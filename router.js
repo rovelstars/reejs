@@ -32,6 +32,15 @@ export async function renderJsx(url, data = undefined) {
       document.getElementById("app")
     );
   }
+  if (ree.routerData.currentPageJsx.postLoad) {
+    console.log("The Page has a postLoad function, calling it now!");
+    if (
+      ree.routerData.currentPageJsx.postLoad[Symbol.toStringTag] ===
+      "AsyncFunction"
+    ) {
+      await ree.routerData.currentPageJsx.postLoad();
+    } else ree.routerData.currentPageJsx.postLoad();
+  }
 }
 export function pushData(data) {
   //find if theres an object with the same url
@@ -56,6 +65,16 @@ export function getData() {
   }
   window.ree.routerData.currentPageData = data;
   return data;
+}
+
+export function removeData() {
+  for (let i = 0; i < history.length; i++) {
+    if (history[i].url == window.location.pathname) {
+      history[i].data = undefined;
+      break;
+    }
+  }
+  localStorage.setItem("historyData", JSON.stringify(history));
 }
 
 export function registerRoute(route) {
@@ -103,7 +122,6 @@ export function getUrlData(realUrl) {
     let params = path.match(foundRoute.url, { decode: decodeURIComponent })(
       realUrl
     ).params;
-    console.log(params);
     return { query: result, params: params, url: foundRoute.url };
   }
 }
@@ -125,19 +143,21 @@ function matchUrl(realUrl) {
 }
 
 export async function load(url = "/") {
+  //run gracefulExit first on the current site
+  if (ree.routerData?.currentPageJsx?.gracefulExit) {
+    console.log("The Page has a gracefulExit function, calling it now!");
+    if (
+      ree.routerData.currentPageJsx.gracefulExit[Symbol.toStringTag] ===
+      "AsyncFunction"
+    ) {
+      await ree.routerData.currentPageJsx.gracefulExit();
+    } else ree.routerData.currentPageJsx.gracefulExit();
+  }
   if (preloader) {
     await renderJsx(preloader);
   }
   if (url) {
-    console.log(
-      "Saving current data to history",
-      window.ree.routerData.currentPageData
-    );
-    window.history.pushState(
-      { data: window.ree.routerData.currentPageData },
-      "",
-      url
-    );
+    window.history.pushState({}, "", url);
   }
   let route = matchUrl(url);
   console.log("Rendering Route", route);

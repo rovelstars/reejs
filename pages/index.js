@@ -1,6 +1,6 @@
 import { html, Component } from "/reender.js";
 import Navbar from "./components/Navbar.js";
-import { load, getData, pushData } from "../router.js";
+import { load, getData, pushData, removeData } from "/router.js";
 export default class Index extends Component {
   add() {
     let { num = getData() || 0 } = this.state;
@@ -18,13 +18,23 @@ export default class Index extends Component {
     console.log(num);
     pushData(num);
   }
+  clear() {
+    removeData();
+    this.setState({ num: 0 });
+    console.log("Wiped out!");
+  }
   render({ data }, { num = getData() || 0 }) {
     return html`<div>
       <${Navbar} />
       <p className="text-indigo-500">
-        Hello <span className="text-indigo-600">${data?.query?.world || "World!"}</span>
+        Hello
+        <span className="text-indigo-600"
+          >${data?.query?.world || "World!"}</span
+        >
       </p>
-      <div className="mx-2 grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div
+        className="mx-2 grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+      >
         <button
           className="btn-blurple"
           onclick=${() => {
@@ -41,7 +51,22 @@ export default class Index extends Component {
         >
           Remove 1
         </button>
-        <div className="btn-red text-center">Balance: ${num}</div>
+        <div
+          className="btn-red text-center"
+          onclick=${() => {
+            this.log();
+          }}
+        >
+          Balance: ${num}
+        </div>
+        <button
+          className="btn-green"
+          onclick=${() => {
+            this.clear();
+          }}
+        >
+          Clear Data
+        </button>
         <button
           className="btn-blurple"
           onclick=${() => {
@@ -70,4 +95,11 @@ export default class Index extends Component {
       </div>
     </div>`;
   }
+}
+
+export function postLoad(){
+  console.log("Sent (Fake) Analytics: Post Load Function ran!");
+}
+export function gracefulExit(){
+  console.log("Sent (Fake) Analytics: User left the page :(");
 }
