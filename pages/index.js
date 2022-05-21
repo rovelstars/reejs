@@ -26,8 +26,8 @@ export default class Index extends Component {
   render({ data }, { num = getData() || 0 }) {
     return html`<div>
       <${Navbar} />
-      <p className="text-indigo-500">
-        Hello
+      <p className="mx-2 text-indigo-500">
+        Hello${" "}
         <span className="text-indigo-600"
           >${data?.query?.world || "World!"}</span
         >
@@ -92,6 +92,14 @@ export default class Index extends Component {
         >
           Goto Test Page
         </button>
+        <button
+          className="btn-red"
+          onclick=${() => {
+            load(`/crash`);
+          }}
+        >
+          Goto Crashing Page
+        </button>
       </div>
     </div>`;
   }
@@ -100,6 +108,10 @@ export default class Index extends Component {
 export function postLoad(){
   console.log("Sent (Fake) Analytics: Post Load Function ran!");
 }
-export function gracefulExit(){
+export function _gracefulExit(){
   console.log("Sent (Fake) Analytics: User left the page :(");
+}
+export async function gracefulExit(){
+  let sus = true;
+  setTimeout(()=>{sus=false}, 15000);
 }

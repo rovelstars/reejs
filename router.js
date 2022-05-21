@@ -17,29 +17,35 @@ if (!window.ree) {
   window.ree = {};
 }
 
-export async function renderJsx(url, data = undefined) {
+export async function renderJsx(url, data = undefined, loader=false) {
   window.ree.routerData.currentPageUrl = url;
-  window.ree.routerData.currentPageJsx = await import(url);
-  if (data) {
-    console.log("data", data);
-    render(
-      html`<${ree.routerData.currentPageJsx.default} data=${data} />`,
-      document.getElementById("app")
-    );
-  } else {
-    render(
-      html`<${ree.routerData.currentPageJsx.default} />`,
-      document.getElementById("app")
-    );
-  }
-  if (ree.routerData.currentPageJsx.postLoad) {
-    console.log("The Page has a postLoad function, calling it now!");
-    if (
-      ree.routerData.currentPageJsx.postLoad[Symbol.toStringTag] ===
-      "AsyncFunction"
-    ) {
-      await ree.routerData.currentPageJsx.postLoad();
-    } else ree.routerData.currentPageJsx.postLoad();
+  try {
+    window.ree.routerData.currentPageJsx = await import(url);
+    if (data) {
+      console.log("data", data);
+      render(
+        html`<${ree.routerData.currentPageJsx.default} data=${data} />`,
+        document.getElementById(loader?"loader":"app")
+      );
+    } else {
+      render(
+        html`<${ree.routerData.currentPageJsx.default} />`,
+        document.getElementById(loader?"loader":"app")
+      );
+    }
+    if (ree.routerData.currentPageJsx.postLoad) {
+      console.log("The Page has a postLoad function, calling it now!");
+      if (
+        ree.routerData.currentPageJsx.postLoad[Symbol.toStringTag] ===
+        "AsyncFunction"
+      ) {
+        await ree.routerData.currentPageJsx.postLoad();
+      } else ree.routerData.currentPageJsx.postLoad();
+    }
+  } catch (e) {
+    let url = routes.find(u=>u.url=="/500").jsx || "/pages/crash.js";
+    console.log("Error loading page, loading /500 with Error:\n", e);
+    await renderJsx(url);
   }
 }
 export function pushData(data) {
@@ -154,7 +160,7 @@ export async function load(url = "/") {
     } else ree.routerData.currentPageJsx.gracefulExit();
   }
   if (preloader) {
-    await renderJsx(preloader);
+    await renderJsx(preloader,undefined,true);
   }
   if (url) {
     window.history.pushState({}, "", url);
@@ -174,6 +180,7 @@ export async function load(url = "/") {
         load(url);
       });
     });
+    document.getElementById("loader").innerHTML="";
     if (postRender) {
       console.log("Running Post Render!");
       if (postRender[Symbol.toStringTag] == "AsyncFunction") await postRender();
@@ -192,6 +199,7 @@ export async function load(url = "/") {
         load(url);
       });
     });
+    document.getElementById("loader").innerHTML="";
     if (postRender) {
       console.log("Running Post Render!");
       if (postRender[Symbol.toStringTag] == "AsyncFunction") await postRender();

@@ -4,7 +4,7 @@ import BotCard from "/pages/components/BotCard.js";
 export default class Failure extends Component {
   render() {
     return html`<div>
-      <p className="text-indigo-500">
+      <p className="mx-2 text-indigo-500">
         Welcome to <span className="text-indigo-600">Failure!</span>
       </p>
       <a className="btn-green" href="/">Go Home!</a>

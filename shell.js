@@ -37,7 +37,9 @@ router.registerRoutes([
   { url: "/failure", jsx: "/pages/failure.js" },
   { url: "/management", jsx: "/pages/management.js" },
   { url: "/test/:id", jsx: "/pages/test.js" },
+  { url: "/crash", jsx: "/pages/hmm.js" },
   { url: "/404", jsx: "/pages/notfound.js" },
+  { url: "/500", jsx: "/pages/crash.js" },
 ]);
 
 window.addEventListener("mousemove", async () => {
