@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!--...other meta tags -->
+    <meta name="description" content="Home Page" />
+    <title>Home</title>
+    <style>
+      body{ margin: 0;}
+    </style>
+    <style type="text/tailwindcss">
+      *,
+      *:focus,
+      *:hover {
+        outline: none;
+      }
+
+      @import url("https://fonts.googleapis.com/css2?family=Quicksand:wght@500&display=swap");
+      @font-face {
+        font-family: Founders Grotesk;
+        src: url(/fonts/founders-grotesk-bold.woff2) format("woff2");
+        display: swap;
+      }
+      @font-face {
+        font-family: Cubano;
+        src: url(/fonts/cubano.ttf) format("truetype");
+        display: swap;
+      }
+      @layer base {
+        [data-theme="default"] {
+          --branding: 255 0 102;
+          --bg: 0 18 32;
+          --bg-lighter: 0 35 61;
+          --success: 55 255 139;
+          --warning: 255 231 76;
+          --blush: 114 76 249;
+          --darker-delta: 94 43 255;
+          --rain: 79 117 155;
+          --scary-dark: 0 4 34;
+          --skyline: 0 255 224;
+          --bsod: 57 115 170;
+          --white-text: 255 255 255;
+          --black-text: 0 0 0;
+          --text-darker: 51 65 85;
+        }
+
+        [data-theme="discord"] {
+        }
+      }
+
+      .md\:hero-bg {
+        background-image: url("/img/bg-dark.svg");
+      }
+
+      ::-webkit-scrollbar {
+        width: 0; /* Remove scrollbar space */
+        background: transparent; /* Optional: just make scrollbar invisible */
+      }
+    </style>
+    <!--<link href="https://pro.fontawesome.com/releases/v5.15.3/css/all.css" rel="stylesheet">-->
+  </head>
+  <body
+    data-theme="default"
+    class="min-h-screen bg-gradient-to-t from-white-text to-rain dark:from-scary-dark dark:to-bg"
+  >
+    <div id="app">
+      <div style="position:absolute;left:50%;top:50%;height:200px;width:200px;margin-top:-100px;margin-left:-100px">
+      <p style="text-align: center;margin-top: 50%;" id="app-not-loaded-msg">Loading...</p>
+    </div>
+    </div>
+    <script src="/shell.js" type="module" defer></script>
+  </body>
+</html>
