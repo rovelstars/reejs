@@ -1,9 +1,18 @@
 # Reejs
 
-### Self Hosting:
+A serverless reactjs framework that teases no-build-step and is serverless-first due to being a static site.
+Currently we are developing a sample site along with reejs in this codebase itself in order to showcase the possibilities of this framework. Feel free to report any bugs at the issues section or introduce new ideas in discussions!
+We shall rewrite this, remove sample code and make reejs possible to run for other sites as well.
 
-Tailwind CSS Cdn fix: goto `shell.js` and change isLocalDev to false, or else it will not work.
-If you are developing reejs locally and using "disable cache" in your browser, download tailwind cdn code [here](https://cdn.tailwindcss.com) and add it to the root of the folder as the name `tw.js` and keep isLocalDev to true. This will save you lot of bandwidth (300kb nearly every time).
+Currently it showcases:
+- Tailwind based CSS generation
+- [Tailwind gen](https://github.com/rovelstars/tailwind-gen)
+- Custom ReeRouter
+- Custom Reender
+- Service Worker that makes it possible for the site to run offline, and also allows directly visiting pages directly from the pages (a static file server would send 404 pages for non-existing pages, so this is a great achievement!)
+- (WIP!) Reebugger (a debugging tool for Reejs)
+
+### Self Hosting:
 
 Install `http-server`
 
