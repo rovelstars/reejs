@@ -20,10 +20,18 @@ Install `http-server`
 npm install -g http-server
 ```
 
+Follow how to make the site https (If you want to use service worker) [here](https://dev.to/aschmelyun/using-the-magic-of-mkcert-to-enable-valid-https-on-local-dev-sites-3a3c)
+
 Then run `http-server`
 
 ```bash
 http-server
+```
+
+(Or) this if you make the site https
+
+```bash
+http-server -s -C ./127.0.0.1.pem -K ./127.0.0.1-key.pem
 ```
 
 Then Visit http://127.0.0.1:8080/
