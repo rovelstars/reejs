@@ -1,4 +1,3 @@
-window.isLocalDev = true;
 window.ree = {};
 import twgen from "/twgen.js";
 let router = await import("/router.js");
@@ -49,11 +48,7 @@ window.addEventListener("mousemove", async () => {
   if (!window.didMouseMove) {
     window.didMouseMove = true;
     document.getElementById("app-not-loaded-msg").innerText = "Starting App!";
-    if(isLocalDev) {
     await import("/tw.js?plugins=forms,typography,aspect-ratio,line-clamp");
-    } else {
-      await import("https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio,line-clamp");
-    }
     await import("/twcfg.js");
     document.getElementById("app").innerHTML = "";
     await router.load(location.pathname + location.search);
