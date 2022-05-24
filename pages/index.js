@@ -26,14 +26,11 @@ export default class Index extends Component {
   render({ data }, { num = getData() || 0 }) {
     return html`<div>
       <${Navbar} />
-      <p className="mx-2 text-indigo-500">
-        Hello${" "}
-        <span className="text-indigo-600"
-          >${data?.query?.world || "World!"}</span
-        >
-      </p>
+      <h1 className="mx-4 dark:text-white text-7xl">
+        Welcome To Ree.js
+      </h1>
       <div
-        className="mx-2 grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+        className="mx-4 grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
       >
         <button
           className="btn-blurple"
@@ -99,6 +96,13 @@ export default class Index extends Component {
           }}
         >
           Goto Crashing Page
+        </button>
+        <button className="bg-sky-600 btn-green"
+          onclick=${() => {
+            load(`/coolpage`);
+          }}
+        >
+          Goto Cool Page
         </button>
       </div>
     </div>`;

@@ -3,12 +3,12 @@ import { html, Component } from "/reender.js";
 export default class Navbar extends Component {
   render() {
     return html`<div
-      className="bg-gradient-to-b dark:from-blush/50 from-blush/70 to-branding/70 p-3 rounded-md transistion duration-100"
+      className="bg-gradient-to-b dark:from-blush/50 from-blush/70 to-branding/70 p-3 rounded-md transistion duration-100 transform-gpu"
     >
       <div className="relative transform transition-all duration-100">
         <div className="flex flex-col justify-between md:min-h-card max-h-card">
           <div className="flex">
-            <img src="/img/face.png" className="w-24 h-24 mr-2 rounded-md hover:border hover:border-blush/30 transistion duration-1000" />
+            <img src="/img/face.png" className="w-24 h-24 mr-2 rounded-md" />
             <div className="flex items-center flex-1">
               <div
                 className="ml-6 text-left md:leading-7"

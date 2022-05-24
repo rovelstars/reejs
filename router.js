@@ -17,7 +17,7 @@ if (!window.ree) {
   window.ree = {};
 }
 
-export async function renderJsx(url, data = undefined, loader=false) {
+export async function renderJsx(url, data = undefined, loader = false) {
   window.ree.routerData.currentPageUrl = url;
   try {
     window.ree.routerData.currentPageJsx = await import(url);
@@ -25,12 +25,12 @@ export async function renderJsx(url, data = undefined, loader=false) {
       console.log("data", data);
       render(
         html`<${ree.routerData.currentPageJsx.default} data=${data} />`,
-        document.getElementById(loader?"loader":"app")
+        document.getElementById(loader ? "loader" : "app")
       );
     } else {
       render(
         html`<${ree.routerData.currentPageJsx.default} />`,
-        document.getElementById(loader?"loader":"app")
+        document.getElementById(loader ? "loader" : "app")
       );
     }
     if (ree.routerData.currentPageJsx.postLoad) {
@@ -43,7 +43,7 @@ export async function renderJsx(url, data = undefined, loader=false) {
       } else ree.routerData.currentPageJsx.postLoad();
     }
   } catch (e) {
-    let url = routes.find(u=>u.url=="/500").jsx || "/pages/crash.js";
+    let url = routes.find((u) => u.url == "/500").jsx || "/pages/crash.js";
     console.log("Error loading page, loading /500 with Error:\n", e);
     await renderJsx(url);
   }
@@ -84,8 +84,14 @@ export function removeData() {
 }
 
 export function registerRoute(route) {
+  //check if route is already registered
+  if (routes.find((r) => r.url == route.url)) {
+    console.log("Route already registered: " + route.url);
+}
+else {
   console.log("registering route", route);
   routes.push({ url: route.url, jsx: route.jsx });
+}
 }
 
 export function registerRoutes(routes) {
@@ -132,7 +138,7 @@ export function getUrlData(realUrl) {
   }
 }
 
-function matchUrl(realUrl) {
+export function matchUrl(realUrl) {
   realUrl = realUrl.split("?")[0];
   let foundRoute = routes.find((templateUrl) => {
     let urlRegex = path.pathToRegexp(templateUrl.url);
@@ -148,8 +154,11 @@ function matchUrl(realUrl) {
   return foundRoute;
 }
 
-export async function load(url = "/") {
+export async function load(url = "/",scrolling=true) {
   //run gracefulExit first on the current site
+  if (preloader) {
+    await renderJsx(preloader, undefined, true);
+  }
   if (ree.routerData?.currentPageJsx?.gracefulExit) {
     console.log("The Page has a gracefulExit function, calling it now!");
     if (
@@ -159,9 +168,6 @@ export async function load(url = "/") {
       await ree.routerData.currentPageJsx.gracefulExit();
     } else ree.routerData.currentPageJsx.gracefulExit();
   }
-  if (preloader) {
-    await renderJsx(preloader,undefined,true);
-  }
   if (url) {
     window.history.pushState({}, "", url);
   }
@@ -170,17 +176,22 @@ export async function load(url = "/") {
   if (!route) {
     //if no route is found, render 404 page
     let data = getUrlData(url);
+    document.getElementById("app").innerHTML = ""; //fix wierd duplication issue
     await renderJsx("/pages/notfound.js", data);
+    if(scrolling){
+      window.scrollTo({top: 0, behavior: 'smooth'});
+    }
     //apply function to all the a tags
     let aTags = document.querySelectorAll("a");
     aTags.forEach((a) => {
       a.addEventListener("click", async (e) => {
         e.preventDefault();
         let url = a.getAttribute("href");
-        load(url);
+        let shouldScroll = a.getAttribute("scroll");
+        load(url,shouldScroll=="true");
       });
     });
-    document.getElementById("loader").innerHTML="";
+    document.getElementById("loader").innerHTML = "";
     if (postRender) {
       console.log("Running Post Render!");
       if (postRender[Symbol.toStringTag] == "AsyncFunction") await postRender();
@@ -189,6 +200,7 @@ export async function load(url = "/") {
   } else {
     let data = getUrlData(url);
     //if route is found, render the jsx
+    document.getElementById("app").innerHTML = ""; //fix wierd duplication issue
     await renderJsx(route.jsx, data);
     //apply function to all the a tags
     let aTags = document.querySelectorAll("a");
@@ -196,10 +208,11 @@ export async function load(url = "/") {
       a.addEventListener("click", async (e) => {
         e.preventDefault();
         let url = a.getAttribute("href");
-        load(url);
+        let shouldScroll = a.getAttribute("scroll");
+        load(url,shouldScroll=="true");
       });
     });
-    document.getElementById("loader").innerHTML="";
+    document.getElementById("loader").innerHTML = "";
     if (postRender) {
       console.log("Running Post Render!");
       if (postRender[Symbol.toStringTag] == "AsyncFunction") await postRender();

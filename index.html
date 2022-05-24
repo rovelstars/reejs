@@ -7,7 +7,9 @@
     <meta name="description" content="Home Page" />
     <title>Home</title>
     <style>
-      body{ margin: 0;}
+      body {
+        margin: 0;
+      }
     </style>
     <style type="text/tailwindcss">
       *,
@@ -49,6 +51,10 @@
         }
       }
 
+      html {
+        scroll-behavior: smooth;
+      }
+
       .md\:hero-bg {
         background-image: url("/img/bg-dark.svg");
       }
@@ -64,11 +70,33 @@
     data-theme="default"
     class="min-h-screen bg-gradient-to-t from-white-text to-rain dark:from-scary-dark dark:to-bg"
   >
-  <div id="loader"></div>
-    <div id="app">
-      <div style="position:absolute;left:50%;top:50%;height:200px;width:200px;margin-top:-100px;margin-left:-100px">
-      <p style="text-align: center;margin-top: 50%;" id="app-not-loaded-msg">Loading...</p>
-    </div>
+    <div id="ree-debugger-shell" class="absolute"></div>
+    <div id="loader"></div>
+    <div id="app" class="min-h-screen">
+      <div
+        style="
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          height: 200px;
+          width: 200px;
+          margin-top: -100px;
+          margin-left: -100px;
+        "
+      >
+        <p style="text-align: center; margin-top: 50%" id="app-not-loaded-msg">
+          Loading...
+        </p>
+        <noscript>
+          <p
+            style="text-align: center; margin-top: 50%"
+            id="app-not-loaded-msg"
+          >
+            Welcome To Failure Management! You Disabled Javascript. What in the
+            world made you think Reejs could run without it?
+          </p>
+        </noscript>
+      </div>
     </div>
     <script src="/shell.js" type="module" defer></script>
   </body>
