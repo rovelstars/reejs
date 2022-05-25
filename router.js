@@ -22,7 +22,6 @@ export async function renderJsx(url, data = undefined, loader = false) {
   try {
     window.ree.routerData.currentPageJsx = await import(url);
     if (data) {
-      console.log("data", data);
       render(
         html`<${ree.routerData.currentPageJsx.default} data=${data} />`,
         document.getElementById(loader ? "loader" : "app")
@@ -45,7 +44,7 @@ export async function renderJsx(url, data = undefined, loader = false) {
   } catch (e) {
     let url = routes.find((u) => u.url == "/500").jsx || "/pages/crash.js";
     console.log("Error loading page, loading /500 with Error:\n", e);
-    await renderJsx(url);
+    await renderJsx(url, e);
   }
 }
 export function pushData(data) {

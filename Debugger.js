@@ -134,9 +134,6 @@ div.id = "ree-debugger-shell-div";
 div.classList.add("absolute");
 render(html`<${Debugger} />`, div);
 
-window.ree.devtools = new Draggabilly(document.getElementById("ree-devtools"), {
-  containment: "#app",
-});
 
 debugDraggie.setPosition(window.innerWidth - 50, window.innerHeight - 50);
 debugDraggie.on("staticClick", function () {

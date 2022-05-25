@@ -17,8 +17,7 @@ export default class Failure extends Component {
     this.setState({ show: false });
   };
   render({props}) {
-    return html`<div>
-      <p className="mx-4 text-indigo-500">
+    return html`<p className="mx-4 text-indigo-500">
         Welcome to <span className="text-indigo-600">Failure!</span>
       </p>
       <a className="btn-green" href="/" data-scroll=${true}>Go Home!</a>
@@ -29,7 +28,6 @@ export default class Failure extends Component {
       >
         <${BotCard} /><${BotCard} /><${BotCard} />
         <${BotCard} /><${BotCard} /><${BotCard} />
-      </div>
-    </div>`;
+      </div>`;
   }
 }

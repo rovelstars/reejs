@@ -24,13 +24,12 @@ export default class Index extends Component {
     console.log("Wiped out!");
   }
   render({ data }, { num = getData() || 0 }) {
-    return html`<div>
-      <${Navbar} />
+    return html`<${Navbar} />
       <h1 className="mx-4 dark:text-white text-7xl">
         Welcome To Ree.js
       </h1>
       <div
-        className="mx-4 grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+        className="mx-4 grid sm:grid-cols-1 md:grid-cols-2 md:mx-56 gap-4"
       >
         <button
           className="btn-blurple"
@@ -104,8 +103,7 @@ export default class Index extends Component {
         >
           Goto Cool Page
         </button>
-      </div>
-    </div>`;
+      </div>`;
   }
 }
 

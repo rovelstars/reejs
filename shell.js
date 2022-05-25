@@ -46,6 +46,18 @@ let routes = [
 ];
 router.registerRoutes(routes);
 
+let shouldSW = localStorage.getItem("shouldSW") || "true";
+
+window.ree.enableSW = function () {
+  localStorage.setItem("shouldSW", "true");
+  shouldSW = "true";
+};
+
+window.ree.disableSW = function () {
+  localStorage.setItem("shouldSW", "false");
+  shouldSW = "false";
+};
+
 async function initLoad() {
   if (!ReeLoaded) {
     ReeLoaded = true;
@@ -54,6 +66,7 @@ async function initLoad() {
     await import("/twcfg.js");
     document.getElementById("app").innerHTML = "";
     await router.load(location.pathname + location.search);
+    if(shouldSW === "true"){
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker
         .register("/sw.js")
@@ -77,6 +90,10 @@ async function initLoad() {
         }
       });
     }
+  }
+  else {
+    console.log("Skipped SW installation!");
+  }
   }
 }
 

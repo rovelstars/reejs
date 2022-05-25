@@ -24,11 +24,20 @@ const cacheFirst = async (request) => {
   return responseFromNetwork;
 };
 
+const cacheThis = async (request) => {
+  const responseFromCache = await caches.match(request);
+  if (responseFromCache) {
+  }
+  else{
+    const responseFromNetwork = await fetch(request);
+    putInCache(request, responseFromNetwork.clone());
+  }
+};
+
 self.addEventListener("install", (event) => {
-  cacheFirst(`https://${self.location.host}/`);
-  cacheFirst(`https://${self.location.host}/pages/notfound.js`);
-  cacheFirst(`https://${self.location.host}/pages/crash.js`);
-  cacheFirst(`https://${self.location.host}/sw.js`);
+  cacheThis(`https://${self.location.host}/`);
+  cacheThis(`https://${self.location.host}/pages/notfound.js`);
+  cacheThis(`https://${self.location.host}/pages/crash.js`);
 });
 
 self.sendMsg = function (d) {
