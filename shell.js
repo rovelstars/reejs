@@ -1,11 +1,13 @@
 window.ree = {};
 import twgen from "/twgen.js";
 let router = await import("/router.js");
+import "/device.js";
 
+let ReeLoaded = false;
 window.ree.router = router;
-window.ree.debug = async function(){
+window.ree.debug = async function () {
   window.ree.debugger = await import("/Debugger.js");
-}
+};
 window.ree.routerData = {
   currentPageUrl: undefined,
   currentPageJsx: undefined,
@@ -41,38 +43,50 @@ let routes = [
   { url: "/coolpage", jsx: "/pages/coolpage.js" },
   { url: "/404", jsx: "/pages/notfound.js" },
   { url: "/500", jsx: "/pages/crash.js" },
-]
+];
 router.registerRoutes(routes);
 
-window.addEventListener("mousemove", async () => {
-  if (!window.didMouseMove) {
-    window.didMouseMove = true;
+async function initLoad() {
+  if (!ReeLoaded) {
+    ReeLoaded = true;
     document.getElementById("app-not-loaded-msg").innerText = "Starting App!";
     await import("/tw.js?plugins=forms,typography,aspect-ratio,line-clamp");
     await import("/twcfg.js");
     document.getElementById("app").innerHTML = "";
     await router.load(location.pathname + location.search);
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
-      .then(function(reg) {
-        console.log('Registration successful, scope is:', reg.scope);
-      })
-      .catch(function(error) {
-        console.log('Service worker registration failed, error:', error);
-      });
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .register("/sw.js")
+        .then(function (reg) {
+          console.log("Registration successful, scope is:", reg.scope);
+        })
+        .catch(function (error) {
+          console.log("Service worker registration failed, error:", error);
+        });
       //wait for service worker to be ready
-      navigator.serviceWorker.ready.then(function(reg) {
-        console.log("I feel like sw is ready!",reg);
-        reg.active.postMessage({type: 'ROUTES_REGISTER', routes});
+      navigator.serviceWorker.ready.then(function (reg) {
+        console.log("I feel like sw is ready!", reg);
+        reg.active.postMessage({ type: "ROUTES_REGISTER", routes });
       });
-      navigator.serviceWorker.addEventListener("message",(e)=>{
-        if(e.data.type === "WTFM") {
+      navigator.serviceWorker.addEventListener("message", (e) => {
+        if (e.data.type === "WTFM") {
           console.log("[WTFM] Routes registered!");
         }
-        if(e.data.type=== "LOAD_ROUTE") {
+        if (e.data.type === "LOAD_ROUTE") {
           router.load(e.data.url);
         }
-      })
+      });
     }
   }
-});
+}
+
+if (!device.mobile) {
+  window.addEventListener("mousemove", () => {
+    if (!window.didMouseMove) {
+      window.didMouseMove = true;
+      initLoad();
+    }
+  });
+} else {
+  initLoad();
+}

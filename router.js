@@ -87,11 +87,10 @@ export function registerRoute(route) {
   //check if route is already registered
   if (routes.find((r) => r.url == route.url)) {
     console.log("Route already registered: " + route.url);
-}
-else {
-  console.log("registering route", route);
-  routes.push({ url: route.url, jsx: route.jsx });
-}
+  } else {
+    console.log("registering route", route);
+    routes.push({ url: route.url, jsx: route.jsx });
+  }
 }
 
 export function registerRoutes(routes) {
@@ -154,7 +153,7 @@ export function matchUrl(realUrl) {
   return foundRoute;
 }
 
-export async function load(url = "/",scrolling=true) {
+export async function load(url = "/", scrolling = true) {
   //run gracefulExit first on the current site
   if (preloader) {
     await renderJsx(preloader, undefined, true);
@@ -178,8 +177,8 @@ export async function load(url = "/",scrolling=true) {
     let data = getUrlData(url);
     document.getElementById("app").innerHTML = ""; //fix wierd duplication issue
     await renderJsx("/pages/notfound.js", data);
-    if(scrolling){
-      window.scrollTo({top: 0, behavior: 'smooth'});
+    if (scrolling) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
     //apply function to all the a tags
     let aTags = document.querySelectorAll("a");
@@ -188,7 +187,7 @@ export async function load(url = "/",scrolling=true) {
         e.preventDefault();
         let url = a.getAttribute("href");
         let shouldScroll = a.getAttribute("scroll");
-        load(url,shouldScroll=="true");
+        load(url, shouldScroll == "true");
       });
     });
     document.getElementById("loader").innerHTML = "";
@@ -209,7 +208,7 @@ export async function load(url = "/",scrolling=true) {
         e.preventDefault();
         let url = a.getAttribute("href");
         let shouldScroll = a.getAttribute("scroll");
-        load(url,shouldScroll=="true");
+        load(url, shouldScroll == "true");
       });
     });
     document.getElementById("loader").innerHTML = "";
