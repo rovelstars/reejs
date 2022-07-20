@@ -1,0 +1,26 @@
+{
+    "html": "text/html",
+    "css": "text/css",
+    "js": "application/javascript",
+    "json": "application/json",
+    "png": "image/png",
+    "jpg": "image/jpeg",
+    "jpeg": "image/jpeg",
+    "svg": "image/svg+xml",
+    "ico": "image/x-icon",
+    "woff": "application/font-woff",
+
+    "ttf": "application/font-ttf",
+    "otf": "application/font-otf",
+    "woff2": "application/font-woff2",
+    "eot": "application/vnd.ms-fontobject",
+    "mp3": "audio/mpeg",
+    "wav": "audio/wav",
+    "ogg": "audio/ogg",
+    "mp4": "video/mp4",
+    "webm": "video/webm",
+    "m4v": "video/x-m4v",
+    "mov": "video/quicktime",
+    "avi": "video/x-msvideo",
+    "mkv": "video/x-matroska"
+}

@@ -1,0 +1,5 @@
+url: https://cdn.jsdelivr.net/npm/cookie-es@0.5.0/dist/index.mjs
+version: 0.5.0
+type: module
+alias: cookie-es
+scope: false

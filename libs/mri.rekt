@@ -1,0 +1,6 @@
+url: https://cdn.jsdelivr.net/npm/mri@1.2.0/lib/index.mjs
+version: 1.2.0
+as: lib/index.mjs
+type: module
+alias: mri
+scope: false

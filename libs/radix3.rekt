@@ -1,0 +1,5 @@
+url: https://cdn.jsdelivr.net/npm/radix3@0.1.2/dist/index.mjs
+version: 0.1.2
+type: module
+alias: radix3
+scope: false

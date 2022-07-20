@@ -1,0 +1,5 @@
+url: https://cdn.jsdelivr.net/npm/sade@1.8.1/lib/index.mjs
+version: 1.8.1
+type: module
+alias: sade
+scope: false

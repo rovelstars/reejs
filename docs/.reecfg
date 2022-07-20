@@ -1,0 +1,10 @@
+system:react
+# Can be react / vue.
+server:less
+# Can be less / static.
+render:csr
+# Can be csr / ssr.
+cache:false
+# Can be true / false.
+version:1.0.0
+# Do not edit this!
