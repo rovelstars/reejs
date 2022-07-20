@@ -12,12 +12,12 @@ Check up the discussions over our [Discord Server](https://discord.gg/eWbt297SkU
 > Install with:
 Windows 10/11:
 ```powershell
-Invoke-RestMethod https://raw.githubusercontent.com/rovelstars/reejs/main/install.js | node
+Invoke-RestMethod https://raw.githubusercontent.com/rovelstars/reejs/master/install.js | node
 ```
 
 Linux/Mac:
 ```sh
-curl -s https://raw.githubusercontent.com/rovelstars/reejs/main/install.js | node
+curl -s https://raw.githubusercontent.com/rovelstars/reejs/master/install.js | node
 ```
 
 Isn't this awesome? Its definitely better than npm install!
