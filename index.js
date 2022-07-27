@@ -54,7 +54,7 @@ cmds
   .forEach((cmd) => {
     const file = `${__dirname}/cmds/${cmd}`;
     const code = fs.readFileSync(file, "utf8");
-    eval(code);
+    eval(`${code}\n//# sourceURL=${file}`);
   });
 
 cli.parse(process.argv);
