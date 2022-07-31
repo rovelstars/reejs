@@ -269,6 +269,8 @@ export default async function dynamicImport(specifier, config = {}, sandbox = {}
       fs.writeFileSync(fileName, ts.outputText);
     }
     if(projectDirOrReejs) specifier = process.cwd()+specifier;
+    //if on windows, add "file:///" before specifier
+    if(process.platform === "win32") specifier = "file:///"+specifier;
     try {
       let mod = await import((fileName || specifier));
       let keys = Object.keys(mod).filter(key => key !== "default");
