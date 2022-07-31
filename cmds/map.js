@@ -8,7 +8,13 @@ cli
       fs.writeFileSync(`${process.cwd()}/import-maps.json`, "{}");
       console.log("[INFO] Intialized import-maps.json");
     }
-    let imports = {};
+    let imports;
+    try{
+    imports = JSON.parse(fs.readFileSync(`${process.cwd()}/import-maps.json`, "utf8"));
+    }catch(e){
+      throw new Error("import-maps.json is not valid JSON");
+    }
+    if(imports.imports) imports = imports.imports;
     //read assets/libs
     let libs = fs.readdirSync(`${process.cwd()}/assets/libs`);
 

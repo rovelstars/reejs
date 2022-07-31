@@ -18,7 +18,7 @@ if (os == "win32") {
   home = home.replace(/\\/g, "/");
 }
 let dir = `${home}/.reejs`;
-let import_map = { imports: {} };
+export let import_map = { imports: {} };
 try {
   import_map = JSON.parse(fs.readFileSync(`${process.cwd()}/import-maps.json`, "utf8"));
 }
@@ -52,6 +52,7 @@ async function fetchCode(url, metaData = {}) {
     fs.mkdirSync(urlDirPath, { recursive: true });
   }
   let urlFilePath = `${urlDirPath}/${urlFile}`;
+  if(!urlFilePath.endsWith(".js")) urlFilePath += ".js";
   if (fs.existsSync(urlFilePath)) {
     return fs.readFileSync(urlFilePath, "utf8");
   }
@@ -178,20 +179,19 @@ export default async function dynamicImport(specifier, config = {}, sandbox = {}
   // Take a specifier from the import map or use it directly. The
   // specifier must be a valid URL.
   if (specifier.startsWith("https://") || specifier.startsWith("http://") || config.initDeno) {
-    let url;
-    let isDenoModule;
-    if(!config.initDeno){
-    url =
-      specifier in imports ? new URL(imports[specifier]) : new URL(specifier);
-    // Create an execution context that provides global variables.
-    isDenoModule = url.toString().includes("deno.land/");
+    let url, isDenoModule;
+    if (!config.initDeno) {
+      url =
+        specifier in imports ? new URL(imports[specifier]) : new URL(specifier);
+      // Create an execution context that provides global variables.
+      isDenoModule = url.toString().includes("deno.land/");
     }
-    if(config.deno){
+    if (config.deno) {
       console.log("Asked to use deno");
       isDenoModule = true;
     }
     if (isDenoModule && !Deno) {
-      console.log(`[DENO] Adding Polyfills for: ${config.initDeno?"\"initialization\"":url}`);
+      console.log(`[DENO] Adding Polyfills for: ${config.initDeno ? "\"initialization\"" : url}`);
       Deno = await dynamicImport("https://esm.sh/@deno/shim-deno@0.8.0?target=node");
       Deno = Deno.Deno;
       let alert = await dynamicImport("./deno/prompts/alert.js");
@@ -204,7 +204,7 @@ export default async function dynamicImport(specifier, config = {}, sandbox = {}
       console.log(`[DENO] Polyfills added for Deno`);
       console.log("[DENO] Current Deno version", Deno.version);
     }
-    if(config.initDeno){
+    if (config.initDeno) {
       return;
     }
     const cloneGlobal = () => Object.defineProperties(
@@ -231,7 +231,7 @@ export default async function dynamicImport(specifier, config = {}, sandbox = {}
     mod = mod.namespace;
     try {
       let keys = Object.keys(mod).filter(key => key !== "default");
-      let namespace;
+      let namespace = {};
       if (Object.keys(mod).includes("default")) {
         namespace = mod.default;
       }
@@ -246,6 +246,7 @@ export default async function dynamicImport(specifier, config = {}, sandbox = {}
   }
   else {
     let fileName;
+    let projectDirOrReejs = config.absolutePath;
     if (specifier.endsWith(".ts") || specifier.endsWith(".tsx")) {
       console.log("[TYPESCRIPT] Transpiling: " + specifier);
       ts = await dynamicImport("https://esm.sh/typescript?target=node");
@@ -267,10 +268,11 @@ export default async function dynamicImport(specifier, config = {}, sandbox = {}
       }
       fs.writeFileSync(fileName, ts.outputText);
     }
+    if(projectDirOrReejs) specifier = process.cwd()+specifier;
     try {
       let mod = await import((fileName || specifier));
       let keys = Object.keys(mod).filter(key => key !== "default");
-      let namespace;
+      let namespace = {};
       if (Object.keys(mod).includes("default")) {
         namespace = mod.default;
       }
@@ -285,7 +287,22 @@ export default async function dynamicImport(specifier, config = {}, sandbox = {}
         return await import(specifier);
       } catch (e) {
         //import from import_maps
-        return await import(process.cwd() + import_map.imports[specifier]);
+        if (import_map.imports[specifier]) {
+          try {
+            return await import(process.cwd() + import_map.imports[specifier]);
+          }
+          catch (e) {
+            try {
+              return await dynamicImport(import_map.imports[specifier]);
+            }
+            catch (e) {
+              throw new Error(`Could not import ${import_map.imports[specifier]}\n${e}`);
+            }
+          }
+        }
+        else {
+          throw new Error(`Could not import ${specifier}\n${e}`);
+        }
       }
     }
   }
