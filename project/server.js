@@ -57,7 +57,7 @@ if (check) {
     }
     let results = [];
     for (let file in files) {
-      results[file] = await Import(`${process.cwd()}/src/pages/${files[file]}`);
+      results[file] = await Import(`${process.platform=="win32"?"file://":`${process.cwd()}/src/pages/`}${files[file]}`);
     }
     return Object.keys(results).map((route) => {
       let path = `/src/pages/${files[route]}`;
@@ -65,6 +65,9 @@ if (check) {
         .replace(/\/src\/pages|index|\.|ts|js$/g, "")
         .replace(/\[\.{3}.+\]/, "*")
         .replace(/\[(.+)\]/, ":$1");
+        if(process.platform=="win32"){
+          pathReg = pathReg.replace(`${process.cwd()}\\src\\pages\\`,"").replaceAll("\\","/");
+        }
       let obj;
       if (!api) {
         obj = { path: pathReg, component: results[route], file: path };
