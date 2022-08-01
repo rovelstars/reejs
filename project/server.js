@@ -1,5 +1,5 @@
 import { createServer } from "http";
-import { createApp, send, createRouter, sendError, useQuery, appendHeader } from "h3";
+import { createApp, send, createRouter, useQuery, appendHeader, sendError, createError } from "h3";
 import check from "./check.js";
 import Import, { import_map } from "./import.js";
 globalThis.Import = Import;
@@ -11,6 +11,7 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 import { homedir, platform } from "os";
+import HTTPCat from "./statusCats.js";
 let app, listen;
 if (check) {
   let home = homedir();
@@ -63,7 +64,7 @@ if (check) {
       let path = `/src/pages/${files[route]}`;
       let pathReg = path
         .replace(/\/src\/pages|index|\.ts|\.js$/g, "");
-        pathReg = pathReg
+      pathReg = pathReg
         .replace(/\[\.{4}\w+\]/, "**")
         .replace(/\[\.{3}\w+\]/, "*")
         .replace(/\[(.+)\]/, ":$1");
@@ -86,9 +87,15 @@ if (check) {
   let system = readConfig(cfg, "system");
   let renderType = readConfig(cfg, "render");
   globalThis.isProd = readConfig(cfg, "env") == "dev" ? false : true;
+  let shouldMinify = readConfig(cfg, "minify")=="true" ? true : false;
+  let terser;
+  if(shouldMinify){
+    console.log("[MINIFY] Enabled!");
+    terser = await Import("https://esm.sh/terser@5.14.2");
+  }
   if (isProd) {
     globalThis.consoleProdLog = console.log;
-    console.log = () => { };
+    console.log = async () => { };
   }
   let shouldCheckRoutes = readConfig(cfg, "check") == "true";
   app = createApp();
@@ -122,6 +129,7 @@ if (check) {
     router.get("/hash", async (req, res) => {
       return __hash;
     })
+    let cacheAssets=[];
     router.get("/assets/**", async (req, res, next) => {
       let file = req.url.replace("/assets/", "").split("?")[0];
       let filepath = `${dir}/project/csr/${file}`;
@@ -138,8 +146,28 @@ if (check) {
           //send mime type header
           appendHeader(res, "Content-Type", mime);
           appendHeader(res, "Cache-Control", "public, max-age=31536000"); // 1 year
-          return send(res, fs.readFileSync(filepath));
+          if (cacheAssets.findIndex((d) => { return d.filepath == filepath }) != -1) {
+            return send(res, cacheAssets[cacheAssets.findIndex((d) => { return d.filepath == filepath })].data);
+          }
+          else {
+          let data = fs.readFileSync(filepath, "utf-8");
+          if (shouldMinify && filepath.endsWith(".js")) {
+            let minified = await terser.minify(data, {
+              module: true,
+              compress: {},
+              mangle: {},
+              output: {},
+              parse: {},
+              rename: {},
+            });
+            data = minified.code;
+          }
+          cacheAssets.push({ filepath, data });
+          return send(res, data);
+        }
         } catch (e) {
+          console.log("Error:", e);
+          if(isProd) consoleProdLog("Error:", e);
           next();
         }
       }
@@ -148,6 +176,7 @@ if (check) {
         next();
       }
     });
+
     let cacheFiles = [];
     router.get("/src", async (req, res, next) => {
       let file = useQuery(req).file;
@@ -175,16 +204,38 @@ if (check) {
           else {
             let data = fs.readFileSync(filepath, "utf-8");
             data = data.replace(/\/\* REEJS_SERVER_SIDE_START \*\/[\s\S]*\/\* REEJS_SERVER_SIDE_END \*\//g, "");
-            //cache file
+            if (shouldMinify && filepath.endsWith(".js")) {
+              let minified = await terser.minify(data, {
+                module: true,
+                compress: {},
+                mangle: {},
+                output: {},
+                parse: {},
+                rename: {},
+              });
+              data = minified.code;
+            }
             cacheFiles.push({ filepath, data });
             return send(res, data);
           }
-        } catch (e) { next(); }
+        } catch (e) {
+          console.log("Error:", e);
+          if(isProd) consoleProdLog("Error:", e);
+          next(); }
       }
       else {
         next();
       }
     });
+    if(!isProd){
+    router.get("/status/:code", async(req, res)=>{
+      let code = req.context.params.code;
+      code = parseInt(code);
+      if(code>300) res.statusCode = code;
+      return HTTPCat(code);
+    });
+  }
+
     app.use("/__reejs", router);
   })();
 

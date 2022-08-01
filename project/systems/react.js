@@ -12,10 +12,38 @@
   });
   pages.forEach(async (page) => {
     router.get(page.path, async (req, res) => {
-      let resp = page.component?.config?.shallowRender ? SSRrender.shallowRender(html`<${page.component.default} req=${req} />`) : SSRrender(html`<${page.component.default} req=${req} />`);
+      let resp;
+      if (page.component?.config?.shallowRender) {
+        try{
+        resp = await SSRrender.shallowRender(html`<${page.component.default} req=${req} />`)
+        }
+        catch(e){
+          console.log(`[SERVER] Error while rendering ${page.path}`);
+          if(page.component.REE || page.component.ErrorRender){
+            resp = await SSRrender.shallowRender(html`<${page.component.REE || page.component.ErrorRender} req=${req} />`);
+          }
+          else{
+            return HTTPCat(500, e.message);
+          }
+        }
+      }
+      else {
+        try{
+        resp = await SSRrender(html`<${page.component.default} req=${req} />`);
+        }
+        catch(e){
+          console.log(`[SERVER] Error while rendering ${page.path}`);
+          if(page.component.REE || page.component.ErrorRender){
+            resp = await SSRrender(html`<${page.component.REE || page.component.ErrorRender} req=${req} />`);
+          }
+          else{
+            return HTTPCat(500, e.message);;
+          }
+        }
+      }
       let headel = "";
       if (page.component.head) {
-        headel = SSRrender(html`<${page.component.head} />`);
+        headel = await SSRrender(html`<${page.component.head} />`);
       }
       resp = `<!DOCTYPE html>
           <html>
@@ -34,18 +62,7 @@
           <div id="app">
           ${resp}
           </div>
-          <script src="/__reejs/assets/shell.js?h=${__hash}" type="module"></script>
-          <script type="module">
-          ree.routes={pages:${JSON.stringify(pages)}};
-          ree.pageUrl="${encodeURI(page.file)}";
-          ree.req={
-            context:${JSON.stringify(req.context)}
-          };
-          ree.hash="${__hash}";
-          ree.importMaps=${JSON.stringify(import_map.imports)};
-          ree.needsHydrate=${page.component?.config?.hydrate ? "true" : "false"};
-          ree.init({env:"${isProd ? "prod" : "dev"}",render:"${renderType}"});
-          </script>
+
           </body>
           </html>`;
       return resp;
@@ -75,7 +92,7 @@
       //change /:variable to /variable
       let pageTestPath = page.component?.config?.checkRoute ?? page.path.replace(/\/:([^\/]+)/g, "/$1");
       console.log(`[TEST] Checking Route ${pageTestPath}`);
-      let res = await fetch(`http://${process.platform=="win32"?"localhost":"127.0.0.1"}:${wasListening}${pageTestPath}`);
+      let res = await fetch(`http://${process.platform == "win32" ? "localhost" : "127.0.0.1"}:${wasListening}${pageTestPath}`);
       if (res.status != 200) {
         console.log(`[WARN] Route ${page.path} is not working`);
       }
@@ -83,7 +100,7 @@
     apis.forEach(async api => {
       let apiTestPath = api.router?.config?.checkRoute ?? api.path.replace(/\/:([^\/]+)/g, "/$1");
       console.log(`[TEST] Checking API Route ${apiTestPath}`);
-      let res = await fetch(`http://${process.platform=="win32"?"localhost":"127.0.0.1"}:${wasListening}${apiTestPath}`);
+      let res = await fetch(`http://${process.platform == "win32" ? "localhost" : "127.0.0.1"}:${wasListening}${apiTestPath}`);
       if (res.status != 200) {
         console.log(`[WARN] API Route ${api.path} is not working`);
       }
