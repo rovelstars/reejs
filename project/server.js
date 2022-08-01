@@ -57,17 +57,20 @@ if (check) {
     }
     let results = [];
     for (let file in files) {
-      results[file] = await Import(`${process.platform=="win32"?"file://":`${process.cwd()}/src/pages/`}${files[file]}`);
+      results[file] = await Import(`${process.platform == "win32" ? "file://" : `${process.cwd()}/src/pages/`}${files[file]}`);
     }
     return Object.keys(results).map((route) => {
       let path = `/src/pages/${files[route]}`;
       let pathReg = path
-        .replace(/\/src\/pages|index|\.|ts|js$/g, "")
-        .replace(/\[\.{3}.+\]/, "*")
+        .replace(/\/src\/pages|index|\.ts|\.js$/g, "");
+        pathReg = pathReg
+        .replace(/\[\.{4}\w+\]/, "**")
+        .replace(/\[\.{3}\w+\]/, "*")
         .replace(/\[(.+)\]/, ":$1");
-        if(process.platform=="win32"){
-          pathReg = pathReg.replace(`${process.cwd()}\\src\\pages\\`,"").replaceAll("\\","/");
-        }
+      if (process.platform == "win32") {
+        pathReg = pathReg.replace(`${process.cwd()}\\src\\pages\\`, "").replaceAll("\\", "/");
+        path.replace(`${process.cwd()}\\src\\pages\\`, "").replaceAll("\\", "/");
+      }
       let obj;
       if (!api) {
         obj = { path: pathReg, component: results[route], file: path };
@@ -100,12 +103,14 @@ if (check) {
   };
 
   globalThis.__hash = hash();
-  app.use("*", (req, res, next) => {
-    if (!req.url.startsWith("/__reejs/")) {
-      console.log(`[SERVER] GET -> ${req.url}`)
-    };
-    next();
-  });
+  if (!isProd) {
+    app.use("**", async (req, res, next) => {
+      if (!req.url.startsWith("/__reejs/")) {
+        console.log(`[SERVER] GET -> ${req.url}`)
+      };
+      next();
+    });
+  }
   console.log("[SERVER] Rendering with Hybrid Mode");
   (async () => {
     let router = createRouter();
@@ -114,10 +119,10 @@ if (check) {
     router.get("/routes", async (req, res) => {
       return { pages, apis };
     });
-    router.get("/hash", (req, res) => {
+    router.get("/hash", async (req, res) => {
       return __hash;
     })
-    router.get("/assets/*", async (req, res, next) => {
+    router.get("/assets/**", async (req, res, next) => {
       let file = req.url.replace("/assets/", "").split("?")[0];
       let filepath = `${dir}/project/csr/${file}`;
       if (fs.existsSync(filepath)) {
@@ -135,7 +140,6 @@ if (check) {
           appendHeader(res, "Cache-Control", "public, max-age=31536000"); // 1 year
           return send(res, fs.readFileSync(filepath));
         } catch (e) {
-          console.log("Failure", e);
           next();
         }
       }
@@ -147,7 +151,10 @@ if (check) {
     let cacheFiles = [];
     router.get("/src", async (req, res, next) => {
       let file = useQuery(req).file;
-      let filepath = `${process.cwd()}${file}`;
+      let filepath = file.replace("/src/pages/", "");
+      if (process.platform != "win32") {
+        filepath = `${process.cwd()}${file}`;
+      }
       if (fs.existsSync(filepath)) {
         try {
           //generate mime type

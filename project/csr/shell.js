@@ -61,12 +61,17 @@ ree.init = async function (options) {
     if (ree.opts.env == "dev") {
         logger("Making an Connection to the Dev Server", "RELOADER");
         setInterval(async () => {
-            let newHash = await fetch("/__reejs/hash").then(res => res.text());
-            if (newHash != ree.hash) {
-                logger("Reloading Page", "RELOADER");
-                location.reload();
+            try {
+                let newHash = await fetch("/__reejs/hash").then(res => res.text());
+                if (newHash != ree.hash) {
+                    logger("Reloading Page", "RELOADER");
+                    location.reload();
+                }
+            } catch (e) {
+                logger("Error getting hash, is server offline?", "RELOADER");
             }
         }, 5000);
     }
-    else logger("Skipped Rendering Ree.js App", "DEBUG")
+    else logger("Skipped Rendering Ree.js App", "DEBUG");
+    //
 }
