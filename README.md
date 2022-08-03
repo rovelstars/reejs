@@ -1,5 +1,4 @@
 <div align='center'>
-  <img src="https://cdn.discordapp.com/attachments/991971417673445376/991971840803217439/Ree.js_Logo_1.png" style='max-width: 100%;height: 500px;' />
   <h1>Ree.js</h1>
   <h3>Make Sites Faster, without the need of building anything!</h3>
 </div>
@@ -34,6 +33,18 @@ Any library that's linked via above command will be installed into `@reejs` dire
 Don't worry! Both `@reejs` & `reejs` scope/package has been locked to prevent any conflicts with other libraries! (Including hackers from introducing other packages with the same name!)
 Packages can be unscoped if their config file has `scope: libraryName`. This will link them to `libraryName`.
 
+## Ree.js now supports These!
+
+Hybrid Rendering, Terser's Minifier, URL Imports, Typescript to Javascript (Useful for deno imports), Deno Polyfills, Import Maps, Module Alias, and much more!
+
+> We are looking for contributors and docs maintainers!
+
+[![Contributor](https://img.shields.io/badge/Contributor-Yes-green.svg?style=flat-square)](https://dscrdly.com/server)
+
+## What does Ree.js does in Production mode?
+
+Disables Logging. That's it. Looks like `console.log` is too slow to be used in production.
+
 ## What's up with `.rekt` file?
 
 These are module configs that are used to download the required files, and respectively generate and link to import maps and node modules respectively.
@@ -50,3 +61,5 @@ more_as: [ "shim/shim.js" | "observe/observe.js"]
 more_alias: [ "shim/shim.js" | "observe"]
 # more alias is for import mapping purposes, more_as is for node module linking.
 ```
+
+### P.S. We are now shipping with REE() function that handles your errors. Because why not?

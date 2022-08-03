@@ -3,7 +3,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import sade from "sade";
 import color from "@reejs/colors";
-import { exec, spawn } from "child_process";
+import { exec, spawn, execSync } from "child_process";
 import { get } from "https";
 import fs from "fs";
 import readConfig from "./utils/readConfig.js";

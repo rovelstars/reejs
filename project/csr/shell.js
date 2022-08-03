@@ -11,15 +11,20 @@ window.Import = async function (url) {
     }
     let mod = await import(url);
     let keys = Object.keys(mod).filter(key => key !== "default");
-    let namespace = {};
-    if (Object.keys(mod).includes("default")) {
-        namespace = mod.default;
+    try {
+        let namespace = {};
+        if (Object.keys(mod).includes("default")) {
+            namespace = mod.default;
+        }
+        keys.forEach(key => {
+            namespace[key] = mod[key];
+        });
+        namespace.default = mod.default;
+        return namespace;
+    } catch (e) {
+        logger(`Couldn't modify module ${url}`, "DEBUG");
+        return mod;
     }
-    keys.forEach(key => {
-        namespace[key] = mod[key];
-    });
-    namespace.default = mod.default;
-    return namespace;
 }
 let $ = function (selector) {
     return document.querySelector(selector);
@@ -37,25 +42,21 @@ window.logger = function (msg, lvl = "debug") {
     }
 }
 ree.init = async function (options) {
-    // options: {app: "",env: "",render:""}
-    options.env == "dev" ? "dev" : "prod";
     ree.opts = options;
     let app = $(`#app`);
     if (!app) {
         logger(`div#app not found! This usually means the initialization is not ran after window load, or it was ran before ${options.app} element was initialized.`, "error");
         return;
     }
-    if (!options.render) {
-        logger(`Render type not specified!`, "error");
-        return;
-    }
-    let { h, render } = await Import("preact");
+    let { h, render, hydrate } = await Import("preact");
     let htm = await Import('htm');
     let html = htm.bind(h);
+    ree.reeact = await Import("preact");
+    ree.html = html;
     let page = await Import(`/__reejs/src?file=${ree.pageUrl}`);
     if (ree.needsHydrate) {
         $("#app").innerHTML = "";;
-        render(html`<${page} req=${ree.req} />`, $("#app"));
+        hydrate(html`<${page} req=${ree.req} />`, $("#app"));
         logger("Rendered Ree.js App", "DEBUG")
     }
     if (ree.opts.env == "dev") {
@@ -65,13 +66,19 @@ ree.init = async function (options) {
                 let newHash = await fetch("/__reejs/hash").then(res => res.text());
                 if (newHash != ree.hash) {
                     logger("Reloading Page", "RELOADER");
-                    location.reload();
+                    setTimeout(()=>{
+                        location.reload();
+                    },2000);
                 }
             } catch (e) {
                 logger("Error getting hash, is server offline?", "RELOADER");
             }
         }, 5000);
     }
-    else logger("Skipped Rendering Ree.js App", "DEBUG");
-    //
+    if (!ree.needsHydrate) logger("Skipped Rendering Ree.js App", "DEBUG");
+    if (ree.opts.twind) {
+        logger("Starting TWIND", "DEBUG");
+        ree.twind = await Import("https://cdn.skypack.dev/twind/shim");
+    }
+    if (ree.opts.run!="none") eval(`${ree.opts.run}();//# sourceURL=reejs/afterInit`);
 }

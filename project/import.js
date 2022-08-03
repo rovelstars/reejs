@@ -6,13 +6,13 @@ import fs from "fs";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 import { homedir, platform } from "os";
+import stdNodeMappings from "./deno/stdNodeMappings.js";
 let home = homedir();
 let os = platform();
 let homewin;
 let Deno;
 globalThis.window = globalThis;
 window.Deno = Deno;
-let ts;
 if (os == "win32") {
   homewin = home;
   home = home.replace(/\\/g, "/");
@@ -36,13 +36,22 @@ process.emit = function (name, data, ...args) {
   return originalEmit.apply(process, arguments);
 };
 
+let ts;
+let tsDownloadStart = false;
 /**
  * @param {string} url - URL of a source code file.
  * @returns {Promise<string>} Raw source code.
  */
 async function fetchCode(url, metaData = {}) {
   //check if file already downloaded at dir/storage/libs/{UrlScheme}/url
-  let Url = new URL(url);
+  let Url;
+  try{
+    Url = new URL(url);
+  }
+  catch(e){
+    console.log("Url: ",url);
+    throw e;
+  }
   let urlScheme = Url.protocol.replace(":", "");
   let urlPath = Url.host + Url.pathname;
   let urlFile = urlPath.split("/").pop();
@@ -52,35 +61,21 @@ async function fetchCode(url, metaData = {}) {
     fs.mkdirSync(urlDirPath, { recursive: true });
   }
   let urlFilePath = `${urlDirPath}/${urlFile}`;
-  if(!urlFilePath.endsWith(".js")) urlFilePath += ".js";
   if (fs.existsSync(urlFilePath)) {
     return fs.readFileSync(urlFilePath, "utf8");
   }
   else {
-    const response = await fetch(url);
-    if (response.ok) {
+    let response;
+    try{
+     response = await fetch(url).catch(e=>{console.log("Error for url:", url);throw e;});
+     let data = await response.text();
+    if (response.ok && !data.includes("* Failed to bundle using Rollup")) {
       //add the file to the cache at dir/storage/libs/{UrlScheme}/url
-      let data = await response.text();
       fs.writeFileSync(urlFilePath, data);
       console.log("[DOWNLOAD]", url, (metaData?.url ? `<< ${metaData.url}` : ""));
-      if (url.endsWith(".ts")) {
-        console.log("[TYPESCRIPT] Transpiling: " + url);
-        ts = await dynamicImport("https://esm.sh/typescript?target=node");
-        ts = ts.transpileModule(data, {
-          compilerOptions: {
-            target: ts.ScriptTarget.ESNext,
-            module: ts.ModuleKind.ESNext
-          }
-        });
-        console.log("[TYPESCRIPT] Done: " + url);
-        return ts;
-      }
-      else {
         return data;
-      }
-    } else if (response.status == 500) {
+    } else if (response.status == 500 || data.includes("* Failed to bundle using Rollup")) {
       //execute the data as a script with url as specifier
-      let data = await response.text();
       let result = new vm.SourceTextModule(data, {
         identifier: url,
       });
@@ -91,6 +86,11 @@ async function fetchCode(url, metaData = {}) {
       throw new Error(`Error fetching ${url}: ${response.statusText} (${response.status})`);
     }
   }
+  catch(e){
+    console.log("Error with url:",url);
+    throw e;
+  }
+  }
 }
 
 /**
@@ -99,22 +99,55 @@ async function fetchCode(url, metaData = {}) {
  * @returns {Promise<vm.Module>}
  */
 async function createModuleFromURL(url, context) {
-  let identifier = url.toString();
-
+  let identifier = stdNodeMappings(url.toString());
+  if(identifier!=url.toString()) url = new URL(identifier);
   if (url.protocol === "http:" || url.protocol === "https:") {
     // Download the code (naive implementation!)
     let source = await fetchCode(identifier, { url: context.__filename });
     // Instantiate a ES module from raw source code.
     let isTS = false;
-    if (source.outputText) {
+    if (identifier.split("?")[0].endsWith(".ts")) {
+      let Url = new URL(identifier);
+      let urlScheme = Url.protocol.replace(":", "");
+      let urlPath = Url.host + Url.pathname;
+      let urlFile = urlPath.split("/").pop();
+      let urlDir = urlPath.split("/").slice(0, -1).join("/");
+      let urlDirPath = `${dir}/storage/libs/${urlScheme}/${urlDir}`;
+      if (!fs.existsSync(urlDirPath)) {
+        fs.mkdirSync(urlDirPath, { recursive: true });
+      }
+      let urlFilePath = `${urlDirPath}/${urlFile}`;
+      if (!urlFilePath.endsWith(".js")) urlFilePath += ".js";
+      if(!fs.existsSync(urlFilePath)){
+      source = await ts.transpileModule(source, {
+        compilerOptions: {
+          target: ts.ScriptTarget.ESNext,
+          module: ts.ModuleKind.ESNext
+        }
+      });
       source = source.outputText;
+  //write the transpiled code to the file
+  fs.writeFileSync(urlFilePath, source);
+      console.log(`[TS] Transpiled Code: ${identifier}`);
       isTS = true;
       console.log(isTS ? `[TS -> JS] ${identifier = identifier.slice(0, -2) + "js"}` : identifier);
     }
+    else{
+      source = fs.readFileSync(urlFilePath, "utf8");
+    }
+  }
+
+
+    try{
     return new vm.SourceTextModule(source, {
       identifier,
       context,
     });
+  }catch(e){
+    console.log("Filename:", context.__filename);
+    console.log("Identifier:", identifier);
+    throw e;
+  }
   } else if (url.protocol === "node:") {
     const imported = await import(identifier);
     const exportNames = Object.keys(imported);
@@ -178,7 +211,8 @@ async function linkWithImportMap({ imports }) {
 export default async function dynamicImport(specifier, config = {}, sandbox = {}, { imports = {} } = import_map) {
   // Take a specifier from the import map or use it directly. The
   // specifier must be a valid URL.
-  if (specifier.startsWith("https://") || specifier.startsWith("http://") || config.initDeno) {
+  if(specifier=="typescript") return await initTS();
+  if (specifier.startsWith("https://") || specifier.startsWith("http://") || imports[specifier]?.startsWith("https://") || imports[specifier]?.startsWith("http://") || config.initDeno) {
     let url, isDenoModule;
     if (!config.initDeno) {
       url =
@@ -186,12 +220,12 @@ export default async function dynamicImport(specifier, config = {}, sandbox = {}
       // Create an execution context that provides global variables.
       isDenoModule = url.toString().includes("deno.land/");
     }
-    if (config.deno) {
+    if (config.initDeno) {
       console.log("Asked to use deno");
       isDenoModule = true;
     }
     if (isDenoModule && !Deno) {
-      console.log(`[DENO] Adding Polyfills for: ${config.initDeno ? "\"initialization\"" : url}`);
+      console.log(`[DENO] Adding Polyfills for: ${config.initDeno ? "(initialization) " + (imports[specifier] || specifier) : url}`);
       Deno = await dynamicImport("https://esm.sh/@deno/shim-deno@0.8.0?target=node");
       Deno = Deno.Deno;
       let alert = await dynamicImport("./deno/prompts/alert.js");
@@ -268,12 +302,12 @@ export default async function dynamicImport(specifier, config = {}, sandbox = {}
       }
       fs.writeFileSync(fileName, ts.outputText);
     }
-    if(projectDirOrReejs) specifier = process.cwd()+specifier;
-    if(process.platform === "win32"){
+    if (projectDirOrReejs) specifier = process.cwd() + specifier;
+    if (process.platform === "win32") {
       //if specifier starts with any drive name add file:/// at starting
       let checkDrive = new RegExp('^' + "([A-Z]:)+", 'i');
-      if(checkDrive.test(specifier)){
-      specifier = "file:///"+specifier;
+      if (checkDrive.test(specifier)) {
+        specifier = "file:///" + specifier;
       }
     }
     try {
@@ -312,5 +346,17 @@ export default async function dynamicImport(specifier, config = {}, sandbox = {}
         }
       }
     }
+  }
+}
+
+async function initTS(){
+  if(!tsDownloadStart){
+    tsDownloadStart = true;
+  console.log("[TS] Initializing");
+  ts = await dynamicImport("https://esm.sh/typescript?target=node");
+  console.log("[TS] Installed!");
+  }
+  else {
+    console.log("[TS] Skipped initialization...");
   }
 }

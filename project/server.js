@@ -111,7 +111,7 @@ if (check) {
 
   globalThis.__hash = hash();
   if (!isProd) {
-    app.use("**", async (req, res, next) => {
+    app.use("*", async (req, res, next) => {
       if (!req.url.startsWith("/__reejs/")) {
         console.log(`[SERVER] GET -> ${req.url}`)
       };
