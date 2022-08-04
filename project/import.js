@@ -18,6 +18,8 @@ if (os == "win32") {
   home = home.replace(/\\/g, "/");
 }
 let dir = `${home}/.reejs`;
+let pkgjson = JSON.parse(fs.readFileSync(`${dir}/package.json`, "utf8"));
+
 export let import_map = { imports: {} };
 try {
   import_map = JSON.parse(fs.readFileSync(`${process.cwd()}/import-maps.json`, "utf8"));
@@ -67,7 +69,11 @@ async function fetchCode(url, metaData = {}) {
   else {
     let response;
     try{
-     response = await fetch(url).catch(e=>{console.log("Error for url:", url);throw e;});
+     response = await fetch(url,{
+      headers:{
+        "User-Agent": `Reejs/${pkgjson.version} ${Deno?`Deno/${Deno.version.deno}`:""} ${ts?.version?`TS/${ts.version}`:""} Node/${process.version}`
+      }
+     }).catch(e=>{console.log("Error for url:", url);throw e;});
      let data = await response.text();
     if (response.ok && !data.includes("* Failed to bundle using Rollup")) {
       //add the file to the cache at dir/storage/libs/{UrlScheme}/url
