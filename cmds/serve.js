@@ -9,6 +9,6 @@ cli.command("serve")
             let child = spawn("node", [`./index.js`, port, "--experimental-vm-modules","--experimental-fetch"],{stdio: "inherit", cwd: `${process.cwd()}/`, detached: false});
         }
         else {
-            console.log(`Please run \`${color("reejs init", "", "blackBrightBg")}\` to create a new project`);
+            console.log(`Please run \`${color("reejs init", "greenBright")}\` to create a new project`);
         }
     });

@@ -1,9 +1,9 @@
 cli
   .command("link")
-  .describe(`Link ${color("assets/libs", "", "blueBrightBg")} folder!`)
+  .describe(`Link ${color("assets/libs", "blueBright")} folder!`)
   .action(() => {
     console.log(
-      `[INFO] Linking ${color("assets/libs", "", "blueBrightBg")} folder!`
+      `[INFO] Linking ${color("assets/libs", "blueBright")} folder!`
     );
     let libs = fs.readdirSync(`${process.cwd()}/assets/libs`);
     //read package json
@@ -39,15 +39,14 @@ cli
       if (!fs.existsSync(libLink)) {
         fs.symlinkSync(libPath, libLink);
         console.log(
-          `[INFO] Linked ${color(lib, "", "blueBrightBg")} -> ${color(
+          `[INFO] Linked ${color("`"+lib+"`", "blueBright")} -> ${color(
             scope ? "@reejs/" : "" + (alias || lib),
-            "",
-            "blueBrightBg"
+            "blueBright",
           )}`
         );
       } else {
         console.log(
-          `[INFO] ${color(lib, "", "blueBrightBg")} is already linked${
+          `[INFO] ${color(lib, "blueBright")} is already linked${
             alias ? ` (as ${alias})` : ""
           }; skipping...`
         );
@@ -57,9 +56,8 @@ cli
       if (pkg.dependencies[`${scope ? "@reejs/" : ""}${alias || lib}`]) {
         console.log(
           `[INFO] ${color(
-            lib,
-            "",
-            "blueBrightBg"
+            "`"+lib+"`",
+            "blueBright",
           )} is already in package.json`
         );
       }
@@ -74,8 +72,7 @@ cli
         console.log(
           `[INFO] Added ${color(
             lib,
-            "",
-            "blueBrightBg"
+            "blueBright",
           )} to package.json`
         );
       }

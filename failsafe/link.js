@@ -64,7 +64,7 @@ function color(str, color, bg) {
 }
 let opts = { force: true };
 
-console.log(`[INFO] Linking ${color("assets/libs","","blueBrightBg")} folder!`);
+console.log(`[INFO] Linking ${color("assets/libs","blueBright")} folder!`);
         let libs = fs.readdirSync(`${process.cwd()}/assets/libs`);
         libs.forEach(lib=>{
             //make soft link to node_modules/@reejs/<lib>
@@ -83,10 +83,10 @@ console.log(`[INFO] Linking ${color("assets/libs","","blueBrightBg")} folder!`);
             }
             if(!fs.existsSync(libLink)) {
                 fs.symlinkSync(libPath,libLink);
-                console.log(`[INFO] Linked ${color(lib,"","blueBrightBg")} -> ${color(scope?"@reejs/":""+(alias || lib),"","blueBrightBg")}`);
+                console.log(`[INFO] Linked ${color(lib,"blueBright")} -> ${color(scope?"@reejs/":""+(alias || lib), "blueBright")}`);
             }
             else{
-                console.log(`[INFO] ${color(lib,"","blueBrightBg")} is already linked${alias?` (as ${alias})`:""}; skipping...`);
+                console.log(`[INFO] ${color(lib,"blueBright")} is already linked${alias?` (as ${alias})`:""}; skipping...`);
             }
         }
         );

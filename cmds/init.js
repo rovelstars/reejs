@@ -31,10 +31,10 @@ version: 0.0.1
                 return process.exit(1);
             }
             //clone the repo
-            console.log(`Cloning the ${url == "https://github.com/ree-js/create-reeact-app" ? "default" : url} repo to ${color(name, "", "greenBg")}`);
+            console.log(`Cloning the ${url == "https://github.com/ree-js/create-reeact-app" ? "default" : url} repo to ${color(name, "blue")}`);
             exec(`git clone ${url} ${name}`, (err) => {
                 if (err) {
-                    console.log(color("Error cloning the repo, maybe check whether the folder with name " + color(name, "", "redBg"), "red"), color("exists", "red"), color(`and repo url ${color(url, "", "redBg")}`, "red"), color(`is correct`, "red"));
+                    console.log(color("Error cloning the repo, maybe check whether the folder with name " + color(name, "redBright"), "red"), color("exists", "red"), color(`and repo url ${color(url, "redBright")}`, "red"), color(`is correct`, "red"));
                     return process.exit(1);
                 }
                 //change to the new folder
@@ -45,8 +45,8 @@ version: 0.0.1
                 execSync("reejs i", { stdio: "inherit" });
                 execSync("reejs link", { stdio: "inherit" });
                 execSync("reejs map", { stdio: "inherit" });
-                console.log(color(`Project ${color(name, "", "greenBg")} created!`, "green", "greenBg"));
-                console.log("To get started, run the following ", "`" + color(`cd ${name} && reejs serve`, "", "blackBrightBg") + "`", " commands");
+                console.log(color(`Project ${color(name, "greenBright")} created!`, "green"));
+                console.log("To get started, run the following ", "`" + color(`cd ${name} && reejs serve`, "green") + "`", " commands");
             });
         });
     });
