@@ -143,7 +143,6 @@ async function createModuleFromURL(url, context) {
     }
   }
 
-
     try{
     return new vm.SourceTextModule(source, {
       identifier,
@@ -360,7 +359,7 @@ async function initTS(){
     tsDownloadStart = true;
   console.log("[TS] Initializing");
   ts = await dynamicImport("https://esm.sh/typescript?target=node");
-  console.log("[TS] Installed!");
+  console.log(`[TS] Installed! v${ts.version}`);
   }
   else {
     console.log("[TS] Skipped initialization...");

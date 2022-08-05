@@ -97,12 +97,7 @@ if (check) {
   let twind;
   if(twindSSR){
     console.log("[TWIND] Enabled!");
-    let jsdom = await Import("https://esm.sh/jsdom?target=deno",{},{TextEncoder, TextDecoder});
-  //init jsdom
-  const { JSDOM } = jsdom;
-  const dom = new JSDOM(`<!DOCTYPE html><html><head></head><body></body></html>`);
-  const window = dom.window;
-  twind = await Import("https://esm.sh/twind@1.0.0-next.38?target=deno",{},{self: window, document: window.document, TextEncoder, TextDecoder});
+  twind = await Import("https://esm.sh/twind@1.0.0-next.38?target=deno",{},{TextEncoder, TextDecoder});
   let presetTW = await Import("https://esm.sh/@twind/preset-tailwind@1.0.0-next.38?target=deno");
     twind.setup({
       /* config */

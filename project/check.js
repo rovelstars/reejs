@@ -54,7 +54,7 @@ if (mode == "dev") {
             process.on("SIGINT", () => {
                 //kill child
                 child.kill();
-                console.log("[INFO] Killed Old server...");
+                console.log("\n[INFO] Killed Old server...\nNode.js", `v${process.versions.node}`);
                 process.exit(0);
             });
         }
