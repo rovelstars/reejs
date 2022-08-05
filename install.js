@@ -54,8 +54,8 @@ if (!fs.existsSync(dir)) {
     }
     console.log(`[INFO] Git found. Cloning into ${dir}`);
     exec(
-      `git clone https://github.com/rovelstars/reejs.git ${os=="win32"?`${home}/.reejs`:(process.env.INSTALL_TO?process.env.INSTALL_TO: `${home}/.reejs`)}`,
-      { },
+      `git clone https://github.com/rovelstars/reejs.git ${os=="win32"?`.reejs`:(process.env.INSTALL_TO?process.env.INSTALL_TO: `${home}/.reejs`)}`,
+      { cwd: os=="win32"?home:null},
       (err, stdout, stderr) => {
         if (err) {
           console.log("[ERROR] Git clone failed. Please try again");
