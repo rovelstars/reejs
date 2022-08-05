@@ -15,11 +15,12 @@ window.Import = async function (url) {
         let namespace = {};
         if (Object.keys(mod).includes("default")) {
             namespace = mod.default;
-        }
+        
         keys.forEach(key => {
             namespace[key] = mod[key];
         });
         namespace.default = mod.default;
+    }
         return namespace;
     } catch (e) {
         logger(`Couldn't modify module ${url}`, "DEBUG");
@@ -56,7 +57,7 @@ ree.init = async function (options) {
     let page = await Import(`/__reejs/src?file=${ree.pageUrl}`);
     if (ree.needsHydrate) {
         $("#app").innerHTML = "";;
-        hydrate(html`<${page} req=${ree.req} />`, $("#app"));
+        //hydrate(html`<${page} req=${ree.req} />`, $("#app"));
         logger("Rendered Ree.js App", "DEBUG")
     }
     if (ree.opts.env == "dev") {
@@ -78,7 +79,8 @@ ree.init = async function (options) {
     if (!ree.needsHydrate) logger("Skipped Rendering Ree.js App", "DEBUG");
     if (ree.opts.twind) {
         logger("Starting TWIND", "DEBUG");
-        ree.twind = await Import("https://cdn.skypack.dev/twind/shim");
+        ree.twind = await Import("https://cdn.jsdelivr.net/npm/@twind/cdn@next/+esm");
+        ree.twind.setup();
     }
     if (ree.opts.run!="none") eval(`${ree.opts.run}();//# sourceURL=reejs/afterInit`);
 }

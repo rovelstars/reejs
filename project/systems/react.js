@@ -53,12 +53,17 @@
           if (page.component.head) {
             headel = await SSRrender(html`<${page.component.head} />`);
           }
+          let cssTW = "";
+          if(twindSSR){
+            cssTW = twind.extract(resp).css;
+          }
           resp = `<!DOCTYPE html>
-          <html ${page.component?.config?.twind ? "hidden" : ""}>
+          <html ${(!twindSSR && page.component?.config?.twind) ? "hidden" : ""}>
           <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           ${headel}
+          ${twindSSR?`<style>${cssTW}</style>`:""}
           ${page.component.config?.hydrate ? `
           <link rel="preload" href="${encodeURI(page.file).replace("/src", "/__reejs/src?file=/src") + `&h=${__hash}`}" as="script" crossorigin="anonymous">
           ${page.component.config?.preloadComponents?.map((c) => `<link rel="preload" href="${encodeURI(c).replace("/src", "/__reejs/src?file=/src") + `&h=${__hash}`}" as="script" crossorigin="anonymous">`).join("") || ""}
@@ -81,7 +86,7 @@
           ree.importMaps=${JSON.stringify(import_map.imports)};
           ree.needsHydrate=${page.component?.config?.hydrate ? "true" : "false"};
           ${page.component?.config?.runBeforeInit ? `(${page.component.config.runBeforeInit.toString()})();` : ""}
-          ree.init({env:"${isProd ? "prod" : "dev"}",twind: ${page.component?.config?.twind == true} ,run:\`${page.component?.config?.runAfterInit ? `(${page.component.config.runAfterInit.toString()})` : "none"}\`});
+          ree.init({env:"${isProd ? "prod" : "dev"}",twind: ${page.component?.config?.twind == true} ,run:\`${page.component?.config?.runAfterInit ? `(${page.component.config.runAfterInit.toString().replaceAll("`","\\`").replaceAll("$","\\$")})` : "none"}\`});
           </script>
           </body>
           </html>`;

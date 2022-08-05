@@ -1,7 +1,27 @@
 cli.command("init [url] [name]")
     .describe(`Initialize a new project`)
     .action((url, name) => {
-        if (!url || url == ".") url = "https://github.com/ree-js/create-reeact-app";
+        if (!url || url == "."){
+            if(fs.existsSync(".reecfg")){
+                console.log(color("Project already initialized", "red"));
+                return;
+            }
+            else{
+            console.log(color("Initiating the current directory as a reejs directory.", "green"));
+            fs.writeFileSync(".reecfg",
+`system: react
+# Can be react.
+env: dev
+# Can be dev / prod.
+check: true
+# Can be true / false. This visits all the routes and checks if they are valid.
+minify: false
+# Can be true / false. This minifies the assets and keeps them in memory.
+version: 0.0.1
+# Do not edit this!`, "utf8");
+            return;
+            }
+        };
         if (!url.startsWith("https://")) name = url; url = "https://github.com/ree-js/create-reeact-app";
         if (!name) name = "reejs-app";
         //check if git is installed

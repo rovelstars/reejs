@@ -89,9 +89,25 @@ if (check) {
   globalThis.isProd = readConfig(cfg, "env") == "dev" ? false : true;
   let shouldMinify = readConfig(cfg, "minify")=="true" ? true : false;
   let terser;
+  let twindSSR = readConfig(cfg, "twindSSR") == "true" ? true : false;
   if(shouldMinify){
     console.log("[MINIFY] Enabled!");
     terser = await Import("https://esm.sh/terser@5.14.2");
+  }
+  let twind;
+  if(twindSSR){
+    console.log("[TWIND] Enabled!");
+    let jsdom = await Import("https://esm.sh/jsdom?target=deno",{},{TextEncoder, TextDecoder});
+  //init jsdom
+  const { JSDOM } = jsdom;
+  const dom = new JSDOM(`<!DOCTYPE html><html><head></head><body></body></html>`);
+  const window = dom.window;
+  twind = await Import("https://esm.sh/twind@1.0.0-next.38?target=deno",{},{self: window, document: window.document, TextEncoder, TextDecoder});
+  let presetTW = await Import("https://esm.sh/@twind/preset-tailwind@1.0.0-next.38?target=deno");
+    twind.setup({
+      /* config */
+      presets: [presetTW]
+    });
   }
   if (isProd) {
     globalThis.consoleProdLog = console.log;
@@ -102,6 +118,7 @@ if (check) {
   let wasListening = false;
   listen = (port) => {
     if (!wasListening) {
+      init();
       console.log(`[SERVER] Listening on ${port}`);
       if (isProd) consoleProdLog(`[SERVER] Listening on ${port}`);
       createServer(app).listen(parseInt(port));
@@ -119,7 +136,7 @@ if (check) {
     });
   }
   console.log("[SERVER] Rendering with Hybrid Mode");
-  (async () => {
+  async function init(){
     let router = createRouter();
     let pages = await genPages();
     let apis = await genPages(true);
@@ -237,11 +254,10 @@ if (check) {
   }
 
     app.use("/__reejs", router);
-  })();
-
-  if (system == "react") {
-    let react = fs.readFileSync(`${dir}/project/systems/react.js`, "utf-8");
-    eval(`${react}\n//# sourceURL=${`${dir}/project/systems/react.js`}`);
-  }
+    if (system == "react") {
+      let react = fs.readFileSync(`${dir}/project/systems/react.js`, "utf-8");
+      eval(`${react}\n//# sourceURL=${`${dir}/project/systems/react.js`}`);
+    }
+  };
 }
 export default { app, listen };

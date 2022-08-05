@@ -18,7 +18,8 @@ if (os == "win32") {
   homewin = home;
   home = home.replace(/\\/g, "/");
 }
-let dir = `${home}/.reejs`;
+
+let dir = fs.existsSync(`${process.cwd()}/.reejs`) ? `${process.cwd()}/.reejs` : `${home}/.reejs`;
 //check if the .reejs/storage exists else create it
 if (!fs.existsSync(`${dir}/storage`)) {
   fs.mkdirSync(`${dir}/storage`);
@@ -31,6 +32,7 @@ function logger(msg, lvl = "DEBUG") {
 function isReejsFolder() {
   return fs.existsSync(`${process.cwd()}/.reecfg`);
 }
+
 function downloadFile(url, dest, cb) {
   var file = fs.createWriteStream(dest);
   get(url, function (response) {
@@ -40,10 +42,10 @@ function downloadFile(url, dest, cb) {
     });
   });
 }
-if(!fs.existsSync(`${dir}/storage/features`)){
+if (!fs.existsSync(`${dir}/storage/features`)) {
   fs.writeFileSync(`${dir}/storage/features`, "", "utf8");
 }
-let featuresList = fs.readFileSync(`${dir}/storage/features`, "utf8").split("\n").filter((e) => {return e!=""});
+let featuresList = fs.readFileSync(`${dir}/storage/features`, "utf8").split("\n").filter((e) => { return e != "" });
 const cli = sade("reejs");
 cli.version(pkg.version);
 
