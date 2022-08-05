@@ -23,14 +23,6 @@ process.emit = function (name, data, ...args) {
 
   return originalEmit.apply(process, arguments);
 };
-if(!process.env.NODE_OPTIONS?.includes("--experimental-vm-modules") && !process.env.NODE_OPTIONS?.includes("--experimental-fetch")){
-  if(os == "win32"){
-    console.log("Please run the following command and try again: `$Env:NODE_OPTIONS=\"--experimental-vm-modules --experimental-fetch\"`");
-    process.exit();
-  }
-  console.log("[WARNING] Please run the following command and try again: `NODE_OPTIONS=\"--experimental-vm-modules --experimental-fetch\"`");
-  process.exit();
-}
 
 let home = homedir();
 let os = platform();
@@ -38,6 +30,15 @@ let homewin;
 if (os == "win32") {
   homewin = home;
   home = home.replace(/\\/g, "/");
+}
+
+if(!process.env.NODE_OPTIONS?.includes("--experimental-vm-modules") && !process.env.NODE_OPTIONS?.includes("--experimental-fetch")){
+  if(os == "win32"){
+    console.log("Please run the following command and try again: `$Env:NODE_OPTIONS=\"--experimental-vm-modules --experimental-fetch\"`");
+    process.exit();
+  }
+  console.log("[WARNING] Please run the following command and try again: `NODE_OPTIONS=\"--experimental-vm-modules --experimental-fetch\"`");
+  process.exit();
 }
 
 let dir = fs.existsSync(process.env.REEJS_CUSTOM_DIR) ? process.env.REEJS_CUSTOM_DIR : `${home}/.reejs`;
