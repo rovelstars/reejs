@@ -11,6 +11,27 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const pkg = JSON.parse(fs.readFileSync(`${__dirname}/package.json`, "utf8"));
 import { homedir, platform } from "os";
+
+const originalEmit = process.emit;
+process.emit = function (name, data, ...args) {
+  if (
+    name === `warning` &&
+    typeof data === `object` &&
+    data.name === `ExperimentalWarning`
+  )
+    return false;
+
+  return originalEmit.apply(process, arguments);
+};
+if(!process.env.NODE_OPTIONS?.includes("--experimental-vm-modules") && !process.env.NODE_OPTIONS?.includes("--experimental-fetch")){
+  if(os == "win32"){
+    console.log("Please run the following command and try again: `$Env:NODE_OPTIONS=\"--experimental-vm-modules --experimental-fetch\"`");
+    process.exit();
+  }
+  console.log("[WARNING] Please run the following command and try again: `NODE_OPTIONS=\"--experimental-vm-modules --experimental-fetch\"`");
+  process.exit();
+}
+
 let home = homedir();
 let os = platform();
 let homewin;
@@ -19,7 +40,7 @@ if (os == "win32") {
   home = home.replace(/\\/g, "/");
 }
 
-let dir = fs.existsSync(`${process.cwd()}/.reejs`) ? `${process.cwd()}/.reejs` : `${home}/.reejs`;
+let dir = fs.existsSync(process.env.REEJS_CUSTOM_DIR) ? process.env.REEJS_CUSTOM_DIR : `${home}/.reejs`;
 //check if the .reejs/storage exists else create it
 if (!fs.existsSync(`${dir}/storage`)) {
   fs.mkdirSync(`${dir}/storage`);

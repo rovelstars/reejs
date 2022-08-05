@@ -17,7 +17,7 @@ if (os == "win32") {
   homewin = home;
   home = home.replace(/\\/g, "/");
 }
-let dir = `${home}/.reejs`;
+let dir = fs.existsSync(process.env.REEJS_CUSTOM_DIR) ? process.env.REEJS_CUSTOM_DIR : `${home}/.reejs`;
 let pkgjson = JSON.parse(fs.readFileSync(`${dir}/package.json`, "utf8"));
 
 export let import_map = { imports: {} };

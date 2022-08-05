@@ -21,7 +21,7 @@ if (check) {
     homewin = home;
     home = home.replace(/\\/g, "/");
   }
-  let dir = `${home}/.reejs`;
+  let dir = fs.existsSync(process.env.REEJS_CUSTOM_DIR) ? process.env.REEJS_CUSTOM_DIR : `${home}/.reejs`;
   const readdir = promisify(fs.readdir);
   const stat = promisify(fs.stat);
 
