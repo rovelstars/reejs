@@ -26,7 +26,7 @@ if (os == "win32") {
 if (process.env.INSTALL_TO) {
   console.log("[INFO] Installing to custom dir:", process.env.INSTALL_TO);
 }
-let dir = process.env.INSTALL_TO?process.env.INSTALL_TO: `${home}/.reejs`;
+let dir = (os!="win32" && process.env.INSTALL_TO) ? process.env.INSTALL_TO: `${home}/.reejs`;
 
 execSync("npm unlink reejs -g");
 
@@ -54,7 +54,7 @@ if (!fs.existsSync(dir)) {
     }
     console.log(`[INFO] Git found. Cloning into ${dir}`);
     exec(
-      `git clone https://github.com/rovelstars/reejs.git ${process.env.INSTALL_TO?process.env.INSTALL_TO: `${home}/.reejs`}`,
+      `git clone https://github.com/rovelstars/reejs.git ${os=="win32"?`${home}/.reejs`:(process.env.INSTALL_TO?process.env.INSTALL_TO: `${home}/.reejs`)}`,
       { },
       (err, stdout, stderr) => {
         if (err) {
