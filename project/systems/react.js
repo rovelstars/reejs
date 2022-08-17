@@ -68,8 +68,8 @@
           <link rel="preload" href="${encodeURI(page.file).replace("/src", "/__reejs/src?file=/src") + `&h=${__hash}`}" as="script" crossorigin="anonymous">
           ${page.component.config?.preloadComponents?.map((c) => `<link rel="preload" href="${encodeURI(c).replace("/src", "/__reejs/src?file=/src") + `&h=${__hash}`}" as="script" crossorigin="anonymous">`).join("") || ""}
           `: ""}
-          <link rel="preload" href="https://unpkg.com/htm@3.1.1/dist/htm.module.js?module" as="script" crossorigin="anonymous">
-          <link rel="preload" href="https://esm.sh/preact@10.10.0" as="script" crossorigin="anonymous">
+          <link rel="preload" href="${import_maps["htm"] || "https://esm.sh/htm@3.1.1"}" as="script" crossorigin="anonymous">
+          <link rel="preload" href="${import_maps["preact"] ||"https://esm.sh/preact@10.10.0"}" as="script" crossorigin="anonymous">
           </head>
           <body>
           <div id="app">
@@ -77,13 +77,13 @@
           </div>
           <script src="/__reejs/assets/shell.js?h=${__hash}" type="module"></script>
           <script type="module">
-          ree.routes={pages:${JSON.stringify(pages)}};
+          ree.routes=${JSON.stringify(pages)};
           ree.pageUrl="${encodeURI(page.file)}";
           ree.req={
             context:${JSON.stringify(req.context)}
           };
           ree.hash="${__hash}";
-          ree.importMaps=${JSON.stringify(import_map.imports)};
+          ree.import_maps=${JSON.stringify(import_maps)};
           ree.needsHydrate=${page.component?.config?.hydrate ? "true" : "false"};
           ${page.component?.config?.runBeforeInit ? `(${page.component.config.runBeforeInit.toString()})();` : ""}
           ree.init({env:"${isProd ? "prod" : "dev"}",twind: ${page.component?.config?.twind == true} ,run:\`${page.component?.config?.runAfterInit ? `(${page.component.config.runAfterInit.toString().replaceAll("`","\\`").replaceAll("$","\\$")})` : "none"}\`});
@@ -91,7 +91,7 @@
           </body>
           </html>`;
           //save to cache
-          if(page.component?.config?.cache){
+          if(page.component?.config?.cache && readConfig(cfg, "allowCaching")=="true"){
           cachedPages.push({ path: req.url, resp });
           console.log(`[SERVER] Saving Rendered ${req.url} to cache...`);
           }

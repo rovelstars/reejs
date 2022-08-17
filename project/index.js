@@ -1,7 +1,13 @@
 import canRun from "./check.js";
-import Import from "./import.js";
-globalThis.Import = Import;
+let server, components, Import;
+if (canRun) {
+    Import = await import("./import.js");
+    globalThis.Import = Import;
+    server = await import("./server.js");
+    server = server.default;
+    components = await import("./components/index.js");
+    components = components.default;
+}
 import readConfig from "./readConfig.js";
-import server from "./server.js";
 
-export default {canRun, Import, readConfig, server, IS_BROWSER: false};
+export default {canRun, Import, readConfig, server, IS_BROWSER: false, components};

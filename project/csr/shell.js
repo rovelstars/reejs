@@ -6,8 +6,8 @@ window.Import = async function (url) {
         url = url.replace("/src", "/__reejs/src?file=/src");
     }
     if (url.startsWith("/__reejs")) url += `&h=${ree.hash}`;
-    if (ree.importMaps[url]) {
-        url = ree.importMaps[url];
+    if (ree.import_maps[url]) {
+        url = ree.import_maps[url];
     }
     let mod = await import(url);
     let keys = Object.keys(mod).filter(key => key !== "default");
@@ -15,22 +15,20 @@ window.Import = async function (url) {
         let namespace = {};
         if (Object.keys(mod).includes("default")) {
             namespace = mod.default;
-        
+        }
         keys.forEach(key => {
             namespace[key] = mod[key];
         });
         namespace.default = mod.default;
-    }
         return namespace;
     } catch (e) {
-        logger(`Couldn't modify module ${url}`, "DEBUG");
         return mod;
     }
 }
-let $ = function (selector) {
+window.$ = function (selector) {
     return document.querySelector(selector);
 }
-let $$ = function (selector) {
+window.$$ = function (selector) {
     return document.querySelectorAll(selector);
 }
 window.logger = function (msg, lvl = "debug") {
@@ -38,7 +36,7 @@ window.logger = function (msg, lvl = "debug") {
     if (ree.opts.env == "dev" && lvl == "DEBUG") {
         console.log("[DEBUG]", msg);
     }
-    else if (lvl != "DEBUG") {
+    else if (lvl != "DEBUG" || lvl != "🚦" || lvl != "🥏") {
         console.log(`[${lvl}]`, msg);
     }
 }
@@ -57,9 +55,17 @@ ree.init = async function (options) {
     let page = await Import(`/__reejs/src?file=${ree.pageUrl}`);
     if (ree.needsHydrate) {
         $("#app").innerHTML = "";;
-        //hydrate(html`<${page} req=${ree.req} />`, $("#app"));
-        logger("Rendered Ree.js App", "DEBUG")
+        hydrate(html`<${page} req=${ree.req} />`, $("#app"));
+        logger("Rendered Ree.js App", "DEBUG");
     }
+    let routerInitiated = false;
+        window.addEventListener("mousemove",async()=>{
+            if(!routerInitiated){
+                routerInitiated = !routerInitiated;
+                let Router = await Import(`/__reejs/assets/router.js?h=${ree.hash}`);
+                ree.router = new Router();
+            }
+        })
     if (ree.opts.env == "dev") {
         logger("Making an Connection to the Dev Server", "RELOADER");
         setInterval(async () => {
@@ -77,9 +83,10 @@ ree.init = async function (options) {
         }, 5000);
     }
     if (!ree.needsHydrate) logger("Skipped Rendering Ree.js App", "DEBUG");
+    delete ree.needsHydrate;
     if (ree.opts.twind) {
         logger("Starting TWIND", "DEBUG");
-        ree.twind = await Import("https://cdn.jsdelivr.net/npm/@twind/cdn@next/+esm");
+        ree.twind = await Import("@twind/cdn");
         ree.twind.setup();
     }
     if (ree.opts.run!="none") eval(`${ree.opts.run}();//# sourceURL=reejs/afterInit`);

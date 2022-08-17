@@ -64,21 +64,6 @@ if (!fs.existsSync(dir)) {
           process.exit(1);
         }
         console.log("[INFO] Git clone successful. Installing libraries...");
-        if (os != "win32") {
-          console.log("[INFO] Adding ENVs to shell configs...");
-          if (fs.existsSync(`${home}/.bashrc`)) {
-            if (fs.readFileSync(`${home}/.bashrc`).toString().indexOf(`export NODE_OPTIONS="--experimental-vm-modules --experimental-fetch"`) == -1) {
-              fs.appendFileSync(`${home}/.bashrc`, `export NODE_OPTIONS="--experimental-vm-modules --experimental-fetch"\n`);
-              console.log("[INFO] Alias added to .bashrc");
-            }
-          }
-          if (fs.existsSync(`${home}/.zshrc`)) {
-            if (fs.readFileSync(`${home}/.zshrc`).toString().indexOf(`export NODE_OPTIONS="--experimental-vm-modules --experimental-fetch"`) == -1) {
-              fs.appendFileSync(`${home}/.zshrc`, `export NODE_OPTIONS="--experimental-vm-modules --experimental-fetch"\n`);
-              console.log("[INFO] Alias added to .zshrc");
-            }
-          }
-        }
         exec(
           "npm link .",
           { cwd: dir + "/" },

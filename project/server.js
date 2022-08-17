@@ -2,6 +2,7 @@ import { createServer } from "http";
 import { createApp, send, createRouter, useQuery, appendHeader, sendError, createError } from "h3";
 import check from "./check.js";
 import Import, { import_map } from "./import.js";
+let import_maps = import_map.imports;
 globalThis.Import = Import;
 import fs from "fs";
 import readConfig from "./readConfig.js";
@@ -12,7 +13,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 import { homedir, platform } from "os";
 import HTTPCat from "./statusCats.js";
-let app, listen;
+let app;
+let initServer = async(port)=>{
 if (check) {
   let home = homedir();
   let os = platform();
@@ -97,7 +99,7 @@ if (check) {
   let twind;
   if(twindSSR){
     console.log("[TWIND] Enabled!");
-  twind = await Import("https://esm.sh/twind@1.0.0-next.38?target=deno",{},{TextEncoder, TextDecoder});
+  twind = await Import(import_maps["twind"],{},{TextEncoder, TextDecoder});
   let presetTW = await Import("https://esm.sh/@twind/preset-tailwind@1.0.0-next.38?target=deno");
     twind.setup({
       /* config */
@@ -111,7 +113,6 @@ if (check) {
   let shouldCheckRoutes = readConfig(cfg, "check") == "true";
   app = createApp();
   let wasListening = false;
-  listen = (port) => {
     if (!wasListening) {
       init();
       console.log(`[SERVER] Listening on ${port}`);
@@ -119,7 +120,6 @@ if (check) {
       createServer(app).listen(parseInt(port));
       wasListening = port;
     }
-  };
 
   globalThis.__hash = hash();
   if (!isProd) {
@@ -255,4 +255,8 @@ if (check) {
     }
   };
 }
-export default { app, listen };
+}
+let Listen = async (port)=>{
+  await initServer(port);
+}
+export default { app, listen: Listen };

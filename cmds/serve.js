@@ -6,7 +6,7 @@ cli.command("serve")
         if (isReejsFolder()) {
             //spawn node server
             let port = opts.port;
-            let child = spawn("node", [`./index.js`, port, "--experimental-vm-modules","--experimental-fetch"],{stdio: "inherit", cwd: `${process.cwd()}/`, detached: false});
+            let child = spawn("node", [`./index.js`, port, "--experimental-vm-modules","--experimental-fetch"], {stdio: "inherit",env: { ...process.env, NODE_OPTIONS: "--experimental-vm-modules --experimental-fetch" }, cwd: `${process.cwd()}/`, detached: false});
         }
         else {
             console.log(`Please run \`${color("reejs init", "greenBright")}\` to create a new project`);
