@@ -11,12 +11,17 @@ cli.command("init [url] [name]")
             fs.writeFileSync(".reecfg",
 `system: react
 # Can be react.
-env: dev
+env: prod
 # Can be dev / prod.
 check: true
 # Can be true / false. This visits all the routes and checks if they are valid.
 minify: false
 # Can be true / false. This minifies the assets and keeps them in memory.
+twindSSR: true
+# Can be true / false. This uses the twind SSR server to render the app.
+allowCaching: true
+# Globally enables / disables caching. This overrides the cache setting in the configs of pages.
+# Disable the above to use less memory. Enable it to be more performant.
 version: 0.0.1
 # Do not edit this!`, "utf8");
             return;

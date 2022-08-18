@@ -11,7 +11,7 @@ export default class Router {
         this.loadRoutes();
         logger("ReeBlaze Initialized", "🚦");
         if (window?.history) {
-            document.addEventListener('click', (e) => this.onClick(e));
+            $$("a").forEach(a => { a.addEventListener('click', (e) => this.onClick(e)) });
             window.addEventListener('popstate', (e) => this.onPop(e));
             this.enabled = true;
         } else {
@@ -34,27 +34,44 @@ export default class Router {
     onPop(e) {
         this.reconstructDOM(this.handlePopState(e));
     }
-    shouldHit = false;
     async reconstructDOM(c) {
-        if (!this.enabled) return logger("Bypassing Router Because it Failed to Start.", "🚦");
-        if (c.next == location.href) {
-            if (!this.shouldHit) logger("ReeBlaze was smart enough to not reender the same page!", "🚦");
-            if (this.shouldHit) logger("ReeBlaze got forced to reender 😩!", "🚦")
-            this.shouldHit = true;
-            setTimeout(() => { this.shouldHit = false }, 500); //😏 you know what ure doing right?
-        }
+        if (!this.router) await this.loadRoutes();
         let foundRoute = this.router.lookup(c.next.replace(location.origin, ""));
         if (!foundRoute) foundRoute = this.router.lookup(c.next.replace(location.origin, "").slice(0, -1));
         if (foundRoute) {
-            logger(`Found Route For ${c.next} | ${foundRoute.payload}`, "🚦");
-            logger(`(Type: ${c.type}) Routing > ${c.next} from ${c.prev ? c.prev : "History"}`, "🚦");
             let page = await Import(foundRoute.payload);
             ree.pageUrl = foundRoute.payload;
-            ree.reeact.render(ree.html`<${page.default} />`,$("#app"));
+            ree.reeact.render(ree.html`<${page.default} />`, $("#app"));
+            if (!$("head style[data-twind]") && page.config?.twind) {
+                logger("Starting TWIND", "DEBUG");
+                ree.twind = await Import("@twind/cdn");
+                ree.twind.setup();
+            }
+            $("head style#old-twind")?.remove();
+            $$("a").forEach(a => { a.addEventListener('click', (e) => this.onClick(e)) });
+            if(page.head){
+                let newHead = document.createElement("head");
+                let currentHead = document.head;
+                ree.reeact.render(ree.html`<${page.head} />`, newHead);
+                const old = Array.from(currentHead.children);
+                const next = Array.from(newHead.children);
+                const freshNodes = next.filter(
+                  (newNode) => !old.find((oldNode) => oldNode.isEqualNode(newNode))
+                );
+                freshNodes.forEach((node) => {
+                    //if the node with same element name exists, replace it
+                    if(currentHead.querySelector(node.tagName)){
+                        currentHead.querySelector(node.tagName).replaceWith(node);
+                    }
+                    else{
+                  currentHead.appendChild(node);
+                    }
+                });
+            }
+            this.currentPage = page;
         }
         else {
             logger(`No Route Found For ${c.next}`, "🚦");
-            logger(`Defaulting To /404`, "🚦");
         }
     }
 
@@ -121,16 +138,39 @@ export default class Router {
 
     handlePopState(e) {
         e.preventDefault();
-        // addToPushState(next);
-        logger(`History 👈 "${document.location}"`, "🥏");
         return this.handleLinkClick(e, true);
     }
     addToHistory(url, state = {}) {
-        logger(`History 👉 "${url}"`, "🥏");
         window.history.pushState(state, "", url);
     }
     fullURL(url) {
         const href = new URL(url || window.location.href).href;
         return href;
+    }
+    async startPrefetchLinksInViewport() {
+        //use intersection observer to prefetch links in viewport
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(async entry => {
+                if (entry.isIntersecting) {
+                    const link = entry.target;
+                    const url = new URL(link.href, location.href);
+                    const next = this.fullURL(url.href);
+                    if (next !== location.href) {
+                        if (!this.router) {
+                            await this.loadRoutes();
+                        }
+                        let foundRoute = this.router.lookup(next.replace(location.origin, ""));
+                        if (!foundRoute) foundRoute = this.router.lookup(next.replace(location.origin, "").slice(0, -1));
+                        if (foundRoute) {
+                            Import(foundRoute.payload);
+                        }
+                    }
+                }
+            });
+        });
+        const links = $$('a[href]');
+        links.forEach(link => {
+            observer.observe(link);
+        });
     }
 }

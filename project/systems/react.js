@@ -63,13 +63,7 @@
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           ${headel}
-          ${twindSSR?`<style>${cssTW}</style>`:""}
-          ${page.component.config?.hydrate ? `
-          <link rel="preload" href="${encodeURI(page.file).replace("/src", "/__reejs/src?file=/src") + `&h=${__hash}`}" as="script" crossorigin="anonymous">
-          ${page.component.config?.preloadComponents?.map((c) => `<link rel="preload" href="${encodeURI(c).replace("/src", "/__reejs/src?file=/src") + `&h=${__hash}`}" as="script" crossorigin="anonymous">`).join("") || ""}
-          `: ""}
-          <link rel="preload" href="${import_maps["htm"] || "https://esm.sh/htm@3.1.1"}" as="script" crossorigin="anonymous">
-          <link rel="preload" href="${import_maps["preact"] ||"https://esm.sh/preact@10.10.0"}" as="script" crossorigin="anonymous">
+          ${twindSSR?`<style id="old-twind">${cssTW}</style>`:""}
           </head>
           <body>
           <div id="app">
