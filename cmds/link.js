@@ -84,8 +84,8 @@ cli
             }
             //soft link project folder to node_modules
             if (!fs.existsSync(`${process.cwd()}/node_modules/reejs`)) {
-                fs.symlinkSync(`${dir}/project`, `${process.cwd()}/node_modules/reejs`);
-                console.log(`[REE.JS] Linked Server:`,`${dir}/project`,"to",`${process.cwd()}/node_modules/reejs`);
+                fs.symlinkSync(`${dir}`, `${process.cwd()}/node_modules/reejs`);
+                console.log(`[REE.JS] Linked Reejs:`,dir,"to",`${process.cwd()}/node_modules/reejs`);
             }
     fs.writeFileSync(`${process.cwd()}/package.json`, JSON.stringify(pkg));
   });

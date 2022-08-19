@@ -92,6 +92,7 @@ ree.init = async function (options) {
         ree.twind = await Import("@twind/cdn");
         ree.twind.setup();
         $("head style#old-twind")?.remove();
+        $("html").removeAttribute("hidden");
     }
     if (ree.opts.run != "none") eval(`${ree.opts.run}();//# sourceURL=reejs/afterInit`);
     delete ree.needsHydrate;

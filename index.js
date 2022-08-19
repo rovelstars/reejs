@@ -11,7 +11,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const pkg = JSON.parse(fs.readFileSync(`${__dirname}/package.json`, "utf8"));
 import { homedir, platform } from "os";
-
+if(!process.env.REEJS_CUSTOM_DIR){
+  process.env.REEJS_CUSTOM_DIR = __dirname;
+}
 const originalEmit = process.emit;
 process.emit = function (name, data, ...args) {
   if (

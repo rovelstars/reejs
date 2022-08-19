@@ -1,8 +1,8 @@
 {
   "name": "reejs",
-  "version": "0.1.7",
+  "version": "0.1.9",
   "description": "Toolkit for reejs",
-  "main": "index.js",
+  "main": "server/index.js",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

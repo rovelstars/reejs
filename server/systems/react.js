@@ -1,8 +1,5 @@
 (async () => {
   let SSRrender = await Import("https://esm.sh/preact-render-to-string@5.2.0");
-  let { h, Component, render } = await Import("preact");
-  let htm = await Import("htm");
-  let html = htm.bind(h);
   let pages = await genPages();
   let apis = await genPages(true);
   let router = createRouter();
