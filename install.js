@@ -28,8 +28,6 @@ if (process.env.INSTALL_TO) {
 }
 let dir = (os!="win32" && process.env.INSTALL_TO) ? process.env.INSTALL_TO: `${home}/.reejs`;
 
-execSync("npm unlink reejs -g");
-
 if (!fs.existsSync(dir)) {
   console.log("[INFO] Checking for git...");
   exec("git --version", (err, stdout, stderr) => {
@@ -95,7 +93,7 @@ if (!fs.existsSync(dir)) {
                   console.log(`export REEJS_CUSTOM_DIR="${process.env.INSTALL_TO}"`);
                 }
                 console.log(
-                  "[INFO] Reejs has been installed!\nTo run reejs in the current shell, enable experimental features: `export NODE_OPTIONS=\"--experimental-vm-modules --experimental-fetch\"`\nTry it out by running `reejs init reejs-app`"
+                  "[INFO] Reejs has been installed!\nTry it out by running `reejs init reejs-app`"
                 );
               }
             );

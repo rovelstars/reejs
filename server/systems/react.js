@@ -1,4 +1,12 @@
 (async () => {
+  if(globalThis.fetch){
+    globalThis._fetch = globalThis.fetch;
+  }
+  if (!globalThis.fetch) {
+    globalThis._fetch = await import(`${dir}/polyfill/fetch.js`);
+    globalThis._fetch = globalThis._fetch.default;
+  }
+  
   let SSRrender = await Import("https://esm.sh/preact-render-to-string@5.2.0");
   let pages = await genPages();
   let apis = await genPages(true);
@@ -51,7 +59,7 @@
             headel = await SSRrender(html`<${page.component.head} />`);
           }
           let cssTW = "";
-          if(twindSSR){
+          if (twindSSR) {
             cssTW = twind.extract(resp).css;
           }
           resp = `<!DOCTYPE html>
@@ -60,7 +68,7 @@
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           ${headel}
-          ${twindSSR?`<style id="old-twind">${cssTW}</style>`:""}
+          ${twindSSR ? `<style id="old-twind">${cssTW}</style>` : ""}
           </head>
           <body>
           <div id="app">
@@ -77,14 +85,14 @@
           ree.import_maps=${JSON.stringify(import_maps)};
           ree.needsHydrate=${page.component?.config?.hydrate ? "true" : "false"};
           ${page.component?.config?.runBeforeInit ? `(${page.component.config.runBeforeInit.toString()})();` : ""}
-          ree.init({env:"${isProd ? "prod" : "dev"}",twind: ${page.component?.config?.twind == true} ,run:\`${page.component?.config?.runAfterInit ? `(${page.component.config.runAfterInit.toString().replaceAll("`","\\`").replaceAll("$","\\$")})` : "none"}\`});
+          ree.init({env:"${isProd ? "prod" : "dev"}",twind: ${page.component?.config?.twind == true} ,run:\`${page.component?.config?.runAfterInit ? `(${page.component.config.runAfterInit.toString().replaceAll("`", "\\`").replaceAll("$", "\\$")})` : "none"}\`});
           </script>
           </body>
           </html>`;
           //save to cache
-          if(page.component?.config?.cache && readConfig(cfg, "allowCaching")=="true"){
-          cachedPages.push({ path: req.url, resp });
-          console.log(`[SERVER] Saving Rendered ${req.url} to cache...`);
+          if (page.component?.config?.cache && readConfig(cfg, "allowCaching") == "true") {
+            cachedPages.push({ path: req.url, resp });
+            console.log(`[SERVER] Saving Rendered ${req.url} to cache...`);
           }
           return resp;
         }
@@ -115,7 +123,7 @@
       //change /:variable to /variable
       let pageTestPath = page.component?.config?.checkRoute ?? page.path.replace(/\/:([^\/]+)/g, "/$1");
       console.log(`[TEST] Checking Route ${pageTestPath}`);
-      let res = await fetch(`http://${process.platform == "win32" ? "localhost" : "127.0.0.1"}:${wasListening}${pageTestPath}`);
+      let res = await _fetch(`http://${process.platform == "win32" ? "localhost" : "127.0.0.1"}:${wasListening}${pageTestPath}`);
       if (res.status != 200) {
         console.log(`[WARN] Route ${page.path} is not working`);
       }
@@ -123,7 +131,7 @@
     apis.forEach(async api => {
       let apiTestPath = api.router?.config?.checkRoute ?? api.path.replace(/\/:([^\/]+)/g, "/$1");
       console.log(`[TEST] Checking API Route ${apiTestPath}`);
-      let res = await fetch(`http://${process.platform == "win32" ? "localhost" : "127.0.0.1"}:${wasListening}${apiTestPath}`);
+      let res = await _fetch(`http://${process.platform == "win32" ? "localhost" : "127.0.0.1"}:${wasListening}${apiTestPath}`);
       if (res.status != 200) {
         console.log(`[WARN] API Route ${api.path} is not working`);
       }

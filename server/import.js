@@ -1,403 +1,77 @@
-import vm from "vm";
-import { builtinModules } from "module";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-import { homedir, platform } from "os";
 import stdNodeMappings from "./deno/stdNodeMappings.js";
 import readConfig from "./readConfig.js";
+
 let cfg = fs.readFileSync(`${process.cwd()}/.reecfg`, "utf-8").split("\n");
-let home = homedir();
-let os = platform();
-let homewin;
-let Deno;
 if (!process.env.REEJS_CUSTOM_DIR) {
-  process.env.REEJS_CUSTOM_DIR = __dirname.split("/").slice(0, -1).join("/");
-}
-if (process.version.node) {
-  globalThis.window = globalThis;
-  window.Deno = Deno;
-}
-if (os == "win32") {
-  homewin = home;
-  home = home.replace(/\\/g, "/");
-}
-let mainProc = false;
-if (readConfig(cfg, "env") == "prod") mainProc = true;
-if (readConfig(cfg, "env") == "dev") {
-  if (process.env.IS_FORK) mainProc = true;
-}
-let dir = fs.existsSync(process.env.REEJS_CUSTOM_DIR) ? process.env.REEJS_CUSTOM_DIR : `${home}/.reejs`;
-let pkgjson = JSON.parse(fs.readFileSync(`${dir}/package.json`, "utf8"));
-
+    process.env.REEJS_CUSTOM_DIR = __dirname.split("/").slice(0, -1).join("/");
+  }
 export let import_map = fs.existsSync(`${process.cwd()}/import-maps.json`) ?
-  JSON.parse(fs.readFileSync(`${process.cwd()}/import-maps.json`, "utf8")) :
-  { imports: {} };
+    JSON.parse(fs.readFileSync(`${process.cwd()}/import-maps.json`, "utf8")) :
+    { imports: {} };
 
-const originalEmit = process.emit;
-process.emit = function (name, data, ...args) {
-  if (
-    name === `warning` &&
-    typeof data === `object` &&
-    data.name === `ExperimentalWarning`
-  )
-    return false;
-
-  return originalEmit.apply(process, arguments);
-};
-
-let ts;
-let tsDownloadStart = false;
-/**
- * @param {string} url - URL of a source code file.
- * @returns {Promise<string>} Raw source code.
- */
-async function fetchCode(url, metaData = {}) {
-  //check if file already downloaded at dir/storage/libs/{UrlScheme}/url
-  let Url;
-  try {
-    Url = new URL(url);
-  }
-  catch (e) {
-    console.log("Url: ", url);
-    throw e;
-  }
-  let urlScheme = Url.protocol.replace(":", "");
-  let urlPath = Url.host + Url.pathname;
-  let urlFile = urlPath.split("/").pop();
-  let urlDir = urlPath.split("/").slice(0, -1).join("/");
-  let urlDirPath = `${dir}/storage/libs/${urlScheme}/${urlDir}`;
-  if (!fs.existsSync(urlDirPath)) {
-    fs.mkdirSync(urlDirPath, { recursive: true });
-  }
-  let urlFilePath = `${urlDirPath}/${urlFile}.js`;
-  if (fs.existsSync(urlFilePath)) {
-    return fs.readFileSync(urlFilePath, "utf8");
-  }
-  else {
-    let response;
-    try {
-      response = await fetch(url, {
-        headers: {
-          "User-Agent": `Reejs/${pkgjson.version} ${Deno ? `Deno/${Deno.version.deno}` : ""} ${ts?.version ? `TS/${ts.version}` : ""} Node/${process.version}`
-        }
-      }).catch(e => { console.log("Error for url:", url); throw e; });
-      let data = await response.text();
-      if (response.ok && !data.includes("* Failed to bundle using Rollup")) {
-        //add the file to the cache at dir/storage/libs/{UrlScheme}/url
-        fs.writeFileSync(urlFilePath, data);
-        console.log("[DOWNLOAD]", url, (metaData?.url ? `<< ${metaData.url}` : ""));
-        return data;
-      } else if (response.status == 500 || data.includes("* Failed to bundle using Rollup")) {
-        //execute the data as a script with url as specifier
-        let result = new vm.SourceTextModule(data, {
-          identifier: url,
-        });
-        await result.link(() => { });
-        await result.evaluate();
-      }
-      else {
-        throw new Error(`Error fetching ${url}: ${response.statusText} (${response.status})`);
-      }
-    }
-    catch (e) {
-      console.log("Error with url:", url);
-      throw e;
-    }
-  }
-}
-
-/**
- * @param {URL} url
- * @param {vm.Context} context
- * @returns {Promise<vm.Module>}
- */
-async function createModuleFromURL(url, context) {
-  let identifier = stdNodeMappings(url.toString());
-  if (identifier != url.toString()) url = new URL(identifier);
-  if (url.protocol === "http:" || url.protocol === "https:") {
-    // Download the code (naive implementation!)
-    let source = await fetchCode(identifier, { url: context.__filename });
-    // Instantiate a ES module from raw source code.
-    let isTS = false;
-    if (identifier.split("?")[0].endsWith(".ts")) {
-      let Url = new URL(identifier);
-      let urlScheme = Url.protocol.replace(":", "");
-      let urlPath = Url.host + Url.pathname;
-      let urlFile = urlPath.split("/").pop();
-      let urlDir = urlPath.split("/").slice(0, -1).join("/");
-      let urlDirPath = `${dir}/storage/libs/${urlScheme}/${urlDir}`;
-      if (!fs.existsSync(urlDirPath)) {
-        fs.mkdirSync(urlDirPath, { recursive: true });
-      }
-      let urlFilePath = `${urlDirPath}/${urlFile}`;
-      if (!urlFilePath.endsWith(".js")) urlFilePath += ".js";
-      if (!fs.existsSync(urlFilePath)) {
-        source = await ts.transpileModule(source, {
-          compilerOptions: {
-            target: ts.ScriptTarget.ESNext,
-            module: ts.ModuleKind.ESNext
-          }
-        });
-        source = source.outputText;
-        //write the transpiled code to the file
-        fs.writeFileSync(urlFilePath, source);
-        console.log(`[TS] Transpiled Code: ${identifier}`);
-        isTS = true;
-        console.log(isTS ? `[TS -> JS] ${identifier = identifier.slice(0, -2) + "js"}` : identifier);
-      }
-      else {
-        source = fs.readFileSync(urlFilePath, "utf8");
-      }
-    }
-
-    try {
-      return new vm.SourceTextModule(source, {
-        identifier,
-        context,
-      });
-    } catch (e) {
-      console.log("Filename:", context.__filename);
-      console.log("Identifier:", identifier);
-      throw e;
-    }
-  } else if (url.protocol === "node:") {
-    const imported = await import(identifier);
-    const exportNames = Object.keys(imported);
-
-    return new vm.SyntheticModule(
-      exportNames,
-      function () {
-        for (const name of exportNames) {
-          this.setExport(name, imported[name]);
-        }
-      },
-      { identifier, context }
-    );
-  } else {
-    // Other possible schemes could be file: and data:
-    // See https://nodejs.org/api/esm.html#esm_urls
-    throw new Error(`Unsupported URL scheme: ${url.protocol}`);
-  }
-}
-
-/**
- * @typedef {object} ImportMap
- * @property {NodeJS.Dict<string>} imports
- *
- * @param {ImportMap} importMap Import map object.
- * @returns Link function.
- */
-async function linkWithImportMap({ imports }) {
-  /**
-   * @param {string} specifier
-   * @param {vm.SourceTextModule} referencingModule
-   * @returns {Promise<vm.SourceTextModule>}
-   */
-  return async function link(specifier, referencingModule) {
-    let url;
-    if (builtinModules.includes(specifier)) {
-      // If the specifier is a bare module specifier for a Node.js builtin,
-      // a valid "node:" protocol URL is created for it.
-      url = new URL("node:" + specifier);
-    } else if (url in imports) {
-      // If the specifier is contained in the import map, it is used from there.
-      url = new URL(imports[specifier]);
-    } else {
-      // If the specifier is a bare module specifier, but not contained
-      // in the import map, it will be resolved against the parent
-      // identifier. E.g., "foo" and "https://cdn.skypack.dev/bar" will
-      // resolve to "https://cdn.skypack.dev/foo". Relative specifiers
-      // will also be resolved against the parent, as expected.
-      url = new URL(specifier, referencingModule.identifier);
-    }
-    return createModuleFromURL(url, referencingModule.context);
-  };
-}
-
-/**
- * @param {string} url - URL of a source code file.
- * @param {vm.Context} sandbox - Optional execution context.
- * @param {ImportMap} importMap Optional Path to import_map.json file or object.
- * @returns {Promise<any>} Result of the evaluated code.
- */
-export default async function dynamicImport(specifier, config = {}, sandbox = {}, { imports = {} } = import_map) {
-  // Take a specifier from the import map or use it directly. The
-  // specifier must be a valid URL.
-  //if any imports keys end with "/" then check whether the specifier is the same as the key, if yes, replace the specifier with the value
-  function import_map(name) {
-    let keys = Object.keys(imports);
+function getImportMap(name) {
+    let keys = Object.keys(import_map.imports);
     for (let i = 0; i < keys.length; i++) {
-      if (name.startsWith(keys[i])) {
-        name = name.replace(keys[i], imports[keys[i]]);
-      }
+        if (name.startsWith(keys[i])) {
+            name = name.replace(keys[i], import_map.imports[keys[i]]);
+        }
     }
     return name;
-  }
-  specifier = import_map(specifier);
-  if (typeof globalThis.Deno != "undefined" && (specifier.startsWith("https://") || specifier.startsWith("http://"))) {
-    let mod = await import(specifier);
-    let keys = Object.keys(mod).filter(key => key !== "default");
-    let namespace = {};
-    if (Object.keys(mod).includes("default")) {
-      namespace = mod.default;
-    }
-    keys.forEach(key => {
-      namespace[key] = mod[key];
-    });
-    namespace.default = mod.default;
-    return namespace;
-  }
-  else {
-    if (specifier == "typescript") return await initTS();
-    if (specifier.startsWith("https://") || specifier.startsWith("http://") || imports[specifier]?.startsWith("https://") || imports[specifier]?.startsWith("http://") || config.initDeno) {
-      let url, isDenoModule;
-      if (!config.initDeno) {
-        url =
-          specifier in imports ? new URL(imports[specifier]) : new URL(specifier);
-        // Create an execution context that provides global variables.
-        isDenoModule = url.toString().includes("deno.land/");
-      }
-      if (config.initDeno) {
-        console.log("Asked to use deno");
-        isDenoModule = true;
-      }
-      if (isDenoModule && !Deno) {
-        console.log(`[DENO] Adding Polyfills for: ${config.initDeno ? "(initialization) " + (imports[specifier] || specifier) : url}`);
-        Deno = await dynamicImport("https://esm.sh/@deno/shim-deno@0.8.0?target=node");
-        Deno = Deno.Deno;
-        let alert = await dynamicImport("./deno/prompts/alert.js");
-        let prompt = await dynamicImport("./deno/prompts/prompt.js");
-        let crypto = await dynamicImport("node:crypto");
-        window.alert = alert;
-        window.prompt = prompt;
-        window.crypto = crypto;
-        window.Deno = Deno;
-        console.log(`[DENO] Polyfills added for Deno`);
-        console.log("[DENO] Current Deno version", Deno.version);
-      }
-      if (config.initDeno) {
-        return;
-      }
-      const cloneGlobal = () => Object.defineProperties(
-        { ...global },
-        Object.getOwnPropertyDescriptors(global)
-      )
-      let hmm = {
-        ...sandbox,
-        Deno, _deno: Deno,
-        process, __dynamicImport: dynamicImport,
-        console,
-        __dirname: sandbox?.__dirname || __dirname, __filename: url.toString()
-      };
-      const context = vm.createContext({ ...cloneGlobal(), ...hmm });
-      // Create the ES module.
-      let mod = await createModuleFromURL(url, context);
-      // Create a "link" function that uses an optional import map.
-      const link = await linkWithImportMap({ imports });
-      // Resolve additional imports in the module.
-      await mod.link(link);
-      // Execute any imperative statements in the module's code.
-      await mod.evaluate();
-      // The namespace includes the exports of the ES module.
-      mod = mod.namespace;
-      try {
-        let keys = Object.keys(mod).filter(key => key !== "default");
-        let namespace = {};
-        if (Object.keys(mod).includes("default")) {
-          namespace = mod.default;
-        }
-        keys.forEach(key => {
-          namespace[key] = mod[key];
-        });
-        namespace.default = mod.default;
-        return namespace;
-      } catch (e) {
-        return mod;
-      }
-    }
-    else {
-      let fileName;
-      let projectDirOrReejs = config.absolutePath;
-      if (specifier.endsWith(".ts") || specifier.endsWith(".tsx")) {
-        console.log("[TYPESCRIPT] Transpiling: " + specifier);
-        ts = await dynamicImport("https://esm.sh/typescript?target=node");
-        let data = fs.readFileSync(specifier, "utf8");
-        ts = ts.transpileModule(data, {
-          compilerOptions: {
-            target: ts.ScriptTarget.ESNext,
-            module: ts.ModuleKind.ESNext
-          }
-        });
-        console.log("[TYPESCRIPT] Done: " + specifier);
-        //save file to disk
-        fileName = specifier.endsWith(".tsx") ? specifier.slice(0, -3) + "js" : specifier.slice(0, -2) + "js";
-        fileName = fileName.replace("/src/", "/.temp/ts/");
-        //make sure the directory exists otherwise recursive create the directory
-        let dir = path.dirname(fileName);
-        if (!fs.existsSync(dir)) {
-          fs.mkdirSync(dir, { recursive: true });
-        }
-        fs.writeFileSync(fileName, ts.outputText);
-      }
-      if (projectDirOrReejs) specifier = process.cwd() + specifier;
-      if (process.platform === "win32") {
-        //if specifier starts with any drive name add file:/// at starting
-        let checkDrive = new RegExp('^' + "([A-Z]:)+", 'i');
-        if (checkDrive.test(specifier)) {
-          specifier = "file:///" + specifier;
-        }
-      }
-      try {
-        let mod = await import((fileName || specifier));
-        let keys = Object.keys(mod).filter(key => key !== "default");
-        let namespace = {};
-        if (Object.keys(mod).includes("default")) {
-          namespace = mod.default;
-        }
-        keys.forEach(key => {
-          namespace[key] = mod[key];
-        });
-        namespace.default = mod.default;
-        return namespace;
-      }
-      catch (e) {
-        try {
-          return await import(specifier);
-        } catch (e) {
-          //import from import_maps
-          if (import_map.imports[specifier]) {
-            try {
-              return await import(process.cwd() + import_map.imports[specifier]);
-            }
-            catch (e) {
-              try {
-                return await dynamicImport(import_map.imports[specifier]);
-              }
-              catch (e) {
-                throw new Error(`Could not import ${import_map.imports[specifier]}\n${e}`);
-              }
-            }
-          }
-          else {
-            throw new Error(`Could not import ${specifier}\n${e}`);
-          }
-        }
-      }
-    }
-  }
 }
 
-async function initTS() {
-  if (!tsDownloadStart) {
-    tsDownloadStart = true;
-    console.log("[TS] Initializing");
-    ts = await dynamicImport("https://esm.sh/typescript?target=node");
-    console.log(`[TS] Installed! v${ts.version}`);
-  }
-  else {
-    console.log("[TS] Skipped initialization...");
-  }
+export default async (specifier) => {
+    specifier = getImportMap(specifier);
+    if (specifier.startsWith("https://") || specifier.startsWith("http://")) {
+        let domain;
+        if(specifier.startsWith("https://esm.sh")) domain = "esm.sh";
+        else if(specifier.startsWith("https://esm.run")) domain = "esm.run";
+        else if(specifier.startsWith("https://cdn.jsdelivr.net") && specifier.endsWith("/+esm")){ 
+            specifier = specifier.replace("https://cdn.jsdelivr.net/npm/", "https://esm.run/").replace("/+esm", "");
+            domain = "esm.run";
+        }
+        else if(specifier.startsWith("https://deno.land")) domain = "deno.land";
+        let dl = await import(`../urlimports/${domain}.js`);
+        let savedAt = await dl.default(specifier);
+        let mod = await import(savedAt);
+        try {
+            let namespace = {};
+            let keys = Object.keys(mod).filter(k => k !== "default");
+            if (Object.keys(mod).includes("default")) {
+                namespace = mod.default;
+            }
+            keys.forEach(k => {
+                namespace[k] = mod[k];
+            });
+            namespace.default = mod.default;
+            return namespace;
+        }
+        catch (e) {
+            return mod;
+        }
+    }
+    else {
+        let mod = await import(specifier).catch(async e=>{
+            if(e.message.startsWith("Cannot find module '")) return await import(process.cwd()+specifier).catch(f=>{throw e});
+        });
+        try {
+            let namespace = {};
+            let keys = Object.keys(mod).filter(k => k !== "default");
+            if (Object.keys(mod).includes("default")) {
+                namespace = mod.default;
+            }
+            keys.forEach(k => {
+                namespace[k] = mod[k];
+            });
+            namespace.default = mod.default;
+            return namespace;
+        }
+        catch (e) {
+            return mod;
+        }
+    }
 }

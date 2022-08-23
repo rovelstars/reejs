@@ -29,15 +29,14 @@ let hash = () => {
 let twind, twindSSR = readConfig(cfg, "twindSSR") == "true" ? true : false;
 if (twindSSR) {
   console.log("[TWIND] Enabled!");
-  twind = await Import(import_maps["twind"], {}, { TextEncoder, TextDecoder });
-  let presetTW = await Import("https://esm.sh/@twind/preset-tailwind@1.0.0-next.38?target=deno");
+  twind = await Import(import_maps["twind"]);
+  let presetTW = await Import(import_maps["@twind/preset-tailwind"]);
   twind.setup({
     /* config */
     presets: [presetTW]
   });
 }
 globalThis.__hash = hash();
-
 let initServer = async (port) => {
   if (check) {
     let home = homedir();

@@ -1,6 +1,6 @@
 cli
   .command("install", "Add a new library/component to the project", {
-    alias: ["i", "add"],
+    alias: ["i"],
   })
   .option("-f --force", "Reinstall everything even if its already installed")
   .action((opts) => {

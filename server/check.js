@@ -4,16 +4,14 @@ import { spawn } from "child_process";
 import readConfig from "./readConfig.js";
 import fs from "fs";
 import path from "path";
-let cfg = fs.readFileSync(`${process.cwd()}/.reecfg`, "utf8").split("\n");
+let cfg;
+try{
+cfg = fs.readFileSync(`${process.cwd()}/.reecfg`, "utf8").split("\n");
+}catch(e){
+    throw new Error("No .reecfg file found in current directory.");
+}
 let mode = readConfig(cfg, "env");
 if (mode == "prod") {
-    console.log("[STARTING] Reejs booted up as production mode.");
-    if(typeof globalThis.Deno != "undefined"){
-        console.log("[STARTING] Deno is running.");
-    }
-    else if (!process.env.NODE_OPTIONS?.includes("--experimental-vm-modules") && !process.env.NODE_OPTIONS?.includes("--experimental-fetch")) {
-        spawn("node", [file, ...extraCmds], { stdio: "inherit", env: { ...process.env, NODE_OPTIONS: "--experimental-vm-modules --experimental-fetch" }, detached: false });
-    }
 }
 if (mode == "dev") {
     let child;
@@ -21,14 +19,14 @@ if (mode == "dev") {
         console.log("[STARTING] Reejs booted up as development mode.");
         child = (typeof globalThis.Deno != "undefined")?
         spawn("deno", ["run","--unstable","--compat","-A",file,...extraCmds], { stdio: "inherit", env: { ...process.env, IS_FORK: "true" }, detached: false }) :
-        spawn("node", [file, ...extraCmds], { stdio: "inherit", env: { ...process.env, IS_FORK: "true", NODE_OPTIONS: "--experimental-vm-modules --experimental-fetch" }, detached: false });
+        spawn("node", [file, ...extraCmds], { stdio: "inherit", env: { ...process.env, IS_FORK: "true" }, detached: false });
         let reload = () => {
             console.log("Stopping.");
             child?.kill();
             console.log("Starting...");
             child = (typeof globalThis.Deno != "undefined")?
             spawn("deno", ["run", "--unstable","--compat","-A",file,...extraCmds], { stdio: "inherit", env: { ...process.env, IS_FORK: "true" }, detached: false }) :
-            spawn("node", [file, ...extraCmds], { stdio: "inherit", env: { ...process.env, IS_FORK: "true", NODE_OPTIONS: "--experimental-vm-modules --experimental-fetch" }, detached: false });
+            spawn("node", [file, ...extraCmds], { stdio: "inherit", env: { ...process.env, IS_FORK: "true" }, detached: false });
         }
         let wait = false;
             console.log("[RELOADER] Looking for file changes...");
@@ -67,14 +65,11 @@ if (mode == "dev") {
     }
 }
 
-let f;
-if (mode=="prod" && (typeof globalThis.Deno == "undefined")?
-(!process.env.NODE_OPTIONS?.includes("--experimental-vm-modules")
-&& !process.env.NODE_OPTIONS?.includes("--experimental-fetch")):true) {
-    f = false;
+let f=false;
+if (mode=="prod") {
+    f = true;
 }
-if (mode=="dev" && !process.env.IS_FORK) {
-    f = false;
+if (mode=="dev" && process.env.IS_FORK) {
+    f = true;
 }
-else f = true;
 export default f;
