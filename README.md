@@ -4,7 +4,7 @@
 </div>
 
 A framework boasting no-build-required features, that can be used to create websites faster, without the need of building anything.
-Brings support for URL Imports and Import Maps to Nodejs! Includes its own very dedicated package manager. Feel free to report any bugs at the issues section or introduce new ideas in discussions!
+Brings support for URL Imports and Import Maps to Nodejs! Feel free to report any bugs at the issues section or introduce new ideas in discussions!
 
 Check up the discussions over our [Discord Server](https://discord.gg/eWbt297SkU) and let us know any suggestions if you have any!
 
@@ -21,17 +21,11 @@ curl -s https://raw.githubusercontent.com/rovelstars/reejs/master/install.js | n
 
 Isn't this awesome? Its definitely better than npm install!
 
-> Note:
-We have `reejs link` command that can be used to link all the libraries that have been installed in the project with `reejs install` to the node_modules folder. This is useful if you want to use any dependency with nodejs' ESM syntax, since alternatives to them were:
-- Custom Module Loader (Its currently experimental by nodejs v18)
-- Import Maps (Deno has it, Nodejs doesn't; GG! *sarcastically of course*)
-- Module Alias npm package (Not really supported with ESM syntax, bye bye hacking require module loaders)
-
-You can generate import maps with `reejs map`
-
-Any library that's linked via above command will be installed into `@reejs` directory of node_modules, so you can import with `@reejs/<library>` syntax.
-Don't worry! Both `@reejs` & `reejs` scope/package has been locked to prevent any conflicts with other libraries! (Including hackers from introducing other packages with the same name!)
-Packages can be unscoped if their config file has `scope: libraryName`. This will link them to `libraryName`.
+## Nah I want to use npm install!
+Alright, there you go:
+```sh
+npm install reejs
+```
 
 ## Ree.js now supports These!
 
@@ -45,21 +39,18 @@ Hybrid Rendering, Terser's Minifier, URL Imports, Typescript to Javascript (Usef
 
 Disables Logging. That's it. Looks like `console.log` is too slow to be used in production.
 
-## What's up with `.rekt` file?
+## Alright, spare me my time; what's special about Ree.js?
 
-These are module configs that are used to download the required files, and respectively generate and link to import maps and node modules respectively.
-If you know yaml, you know rekt. However it's a smaller and trimmed down version of the yaml spec, that not fully supports the spec, most of them being all those multiline values.
-Example of a rekt file:
+- No build required
+- Import Urls
 
-```yaml
-url: https://cdn.jsdelivr.net/npm/twind@0.16.17/twind.js
-version: 0.16.17
-type: module
-more: ["https://cdn.jsdelivr.net/npm/twind@0.16.17/shim/shim.js" | "https://cdn.jsdelivr.net/npm/twind@0.16.17/observe/observe.js"]
-more_as: [ "shim/shim.js" | "observe/observe.js"]
-# double quotes are allowed in rekt files, as well as unquoted values. Double quotes are useful if you want strings that start or end with spaces, that otherwise would have been trimmed away by our parser.
-more_alias: [ "shim/shim.js" | "observe"]
-# more alias is for import mapping purposes, more_as is for node module linking.
+> Wait, what? Import Urls?
+Yes! Ree.js supports import urls, something deno has being boasting about, while nodejs doesn't support it. This spares us from having to use `npm install` to install any library. Such a lifesaver!
+Example:
+```js
+let preact = await Import("https://esm.sh/preact");
 ```
+
+And the best part? You have the same codebase being delivered to your browser, and the browser is able to use it!
 
 ### P.S. We are now shipping with REE() function that handles your errors. Because why not?
