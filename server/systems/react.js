@@ -7,7 +7,7 @@
     globalThis._fetch = globalThis._fetch.default;
   }
   
-  let SSRrender = await Import("https://esm.sh/preact-render-to-string@5.2.0");
+  let SSRrender = await Import(import_maps["preact-ssr"]);
   let pages = await genPages();
   let apis = await genPages(true);
   let router = createRouter();

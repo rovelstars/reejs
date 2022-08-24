@@ -1,5 +1,0 @@
-url: https://cdn.jsdelivr.net/npm/destr@1.1.1/dist/index.mjs
-version: 1.1.1
-type: module
-alias: destr
-scope: false

@@ -3,7 +3,7 @@ import path from "path";
 import https from "https";
 import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename).split("/").slice(0, -1).join("/");
+let __dirname = path.dirname(__filename).split("/").slice(0, -1).join("/");
 const originalEmit = process.emit;
 process.emit = function (name, data, ...args) {
     if (
@@ -16,11 +16,11 @@ process.emit = function (name, data, ...args) {
     return originalEmit.apply(process, arguments);
 };
 if (!process.env.REEJS_CUSTOM_DIR) {
-    process.env.REEJS_CUSTOM_DIR = __dirname.split("/").slice(0, -1).join("/");
+    process.env.REEJS_CUSTOM_DIR = __dirname;
 }
 let dir = fs.existsSync(process.env.REEJS_CUSTOM_DIR) ? process.env.REEJS_CUSTOM_DIR : `${home}/.reejs`;
 
-if(globalThis.fetch){
+if (globalThis.fetch) {
     globalThis._fetch = globalThis.fetch;
 }
 if (!globalThis.fetch) {
@@ -28,7 +28,10 @@ if (!globalThis.fetch) {
     globalThis._fetch = globalThis._fetch.default;
 }
 
-export default async function dl(url, p) {
+export default async function dl(url, p, local) {
+    if (local) {
+        __dirname = process.cwd() + "/.cache";
+    }
     if (!url.startsWith("https://esm.sh/")) {
         throw new Error("Only esm.sh urls are supported!\n" + url);
     }
@@ -40,6 +43,8 @@ export default async function dl(url, p) {
     if (version?.includes("/")) modPath = version.split("/").slice(1).join("/");
     if (modPath) version = version.split("/")[0];
     if (fs.existsSync(__dirname + `/storage/local/esm.sh/${name}@${version}${modPath ? `/${modPath}` : "/index.js"}`)) return __dirname + `/storage/local/esm.sh/${name}@${version}${modPath ? `/${modPath}` : "/index.js"}`;
+    if (fs.existsSync(`${process.cwd()}/.cache/storage/local/esm.sh/${name}@${version}${modPath ? `/${modPath}.js` : "/index.js"}`))
+        return (`${process.cwd()}/.cache/storage/local/esm.sh/${name}@${version}${modPath ? `/${modPath}.js` : "/index.js"}`);
     console.log(`[DOWNLOAD] ⏬ ${originalUrl}${p ? ` ↩️  ${p}` : ""}`);
     let code = await _fetch(originalUrl).then(res => res.text());
     code = code.replaceAll("https://esm.sh/", "/");
@@ -61,7 +66,7 @@ export default async function dl(url, p) {
                 _modPath = _modPath + ".js";
             }
             code = code.replaceAll(_rawUrl, _rawUrl.replace("/v", __dirname + "/storage/local/esm.sh/v"));
-            await dl(url, name);
+            await dl(url, name, local);
         }));
     }
     relativeUrls = code.match(/\/stable[A-Za-z_.0-9\/@-]+/g);

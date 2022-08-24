@@ -1,9 +1,9 @@
 import { createServer } from "http";
-import { createApp, send, createRouter, useQuery, appendHeader, sendError, createError } from "h3";
 import check from "./check.js";
 import Import, { import_map } from "./import.js";
 let import_maps = import_map.imports;
 globalThis.Import = Import;
+let { createApp, send, createRouter, useQuery, appendHeader, sendError, createError } = await Import(import_maps["h3"]);
 import fs from "fs";
 import readConfig from "./readConfig.js";
 import { promisify } from "util";

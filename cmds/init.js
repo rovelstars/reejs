@@ -55,12 +55,13 @@ if (ree.canRun){
                     `{
     "imports": {
         "preact": "https://esm.sh/preact@10.10.0",
-        "preact/": "https://esm.sh/preact@10.10.0/",
         "react": "https://esm.sh/preact@10.10.0",
         "htm": "https://esm.sh/htm@3.1.1",
         "twind": "https://esm.sh/twind@next",
         "@twind/cdn": "https://esm.sh/@twind/cdn@next",
-        "@twind/preset-tailwind": "https://esm.run/@twind/preset-tailwind@next"
+        "@twind/preset-tailwind": "https://esm.run/@twind/preset-tailwind@next",
+        "preact-ssr": "https://esm.sh/preact-render-to-string@5.2.0",
+        "h3": "https://esm.sh/h3@0.7.16?target=node"
     }
 }`, "utf8");
                 if (!fs.existsSync("./package.json")) {

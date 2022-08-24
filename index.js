@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 import path from "path";
 import { fileURLToPath } from "url";
-import sade from "sade";
-import color from "@reejs/colors";
+import importESM_sh from "./urlimports/esm.sh.js";
+let sade = await importESM_sh("https://esm.sh/sade?target=node");
+sade = await import(sade);
+sade = sade.default;
+import color from "./utils/colors.js";
 import { exec, spawn, execSync } from "child_process";
 import { get } from "https";
 import fs from "fs";

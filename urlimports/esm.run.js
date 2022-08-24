@@ -3,7 +3,7 @@ import path from "path";
 import https from "https";
 import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename).split("/").slice(0, -1).join("/");
+let __dirname = path.dirname(__filename).split("/").slice(0, -1).join("/");
 const originalEmit = process.emit;
 process.emit = function (name, data, ...args) {
     if (
@@ -20,7 +20,7 @@ if (!process.env.REEJS_CUSTOM_DIR) {
 }
 let dir = fs.existsSync(process.env.REEJS_CUSTOM_DIR) ? process.env.REEJS_CUSTOM_DIR : `${home}/.reejs`;
 
-if(globalThis.fetch){
+if (globalThis.fetch) {
     globalThis._fetch = globalThis.fetch;
 }
 if (!globalThis.fetch) {
@@ -28,7 +28,10 @@ if (!globalThis.fetch) {
     globalThis._fetch = globalThis._fetch.default;
 }
 
-export default async function dl(url, p) {
+export default async function dl(url, p, local) {
+    if (local) {
+        __dirname = process.cwd() + "/.cache";
+    }
     if (url.startsWith("https://cdn.jsdelivr.net/npm") && url.endsWith("+esm")) {
         url = url.replace("https://cdn.jsdelivr.net/npm/", "https://esm.run/").replace("/+esm", "");
     }
@@ -45,6 +48,8 @@ export default async function dl(url, p) {
     if (version?.includes("/")) modPath = version.split("/").slice(1).join("/");
     if (modPath) version = version.split("/")[0];
     if (fs.existsSync(__dirname + `/storage/local/esm.run/${name}@${version}${modPath ? `/${modPath}.js` : "/index.js"}`)) return __dirname + `/storage/local/esm.run/${name}@${version}${modPath ? `/${modPath}.js` : "/index.js"}`;
+    if (fs.existsSync(`${process.cwd()}/.cache/storage/local/esm.run/${name}@${version}${modPath ? `/${modPath}.js` : "/index.js"}`))
+        return (`${process.cwd()}/.cache/storage/local/esm.run/${name}@${version}${modPath ? `/${modPath}.js` : "/index.js"}`);
     console.log(`[DOWNLOAD] ⏬ ${originalUrl}${p ? ` ↩️  ${p}` : ""}`);
     let code = await _fetch(originalUrl).then(res => res.text());
     code = code.replaceAll("https://cdn.jsdelivr.net/npm/", "/");
@@ -66,7 +71,7 @@ export default async function dl(url, p) {
                 _modPath = _modPath + ".js";
             }
             code = code.replace(_rawUrl, _rawUrl.replace("/npm", __dirname + "/storage/local/esm.run").replace("+esm", "+esm.js"));
-            await dl(url, name);
+            await dl(url, name, local);
         }));
     }
     if (!fs.existsSync(__dirname + `/storage/local/esm.run/${name}@${version}`)) {

@@ -1,5 +1,0 @@
-url: https://cdn.jsdelivr.net/npm/ufo@0.8.1/dist/index.mjs
-version: 0.8.1
-type: module
-alias: ufo
-scope: false
