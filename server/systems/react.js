@@ -1,68 +1,99 @@
 (async () => {
-  if(globalThis.fetch){
+  if (globalThis.fetch) {
     globalThis._fetch = globalThis.fetch;
   }
   if (!globalThis.fetch) {
     globalThis._fetch = await import(`${dir}/polyfill/fetch.js`);
     globalThis._fetch = globalThis._fetch.default;
   }
-  
-  let SSRrender = await Import(import_maps["preact-ssr"]);
+  let SSRrender;
+  let shouldSSR = (mode == "ssr" || mode == "auto");
+  let shouldCSR = (mode == "csr" || mode == "auto");
+  if (shouldSSR) {
+    SSRrender = await Import(import_maps["preact-ssr"]);
+  }
   let pages = await genPages();
   let apis = await genPages(true);
   let router = createRouter();
   let cachedPages = [];
-  apis.forEach(async (api) => {
-    router.get(api.path, async (req, res) => api.router.default(req, res));
-    console.log(`[SERVER] Registering API Route ${api.path}`);
-  });
-  pages.forEach(async (page) => {
-    router.get(page.path, async (req, res) => {
-      let resp;
-      if (page.component?.config?.cache || !cachedPages.find(p => p.path == page.path)) {
-        let cached = cachedPages.find(p => p.path == page.path);
-        if (cached) {
-          return cached.resp;
-        }
-        else {
-          if (page.component?.config?.shallowRender) {
-            try {
-              resp = await SSRrender.shallowRender(html`<${page.component.default} req=${req} />`)
-            }
-            catch (e) {
-              console.log(`[SERVER] Error while rendering ${page.path}`);
-              if (page.component.REE || page.component.ErrorRender) {
-                resp = await SSRrender.shallowRender(html`<${page.component.REE || page.component.ErrorRender} req=${req} e=${e} />`);
-              }
-              else {
-                console.log(`[ERROR]`, e);
-                return HTTPCat(500, e.message);
-              }
-            }
+  if (shouldCSR) {
+    router.get("/**",async(req,res)=>{
+      return `<!DOCTYPE html>
+      <html hidden>
+      <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body>
+      <div id="app">
+      </div>
+      <script src="/__reejs/assets/shell.js?h=${__hash}" type="module"></script>
+      <script type="module">
+      ree.routes=${JSON.stringify(pages)};
+      ree.req={
+        context:${JSON.stringify(req?.context)}
+      };
+      ree.hash="${__hash}";
+      ree.import_maps=${JSON.stringify(import_maps)};
+      ree.needsHydrate="true";
+      ree.init({env:"${isProd ? "prod" : "dev"}",mode: "csr",twind: true ,run: "none"});
+      </script>
+      </body>
+      </html>`;
+    })
+  }
+  if (shouldSSR) {
+    apis.forEach(async (api) => {
+      router.get(api.path, async (req, res) => api.router.default(req, res));
+      console.log(`[SERVER] Registering API Route ${api.path}`);
+    });
+    pages.forEach(async (page) => {
+      router.get(page.path, async (req, res) => {
+        let resp;
+        if (page.component?.config?.cache || !cachedPages.find(p => p.path == page.path)) {
+          let cached = cachedPages.find(p => p.path == page.path);
+          if (cached) {
+            return cached.resp;
           }
           else {
-            try {
-              resp = await SSRrender(html`<${page.component.default} req=${req} />`);
-            }
-            catch (e) {
-              if (page.component.REE || page.component.ErrorRender) {
-                resp = await SSRrender(html`<${page.component.REE || page.component.ErrorRender} req=${req} e=${e} />`);
+            if (page.component?.config?.shallowRender) {
+              try {
+                resp = await SSRrender.shallowRender(html`<${page.component.default} req=${req} />`)
               }
-              else {
-                console.log(`[ERROR]`, e);
-                return HTTPCat(500, e.message);
+              catch (e) {
+                console.log(`[SERVER] Error while rendering ${page.path}`);
+                if (page.component.REE || page.component.ErrorRender) {
+                  resp = await SSRrender.shallowRender(html`<${page.component.REE || page.component.ErrorRender} req=${req} e=${e} />`);
+                }
+                else {
+                  console.log(`[ERROR]`, e);
+                  return HTTPCat(500, e.message);
+                }
               }
             }
-          }
-          let headel = "";
-          if (page.component.head) {
-            headel = await SSRrender(html`<${page.component.head} />`);
-          }
-          let cssTW = "";
-          if (twindSSR) {
-            cssTW = twind.extract(resp).css;
-          }
-          resp = `<!DOCTYPE html>
+            else {
+              try {
+                resp = await SSRrender(html`<${page.component.default} req=${req} />`);
+              }
+              catch (e) {
+                if (page.component.REE || page.component.ErrorRender) {
+                  resp = await SSRrender(html`<${page.component.REE || page.component.ErrorRender} req=${req} e=${e} />`);
+                }
+                else {
+                  console.log(`[ERROR]`, e);
+                  return HTTPCat(500, e.message);
+                }
+              }
+            }
+            let headel = "";
+            if (page.component.head) {
+              headel = await SSRrender(html`<${page.component.head} />`);
+            }
+            let cssTW = "";
+            if (twindSSR) {
+              cssTW = twind.extract(resp).css;
+            }
+            resp = `<!DOCTYPE html>
           <html ${(!twindSSR && page.component?.config?.twind) ? "hidden" : ""}>
           <head>
           <meta charset="utf-8">
@@ -85,35 +116,36 @@
           ree.import_maps=${JSON.stringify(import_maps)};
           ree.needsHydrate=${page.component?.config?.hydrate ? "true" : "false"};
           ${page.component?.config?.runBeforeInit ? `(${page.component.config.runBeforeInit.toString()})();` : ""}
-          ree.init({env:"${isProd ? "prod" : "dev"}",twind: ${page.component?.config?.twind == true} ,run:\`${page.component?.config?.runAfterInit ? `(${page.component.config.runAfterInit.toString().replaceAll("`", "\\`").replaceAll("$", "\\$")})` : "none"}\`});
+          ree.init({env:"${isProd ? "prod" : "dev"}",mode: "ssr" ,twind: ${page.component?.config?.twind == true} ,run:\`${page.component?.config?.runAfterInit ? `(${page.component.config.runAfterInit.toString().replaceAll("`", "\\`").replaceAll("$", "\\$")})` : "none"}\`});
           </script>
           </body>
           </html>`;
-          //save to cache
-          if (page.component?.config?.cache && readConfig(cfg, "allowCaching") == "true") {
-            cachedPages.push({ path: req.url, resp });
-            console.log(`[SERVER] Saving Rendered ${req.url} to cache...`);
+            //save to cache
+            if (page.component?.config?.cache && readConfig(cfg, "allowCaching") == "true") {
+              cachedPages.push({ path: req.url, resp });
+              console.log(`[SERVER] Saving Rendered ${req.url} to cache...`);
+            }
+            return resp;
           }
-          return resp;
         }
-      }
+      });
+      console.log(`[SERVER] Registering Route ${page.path}`);
     });
-    console.log(`[SERVER] Registering Route ${page.path}`);
-  });
-  //check if assets folder exists
-  if (fs.existsSync(`${process.cwd()}/dist`)) {
-    console.log(`[SERVER] Assets folder found, Serving assets`);
-    //serve assets
-    router.get("/assets/*", async (req, res, next) => {
-      let file = req.url.split("?")[0].replace("/assets/", "");
-      let filepath = `${process.cwd()}/dist/${file}`;
-      if (fs.existsSync(filepath)) {
-        try {
-          return send(res, fs.readFileSync(filepath));
-        } catch (e) { next(); }
-      }
-      next();
-    });
+    //check if assets folder exists
+    if (fs.existsSync(`${process.cwd()}/dist`)) {
+      console.log(`[SERVER] Assets folder found, Serving assets`);
+      //serve assets
+      router.get("/assets/*", async (req, res, next) => {
+        let file = req.url.split("?")[0].replace("/assets/", "");
+        let filepath = `${process.cwd()}/dist/${file}`;
+        if (fs.existsSync(filepath)) {
+          try {
+            return send(res, fs.readFileSync(filepath));
+          } catch (e) { next(); }
+        }
+        next();
+      });
+    }
   }
   app.use(router);
 
@@ -137,4 +169,8 @@
       }
     });
   }
+  process.on("SIGINT", () => {
+    console.log("[SERVER] Shutting down...");
+    process.exit();
+  });
 })();

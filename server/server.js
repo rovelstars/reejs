@@ -97,6 +97,7 @@ let initServer = async (port) => {
     }
 
     let system = readConfig(cfg, "system");
+    let mode = readConfig(cfg, "mode");
     let renderType = readConfig(cfg, "render");
     globalThis.isProd = readConfig(cfg, "env") == "dev" ? false : true;
     let shouldMinify = readConfig(cfg, "minify") == "true" ? true : false;

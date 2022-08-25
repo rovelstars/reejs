@@ -28,6 +28,9 @@ export default class Router {
             this.router.insert(route.path, { payload: route.file });
         });
     }
+    lookup(url) {
+        return this.router.lookup(url);
+    }
     onClick(e) {
         this.reconstructDOM(this.handleLinkClick(e));
     }

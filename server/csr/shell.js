@@ -49,24 +49,36 @@ ree.init = async function (options) {
     }
 
     let routerInitiated = false;
-    window.addEventListener("mousemove", async () => {
+    window.addEventListener(ree.opts.mode == "csr"?"mousemove":"load", async () => {
         if (!routerInitiated) {
             routerInitiated = !routerInitiated;
+            let Router;
+            if (ree.opts.mode == "csr") {
+                Router = await Import(`/__reejs/assets/router.js?h=${ree.hash}`);
+                ree.router = new Router();
+                ree.router.startPrefetchLinksInViewport();
+            }
             let { h, render, hydrate } = await Import("preact");
             let htm = await Import('htm');
             let html = htm.bind(h);
             ree.reeact = await Import("preact");
             ree.html = html;
-            let page = await Import(`/__reejs/src?file=${ree.pageUrl}`);
-            if (ree.needsHydrate) {
-                $("#app").innerHTML = "";;
+            
+            let foundRoute;
+            if(!ree.pageUrl) foundRoute = ree.router.lookup(location.pathname);
+            if (!ree.pageUrl && !foundRoute) foundRoute = ree.router.lookup(location.pathname.slice(0, -1));
+            let page = await Import(`/__reejs/src?file=${ree.pageUrl || foundRoute.payload}`);
+            if (ree.needsHydrate || ree.opts.mode == "csr") {
+                $("#app").innerHTML = "";
                 hydrate(html`<${page} req=${ree.req} />`, $("#app"));
                 logger("Rendered Ree.js App", "DEBUG");
+                page?.config?.runAfterInit();
             }
-            
-            let Router = await Import(`/__reejs/assets/router.js?h=${ree.hash}`);
-            ree.router = new Router();
-            ree.router.startPrefetchLinksInViewport();
+            if (ree.opts.mode == "ssr") {
+                Router = await Import(`/__reejs/assets/router.js?h=${ree.hash}`);
+                ree.router = new Router();
+                ree.router.startPrefetchLinksInViewport();
+            }
         }
     })
     if (ree.opts.env == "dev") {
@@ -98,6 +110,6 @@ ree.init = async function (options) {
     delete ree.needsHydrate;
     delete ree.opts.run;
     delete ree.opts.twind;
-    $$("script").forEach(s => s.remove());
+    //$$("script").forEach(s => s.remove());
     $$("head link[rel='preload']").forEach(s => s.remove());
 }
