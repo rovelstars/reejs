@@ -8,21 +8,26 @@
   }
   let SSRrender;
   let shouldSSR = (mode == "ssr" || mode == "auto");
-  let shouldCSR = (mode == "csr" || mode == "auto");
+  let shouldCSR = (mode == "csr");
   if (shouldSSR) {
     SSRrender = await Import(import_maps["preact-ssr"]);
+    console.log("Rendering with SSR Mode");
   }
   let pages = await genPages();
   let apis = await genPages(true);
   let router = createRouter();
   let cachedPages = [];
   if (shouldCSR) {
+    console.log("Rendering with CSR Mode");
+    let domains = Object.keys(import_maps).map(e=>{let link = import_maps[e];return link.split("/").slice(0, 3).join("/")});
+    domains = Array.from(new Set(domains));
     router.get("/**",async(req,res)=>{
       return `<!DOCTYPE html>
       <html hidden>
       <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      ${(domains.length>0)?domains.map(e=>`<link rel="preconnect" href="${e}">`).join("\n"):""}
       </head>
       <body>
       <div id="app">

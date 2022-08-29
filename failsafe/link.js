@@ -1,7 +1,7 @@
-import path from "path";
-import { fileURLToPath } from "url";
+import path from "../utils/path.js";
+import { fileURLToPath } from "./utils/path.js";
 import { get } from "https";
-import fs from "fs";
+import fs from "../utils/fs.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const pkg = JSON.parse(fs.readFileSync(`${__dirname}/../package.json`, "utf8"));

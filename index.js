@@ -1,14 +1,17 @@
 #!/usr/bin/env node
-import path from "path";
-import { fileURLToPath } from "url";
-import importESM_sh from "./urlimports/esm.sh.js";
+import { fileURLToPath } from "./utils/url.js";
+import importESM_sh from "./utils/urlimports.js";
+import Import from "./server/import.js";
+import "./polyfill/process.js";
 let sade = await importESM_sh("https://esm.sh/sade?target=node");
 sade = await import(sade);
 sade = sade.default;
 import color from "./utils/colors.js";
 import { exec, spawn, execSync } from "child_process";
 import { get } from "https";
-import fs from "fs";
+import fs from "./utils/fs.js";
+import { promisify } from "./utils/util.js";
+import path, { resolve } from "./utils/path.js";
 import readConfig from "./utils/readConfig.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

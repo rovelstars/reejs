@@ -1,6 +1,6 @@
 {
   "name": "reejs",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "Toolkit for reejs",
   "main": "server/index.js",
   "type": "module",

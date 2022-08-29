@@ -30,9 +30,9 @@ version: 0.0.1
                 //create the index.js in src/pages
                 fs.writeFileSync("./src/pages/index.js",
                     `export default function () {
-    return ree.html\`<main className="min-h-screen bg-indigo-600">
+    return ree.html\`<main className="min-h-screen bg-gradient-to-b from-red-500 to-purple-800">
     <div className="flex items-center justify-center">
-      <h1 className="font-bold /* you can even use inline comments */ text-white text-7xl">
+      <h1 className="font-bold text-white text-7xl">
         Welcome To Ree.js!
       </h1>
     </div>
@@ -53,17 +53,24 @@ if (ree.canRun){
 }`, "utf8");
                 fs.writeFileSync("./import-maps.json",
                     `{
-    "imports": {
-        "preact": "https://esm.sh/preact@10.10.0",
-        "react": "https://esm.sh/preact@10.10.0",
-        "htm": "https://esm.sh/htm@3.1.1",
-        "twind": "https://esm.sh/twind@next",
-        "@twind/cdn": "https://esm.sh/@twind/cdn@next",
-        "@twind/preset-tailwind": "https://esm.run/@twind/preset-tailwind@next",
-        "preact-ssr": "https://esm.sh/preact-render-to-string@5.2.0",
-        "h3": "https://esm.sh/h3@0.7.16?target=node"
-    }
-}`, "utf8");
+                        "imports": {
+                            "preact": "https://esm.sh/preact@10.10.0",
+                            "react": "https://esm.sh/preact@10.10.0",
+                            "htm": "https://esm.sh/htm@3.1.1",
+                            "@twind/cdn": "https://esm.run/@twind/cdn@next",
+                            "@twind/preset-tailwind": "https://esm.run/@twind/preset-tailwind@next"
+                        }
+                    }`, "utf8");
+                fs.writeFileSync("./server.import-maps.json",
+                    `{
+                    "imports": {
+                      "reejs": "./node_modules/reejs/server/index.js",
+                      "twind": "https://esm.sh/twind@next",
+                      "preact-ssr": "https://esm.sh/preact-render-to-string@5.2.0",
+                      "h3": "https://esm.sh/h3@0.7.16?target=node",
+                      "undici": "https://esm.sh/undici@5.10.0?target=node&bundle"
+                    }
+                  }`, "utf8");
                 if (!fs.existsSync("./package.json")) {
                     console.log(color("Generating package.json", "green"));
                     fs.writeFileSync("./package.json",
@@ -114,7 +121,6 @@ if (ree.canRun){
                 //delete the .git folder
                 fs.rmSync(`.git`, { recursive: true, force: true });
                 fs.rmSync(`LICENSE`, { recursive: true, force: true });
-                execSync("reejs i", { stdio: "inherit" });
                 execSync("reejs link", { stdio: "inherit" });
                 execSync("reejs map", { stdio: "inherit" });
                 console.log(color(`Project ${color(name, "greenBright")} created!`, "green"));

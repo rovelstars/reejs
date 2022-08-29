@@ -20,16 +20,8 @@ cli.command("add [name]")
             let keys = Object.keys(import_map.imports);
             console.log(`Installing ${keys.length} packages from import-maps.json`);
             await Promise.all(keys.map(async (_name) => {
-                let domain;
                 let name = import_map.imports[_name];
-                if (name.startsWith("https://esm.sh")) domain = "esm.sh";
-                else if (name.startsWith("https://esm.run")) domain = "esm.run";
-                else if (name.startsWith("https://cdn.jsdelivr.net") && name.endsWith("/+esm")) {
-                    name = name.replace("https://cdn.jsdelivr.net/npm/", "https://esm.run/").replace("/+esm", "");
-                    domain = "esm.run";
-                }
-                else if (name.startsWith("https://deno.land")) domain = "deno.land";
-                let importer = await import(`./urlimports/${domain}.js`);
+                let importer = await import("./utils/urlimports.js");
                 let dir = await importer.default(name, null, opts.local);
                 pkg.dependencies[_name] = "file:" + (opts.local ?
                     "./.cache/storage/local" + dir.split("/.cache/storage/local")[1]
@@ -47,16 +39,8 @@ cli.command("add [name]")
             fs.writeFileSync(`${process.cwd()}/package.json`, JSON.stringify(pkg, null, 4));
             return;
         }
-        console.log("Looking for Provider for " + name);
-        let domain;
-        if (name.startsWith("https://esm.sh")) domain = "esm.sh";
-        else if (name.startsWith("https://esm.run")) domain = "esm.run";
-        else if (name.startsWith("https://cdn.jsdelivr.net") && name.endsWith("/+esm")) {
-            name = name.replace("https://cdn.jsdelivr.net/npm/", "https://esm.run/").replace("/+esm", "");
-            domain = "esm.run";
-        }
-        else if (name.startsWith("https://deno.land")) domain = "deno.land";
-        if (domain) console.log("Selected: " + domain);
-        let importer = await import(`./urlimports/${domain}.js`);
+        if(name){
+        let importer = await import("./utils/urlimports.js");
         await importer.default(name, null, opts.local);
+    }
     });

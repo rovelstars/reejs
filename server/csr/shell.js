@@ -49,7 +49,7 @@ ree.init = async function (options) {
     }
 
     let routerInitiated = false;
-    window.addEventListener(ree.opts.mode == "csr"?"mousemove":"load", async () => {
+    window.addEventListener(ree.opts.mode == "ssr"?"mousemove":"load", async () => {
         if (!routerInitiated) {
             routerInitiated = !routerInitiated;
             let Router;

@@ -1,17 +1,18 @@
-import { createServer } from "http";
+import { createServer } from "../utils/http.js";
 import check from "./check.js";
 import Import, { import_map } from "./import.js";
+import "../polyfill/process.js";
 let import_maps = import_map.imports;
 globalThis.Import = Import;
 let { createApp, send, createRouter, useQuery, appendHeader, sendError, createError } = await Import(import_maps["h3"]);
-import fs from "fs";
+import fs from "../utils/fs.js";
 import readConfig from "./readConfig.js";
-import { promisify } from "util";
-import path, { resolve } from "path";
-import { fileURLToPath } from "url";
+import { promisify } from "../utils/util.js";
+import path, { resolve } from "../utils/path.js";
+import { fileURLToPath } from "../utils/url.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-import { homedir, platform } from "os";
+import { homedir, platform } from "../utils/os.js";
 import HTTPCat from "./statusCats.js";
 let app;
 let cfg = fs.readFileSync(`${process.cwd()}/.reecfg`, "utf-8").split("\n");
@@ -131,7 +132,6 @@ let initServer = async (port) => {
         next();
       });
     }
-    console.log("[SERVER] Rendering with Hybrid Mode");
     async function init() {
       let router = createRouter();
       let pages = await genPages();
