@@ -24,7 +24,7 @@ if (globalThis.fetch) {
     globalThis._fetch = globalThis.fetch;
 }
 if (!globalThis.fetch) {
-    globalThis._fetch = await import(`${dir}/polyfill/fetch.js`);
+    globalThis._fetch = await import(`../polyfill/fetch.js`);
     globalThis._fetch = globalThis._fetch.default;
 }
 
