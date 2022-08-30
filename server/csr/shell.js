@@ -1,13 +1,18 @@
 window.ree = {
     IS_BROWSER: true,
 };
+
 window.Import = async function (url) {
-    if (url.startsWith("/src")) {
+    window.__USE_STATIC = (ree.opts.mode=="static");
+    if (url.startsWith("/src") && !__USE_STATIC) {
         url = url.replace("/src", "/__reejs/src?file=/src");
     }
     if (url.startsWith("/__reejs")) url += `&h=${ree.hash}`;
     if (ree.import_maps[url]) {
         url = ree.import_maps[url];
+    }
+    if(__USE_STATIC){
+        url = url.replace(`?h=${ree.hash}`, "").replace(`&h=${ree.hash}`, "");
     }
     let mod = await import(url);
     let keys = Object.keys(mod).filter(key => key !== "default");
@@ -49,12 +54,12 @@ ree.init = async function (options) {
     }
 
     let routerInitiated = false;
-    window.addEventListener(ree.opts.mode == "ssr"?"mousemove":"load", async () => {
+    window.addEventListener((ree.opts.mode == "ssr")?"mousemove":"load", async () => {
         if (!routerInitiated) {
             routerInitiated = !routerInitiated;
             let Router;
-            if (ree.opts.mode == "csr") {
-                Router = await Import(`/__reejs/assets/router.js?h=${ree.hash}`);
+            if (ree.opts.mode == "csr" || ree.opts.mode == "static") {
+                Router = await Import(`/__reejs/assets/router.js${(ree.opts.mode=="static")?"":`?h=${ree.hash}`}`);
                 ree.router = new Router();
                 ree.router.startPrefetchLinksInViewport();
             }
@@ -65,23 +70,23 @@ ree.init = async function (options) {
             ree.html = html;
             
             let foundRoute;
-            if(!ree.pageUrl) foundRoute = ree.router.lookup(location.pathname);
-            if (!ree.pageUrl && !foundRoute) foundRoute = ree.router.lookup(location.pathname.slice(0, -1));
-            let page = await Import(`/__reejs/src?file=${ree.pageUrl || foundRoute.payload}`);
-            if (ree.needsHydrate || ree.opts.mode == "csr") {
+            if(!ree.pageUrl) foundRoute = await ree.router.lookup(location.pathname);
+            if (!ree.pageUrl && !foundRoute) foundRoute = await ree.router.lookup(location.pathname.slice(0, -1));
+            let page = await Import(ree.pageUrl || foundRoute.payload);
+            if (ree.needsHydrate || ree.opts.mode == "csr" || ree.opts.mode == "static") {
                 $("#app").innerHTML = "";
                 hydrate(html`<${page} req=${ree.req} />`, $("#app"));
                 logger("Rendered Ree.js App", "DEBUG");
                 page?.config?.runAfterInit();
             }
             if (ree.opts.mode == "ssr") {
-                Router = await Import(`/__reejs/assets/router.js?h=${ree.hash}`);
+                Router = await Import(`/__reejs/assets/router.js${(ree.opts.mode=="static")?"":`?h=${ree.hash}`}`);
                 ree.router = new Router();
                 ree.router.startPrefetchLinksInViewport();
             }
         }
-    })
-    if (ree.opts.env == "dev") {
+    });
+    if (ree.opts.env == "dev" && ree.opts.mode != "static") {
         logger("Making an Connection to the Dev Server", "RELOADER");
         setInterval(async () => {
             try {

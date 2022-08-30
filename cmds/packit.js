@@ -1,8 +1,8 @@
 cli.command("pack-it")
+    .alias(["packit"])
     .describe(`Pack your project for serverless deployment!`)
-    .option("-o, --output <output>", "The output file name")
     .action(async() => {
-        if (process.env.CF_PAGES) console.log("Packing Your Project for Cloudflare Pages...");
+      console.log("Packing Your Project for Static File Serving...");
         if (fs.existsSync(`${process.cwd()}/.packit`)) {
             fs.rmSync(`${process.cwd()}/.packit`, { recursive: true });
             fs.mkdirSync(`${process.cwd()}/.packit`);
