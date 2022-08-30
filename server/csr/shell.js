@@ -41,7 +41,7 @@ window.logger = function (msg, lvl = "debug") {
     if (ree.opts.env == "dev" && lvl == "DEBUG") {
         console.log("[DEBUG]", msg);
     }
-    else if (lvl != "DEBUG" || lvl != "🚦" || lvl != "🥏") {
+    else if (lvl != "DEBUG") {
         console.log(`[${lvl}]`, msg);
     }
 }
@@ -77,6 +77,8 @@ ree.init = async function (options) {
                 $("#app").innerHTML = "";
                 hydrate(html`<${page} req=${ree.req} />`, $("#app"));
                 logger("Rendered Ree.js App", "DEBUG");
+                $$("a").forEach(a => { a.addEventListener('click', (e) => ree.router.onClick(e)) });
+                window.addEventListener('popstate', (e) => ree.router.onPop(e));
                 page?.config?.runAfterInit();
             }
             if (ree.opts.mode == "ssr") {
