@@ -1,12 +1,11 @@
 {
   "name": "reejs",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Toolkit for reejs",
   "main": "server/index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "install": "node ./failsafe.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "@rovelstars",

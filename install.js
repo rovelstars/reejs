@@ -73,29 +73,12 @@ if (!fs.existsSync(dir)) {
               console.log("[INFO] Reverting back changes...");
               process.exit(1);
             }
-            exec(
-              `${execApp} ./failsafe.js`,
-              { cwd: dir + "/" },
-              (err, stdout, stderr) => {
-                if (err) {
-                  console.log(
-                    "[ERROR] Installing dependencies failed. Please try again"
-                  );
-                  console.log(err);
-                  console.log("[INFO] Reverting back changes...");
-                  process.exit(1);
-                }
-                console.log(
-                  "[INFO] Installing libraries successful! Cleaning up files..."
-                );
-                if(process.env.INSTALL_TO){
-                  console.log("[WARN] Custom Installation was done. Please add the following to your .bashrc or .zshrc file:")
-                  console.log(`export REEJS_CUSTOM_DIR="${process.env.INSTALL_TO}"`);
-                }
-                console.log(
-                  "[INFO] Reejs has been installed!\nTry it out by running `reejs init reejs-app`"
-                );
-              }
+            if(process.env.INSTALL_TO){
+              console.log("[WARN] Custom Installation was done. Please add the following to your .bashrc or .zshrc file:")
+              console.log(`export REEJS_CUSTOM_DIR="${process.env.INSTALL_TO}"`);
+            }
+            console.log(
+              "[INFO] Reejs has been installed!\nTry it out by running `reejs init reejs-app`"
             );
           }
         );
