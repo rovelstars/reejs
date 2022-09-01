@@ -2,9 +2,17 @@ import fs from "./fs.js";
 import path from "./path.js";
 import "../polyfill/process.js";
 import { fileURLToPath } from "./url.js";
+import { homedir, platform } from "os";
 const __filename = fileURLToPath(import.meta.url);
 let __dirname = path.dirname(__filename).split("/").slice(0, -1).join("/");
 const originalEmit = process?.emit;
+let home = homedir();
+let os = platform();
+let homewin;
+if (os == "win32") {
+  homewin = home;
+  home = home.replace(/\\/g, "/");
+}
 process.emit = function (name, data, ...args) {
     if (
         name === `warning` &&

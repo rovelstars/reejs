@@ -7,7 +7,6 @@ const __dirname = path.dirname(__filename);
 import stdNodeMappings from "./deno/stdNodeMappings.js";
 import readConfig from "./readConfig.js";
 
-let cfg = fs.readFileSync(`${process.cwd()}/.reecfg`, "utf-8").split("\n");
 if (!process.env.REEJS_CUSTOM_DIR) {
     process.env.REEJS_CUSTOM_DIR = __dirname.split("/").slice(0, -1).join("/");
   }

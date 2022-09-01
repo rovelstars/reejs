@@ -4,7 +4,7 @@ import Import, { import_map } from "./import.js";
 import "../polyfill/process.js";
 let import_maps = import_map.imports;
 globalThis.Import = Import;
-let { createApp, send, createRouter, useQuery, appendHeader, sendError, createError } = await Import(import_maps["h3"]);
+let { createApp, send, createRouter, useQuery, appendHeader, setHeader, sendError, createError } = await Import(import_maps["h3"]);
 import fs from "../utils/fs.js";
 import readConfig from "./readConfig.js";
 import { promisify } from "../utils/util.js";
@@ -132,6 +132,11 @@ let initServer = async (port) => {
         next();
       });
     }
+    app.use(async (req, res, next) => {
+      //add header server software
+      setHeader(res, "Server", "ReeST");
+      next();
+    });
     async function init() {
       let router = createRouter();
       let pages = await genPages();
