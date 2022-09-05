@@ -14,6 +14,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 import { homedir, platform } from "../utils/os.js";
 import HTTPCat from "./statusCats.js";
+import https from "https";
 let app;
 let cfg = fs.readFileSync(`${process.cwd()}/.reecfg`, "utf-8").split("\n");
 //generate hash that is unique everytime
@@ -257,8 +258,10 @@ let initServer = async (port) => {
 
       app.use("/__reejs", router);
       if (system == "react") {
-        let react = fs.readFileSync(`${dir}/server/systems/react.js`, "utf-8");
-        eval(`${react}\n//# sourceURL=${`${dir}/server/systems/react.js`}`);
+        let react = fs.readFileSync(`${dir}/server/systems/react.js`, "utf-8")+`//# sourceURL=${dir}/server/systems/react.js`;
+        //run code with new Function passing all the context
+        new Function("wasListening","shouldCheckRoutes", "import_maps", "mode", "app", "router", "dir", "isProd", "readConfig", "createRouter", "createApp", "send", "setHeader", "appendHeader", "useQuery", "HTTPCat", "genPages", "consoleProdLog", react)
+        (wasListening, shouldCheckRoutes, import_maps, mode, app, router, dir, isProd, readConfig, createRouter, createApp, send, setHeader, appendHeader, useQuery, HTTPCat, genPages, consoleProdLog);
       }
     };
   }
