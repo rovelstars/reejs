@@ -3,6 +3,7 @@ import path from "./path.js";
 import "../polyfill/process.js";
 import { fileURLToPath } from "./url.js";
 import { homedir, platform } from "os";
+import https from "https";
 const __filename = fileURLToPath(import.meta.url);
 let __dirname = path.dirname(__filename).split("/").slice(0, -1).join("/");
 const originalEmit = process?.emit;
@@ -32,8 +33,23 @@ if (globalThis.fetch) {
     globalThis._fetch = globalThis.fetch;
 }
 if (!globalThis.fetch) {
-    globalThis._fetch = await import(`../polyfill/fetch.js`);
-    globalThis._fetch = globalThis._fetch.default;
+    globalThis._fetch = async function (url, options) {
+        return new Promise((resolve, reject) => {
+            https.get(url, (res) => {
+                let data = "";
+                res.on("data", (chunk) => {
+                    data += chunk;
+                });
+                res.on("end", () => {
+                    resolve({
+                        text: () => {
+                            return data;
+                        },
+                    });
+                });
+            });
+        });
+    }
 }
 
 if (!globalThis.lexer) {
