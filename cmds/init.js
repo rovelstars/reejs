@@ -97,7 +97,6 @@ if (ree.canRun){
                 }
                 execSync("reejs i", { stdio: "inherit" });
                 execSync("reejs link", { stdio: "inherit" });
-                execSync("reejs map", { stdio: "inherit" });
                 return;
             }
         };
@@ -122,7 +121,6 @@ if (ree.canRun){
                 fs.rmSync(`.git`, { recursive: true, force: true });
                 fs.rmSync(`LICENSE`, { recursive: true, force: true });
                 execSync("reejs link", { stdio: "inherit" });
-                execSync("reejs map", { stdio: "inherit" });
                 console.log(color(`Project ${color(name, "greenBright")} created!`, "green"));
                 console.log("To get started, run the following ", "`" + color(`cd ${name} && reejs serve`, "green") + "`", " commands");
             });

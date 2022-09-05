@@ -17,7 +17,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const pkg = JSON.parse(fs.readFileSync(`${__dirname}/package.json`, "utf8"));
 import { homedir, platform } from "os";
-if(!process.env.REEJS_CUSTOM_DIR){
+if (!process.env.REEJS_CUSTOM_DIR) {
   process.env.REEJS_CUSTOM_DIR = __dirname;
 }
 const originalEmit = process.emit;
@@ -76,8 +76,11 @@ cmds
   .filter((f) => f.endsWith(".js"))
   .forEach((cmd) => {
     const file = `${__dirname}/cmds/${cmd}`;
-    const code = fs.readFileSync(file, "utf8");
-    eval(`${code}\n//# sourceURL=${file}`);
+    const code = fs.readFileSync(file, "utf8") + `//# sourceURL=${file}`;
+    //run code with Function
+    new Function(
+      "pkg", "cli", "color", "fs", "path", "exec", "spawn", "execSync", "readConfig", "featuresList", "dir", "downloadFile", "isReejsFolder", "logger", "platform", "homedir", "home", "homewin", code)
+      (pkg, cli, color, fs, path, exec, spawn, execSync, readConfig, featuresList, dir, downloadFile, isReejsFolder, logger, platform, homedir, home, homewin);
   });
 
 cli.parse(process.argv);
