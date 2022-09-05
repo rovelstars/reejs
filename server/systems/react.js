@@ -3,8 +3,23 @@
     globalThis._fetch = globalThis.fetch;
   }
   if (!globalThis.fetch) {
-    globalThis._fetch = await import(`${dir}/polyfill/fetch.js`);
-    globalThis._fetch = globalThis._fetch.default;
+    globalThis._fetch = async function (url, options) {
+      return new Promise((resolve, reject) => {
+        https.get(url, (res) => {
+          let data = "";
+          res.on("data", (chunk) => {
+            data += chunk;
+          });
+          res.on("end", () => {
+            resolve({
+              text: () => {
+                return data;
+              },
+            });
+          });
+        });
+      });
+    }
   }
   let SSRrender;
   let shouldSSR = (mode == "ssr" || mode == "auto");
