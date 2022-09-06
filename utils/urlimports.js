@@ -41,7 +41,6 @@ if (!globalThis.lexer) {
     globalThis.lexer = await import("./lexer.js");
     await lexer.init;
 }
-let test = await _fetch("https://discord.rovelstars.com/api");
 export default async function dl(url, local, _domain) {
     if (local) {
         __dirname = process.cwd() + "/.cache";

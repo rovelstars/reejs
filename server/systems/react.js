@@ -3,7 +3,7 @@
     globalThis._fetch = globalThis.fetch;
   }
   if (!globalThis.fetch) {
-    globalThis._fetch = await import("../../utils/fetch.js");
+    globalThis._fetch = await import("../utils/fetch.js");
     globalThis._fetch = globalThis._fetch.default;
   }
   let SSRrender;
