@@ -8,6 +8,6 @@ else {
     mod = await import("fs");
 }
 
-let { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, rmdirSync, unlinkSync, statSync, watch, readdir, stat, copyFileSync, rmSync } = mod;
-mod = { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, rmdirSync, unlinkSync, statSync, watch, readdir, stat, copyFileSync, rmSync };
-export default { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, rmdirSync, unlinkSync, statSync, watch, readdir, stat, copyFileSync, rmSync };
+let { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, rmdirSync, unlinkSync, statSync, watch, readdir, stat, copyFileSync, rmSync, symlinkSync } = mod;
+mod = { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, rmdirSync, unlinkSync, statSync, watch, readdir, stat, copyFileSync, rmSync, symlinkSync };
+export default { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, rmdirSync, unlinkSync, statSync, watch, readdir, stat, copyFileSync, rmSync, symlinkSync };

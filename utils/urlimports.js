@@ -3,7 +3,7 @@ import path from "./path.js";
 import "../polyfill/process.js";
 import { fileURLToPath } from "./url.js";
 import { homedir, platform } from "os";
-import https from "https";
+import { get } from "./https.js";
 const __filename = fileURLToPath(import.meta.url);
 let __dirname = path.dirname(__filename).split("/").slice(0, -1).join("/");
 const originalEmit = process?.emit;
@@ -11,8 +11,8 @@ let home = homedir();
 let os = platform();
 let homewin;
 if (os == "win32") {
-  homewin = home;
-  home = home.replace(/\\/g, "/");
+    homewin = home;
+    home = home.replace(/\\/g, "/");
 }
 process.emit = function (name, data, ...args) {
     if (
@@ -33,59 +33,52 @@ if (globalThis.fetch) {
     globalThis._fetch = globalThis.fetch;
 }
 if (!globalThis.fetch) {
-    globalThis._fetch = async function (url, options) {
-        return new Promise((resolve, reject) => {
-            https.get(url, (res) => {
-                let data = "";
-                res.on("data", (chunk) => {
-                    data += chunk;
-                });
-                res.on("end", () => {
-                    resolve({
-                        text: () => {
-                            return data;
-                        },
-                    });
-                });
-            });
-        });
-    }
+    globalThis._fetch = await import("./fetch.js");
+    globalThis._fetch = globalThis._fetch.default;
 }
 
 if (!globalThis.lexer) {
-    globalThis.lexer = await import("../utils/lexer.js");
+    globalThis.lexer = await import("./lexer.js");
     await lexer.init;
 }
-
-export default async function dl(url, p, local, _domain) {
+let test = await _fetch("https://discord.rovelstars.com/api");
+export default async function dl(url, local, _domain) {
     if (local) {
         __dirname = process.cwd() + "/.cache";
     }
-    if(_domain=="esm.run" && url.startsWith("/npm/") && url.endsWith("/+esm")){
+    if (_domain == "esm.run" && url.startsWith("/npm/") && url.endsWith("/+esm")) {
         url = url.slice(4, -5);
-        }
+    }
     let originalUrl = url.startsWith("/") ? `https://${_domain}${url}` : url;
     let domain = _domain || url.split("/")[2];
     url = url.split("?")[0];
-    let name = url.replace(`https://${domain}/`, "").split("@")[0];
-    let version = url.startsWith("@") ? url.replace("@", "").split("@")[1] : url.split("@")[1];
-    let modPath;
-    if (version?.includes("/")) modPath = version.split("/").slice(1).join("/");
-    if (modPath) version = version.split("/")[0];
-    if (fs.existsSync(__dirname + `/storage/local/${domain}/${name}@${version}${modPath ? `/${modPath}` : "/index.js"}`))
-        return __dirname + `/storage/local/${domain}/${name}@${version}${modPath ? `/${modPath}` : "/index.js"}`;
-    if (fs.existsSync(`${process.cwd()}/.cache/storage/local/${domain}/${name}@${version}${modPath ? `/${modPath}.js` : "/index.js"}`))
-        return (`${process.cwd()}/.cache/storage/local/${domain}/${name}@${version}${modPath ? `/${modPath}.js` : "/index.js"}`);
+    let mod = url.startsWith("/") ? `https/${url}` : url.replace("https://", "https/");
+    let modPath = mod.split("/").slice(0, -1).join("/");
+    if (!mod.endsWith(".js")) {
+        mod += ".js";
+    }
+    if (fs.existsSync(`${process.cwd()}/.cache/storage/local/${mod}`)) {
+        return `${process.cwd()}/.cache/storage/local/${mod}`;
+    }
+    if (fs.existsSync(`${__dirname}/storage/local/${mod}`)) {
+        return `${__dirname}/storage/local/${mod}`;
+    }
     if (!originalUrl.startsWith("https://") && !originalUrl.startsWith("http://")) return originalUrl;
-    console.log(`[DOWNLOAD] ⏬ ${originalUrl}${p ? ` ↩️  ${p}` : ""}`);
+    console.log(`[DOWNLOAD] ⏬ ${originalUrl}`);
     let code = await _fetch(originalUrl).then(res => res.text());
     try {
         let [_imports] = await lexer.parse(code)
-
-        _imports = Array.from(new Set(_imports.map(i => i.n)));
+        _imports = Array.from(new Set(_imports.map(i => i.n))).map(i=>{
+            if(i.startsWith(".")){
+                //Urlpath will change from https://esm.sh/hmm/ok to /hmm/
+                let urlPath = originalUrl.split("/").slice(3,-1).join("/");
+                i = i.replace("./", `/${urlPath}/`);
+            }
+            return i;
+        });
         if (_imports.length > 0) {
             await Promise.all(_imports.map(async i => {
-                let to = await dl(i, name, local, domain)
+                let to = await dl(i, local, domain)
                 code = code.replaceAll(i, to);
             }));
         }
@@ -94,20 +87,10 @@ export default async function dl(url, p, local, _domain) {
         console.log(e);
         throw new Error(`[DOWNLOAD] ⚠️  Failed to parse ${originalUrl}`);
     };
-    //console.log(code);
-    if (!fs.existsSync(__dirname + `/storage/local/${domain}/${name}@${version}`)) {
-        fs.mkdirSync(__dirname + `/storage/local/${domain}/${name}@${version}`, { recursive: true });
+
+    if (!fs.existsSync(`${__dirname}/storage/local/${modPath}`)) {
+        fs.mkdirSync(`${__dirname}/storage/local/${modPath}`, { recursive: true });
     }
-    if (modPath) {
-        let modDir = modPath.split("/").slice(0, -1).join("/");
-        if (!fs.existsSync(__dirname + `/storage/local/${domain}/${name}@${version}/${modDir}`)) {
-            fs.mkdirSync(__dirname + `/storage/local/${domain}/${name}@${version}/${modDir}`, { recursive: true });
-        }
-    }
-    if (!modPath?.endsWith(".js") && modPath != undefined) {
-        modPath = modPath + ".js";
-    }
-    code = code.replaceAll(`${__dirname}/storage/local/${domain}${__dirname}`, __dirname);
-    fs.writeFileSync(__dirname + `/storage/local/${domain}/${name}@${version}${modPath ? `/${modPath}` : "/index.js"}`, code, "utf8");
-    return __dirname + `/storage/local/${domain}/${name}@${version}${modPath ? `/${modPath}` : "/index.js"}`
+    fs.writeFileSync(`${__dirname}/storage/local/${mod}`, code);
+    return `${__dirname}/storage/local/${mod}`;
 }

@@ -3,23 +3,8 @@
     globalThis._fetch = globalThis.fetch;
   }
   if (!globalThis.fetch) {
-    globalThis._fetch = async function (url, options) {
-      return new Promise((resolve, reject) => {
-        https.get(url, (res) => {
-          let data = "";
-          res.on("data", (chunk) => {
-            data += chunk;
-          });
-          res.on("end", () => {
-            resolve({
-              text: () => {
-                return data;
-              },
-            });
-          });
-        });
-      });
-    }
+    globalThis._fetch = await import("../../utils/fetch.js");
+    globalThis._fetch = globalThis._fetch.default;
   }
   let SSRrender;
   let shouldSSR = (mode == "ssr" || mode == "auto");
@@ -140,6 +125,22 @@
           </script>
           </body>
           </html>`;
+
+          if(shouldMinify){
+            let minifier = await Import("https://esm.sh/html-minifier-terser@7.0.0?target=node&bundle");
+            let minified = await minifier.minify(resp,{
+              removeAttributeQuotes: true,
+              removeComments: true,
+              removeCommentsFromCDATA: true,
+              removeCDATASectionsFromCDATA: true,
+              collapseWhitespace: true,
+              collapseBooleanAttributes: true,
+              removeAttributeQuotes: true,
+              removeEmptyAttributes: true
+            });
+            console.log(`[SERVER] Minified ${page.path} from ${resp.length/1000} to ${minified.length/1000} kb, saved ${(resp.length - minified.length)/1000} kb!`);
+            resp = minified;
+          }
             //save to cache
             if (page.component?.config?.cache && readConfig(cfg, "allowCaching") == "true") {
               cachedPages.push({ path: req.url, resp });

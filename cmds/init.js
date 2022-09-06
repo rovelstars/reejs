@@ -96,7 +96,17 @@ if (ree.canRun){
                     fs.writeFileSync("./package.json", JSON.stringify(packageJson, null, 2), "utf8");
                 }
                 execSync("reejs i", { stdio: "inherit" });
-                execSync("reejs link", { stdio: "inherit" });
+                //check if node_modules is present
+                if (!fs.existsSync(`${process.cwd()}/node_modules`)) {
+                    //create node_modules
+                    fs.mkdirSync(`${process.cwd()}/node_modules`);
+                }
+                //soft link project folder to node_modules
+                if (!fs.existsSync(`${process.cwd()}/node_modules/reejs`)) {
+                    fs.symlinkSync(`${dir}`, `${process.cwd()}/node_modules/reejs`);
+                    console.log(`[REE.JS] Linked Reejs:`, dir, "to", `${process.cwd()}/node_modules/reejs`);
+                }
+                fs.writeFileSync(`${process.cwd()}/package.json`, JSON.stringify(pkg));
                 return;
             }
         };
@@ -120,7 +130,17 @@ if (ree.canRun){
                 //delete the .git folder
                 fs.rmSync(`.git`, { recursive: true, force: true });
                 fs.rmSync(`LICENSE`, { recursive: true, force: true });
-                execSync("reejs link", { stdio: "inherit" });
+                //check if node_modules is present
+                if (!fs.existsSync(`${process.cwd()}/node_modules`)) {
+                    //create node_modules
+                    fs.mkdirSync(`${process.cwd()}/node_modules`);
+                }
+                //soft link project folder to node_modules
+                if (!fs.existsSync(`${process.cwd()}/node_modules/reejs`)) {
+                    fs.symlinkSync(`${dir}`, `${process.cwd()}/node_modules/reejs`);
+                    console.log(`[REE.JS] Linked Reejs:`, dir, "to", `${process.cwd()}/node_modules/reejs`);
+                }
+                fs.writeFileSync(`${process.cwd()}/package.json`, JSON.stringify(pkg));
                 console.log(color(`Project ${color(name, "greenBright")} created!`, "green"));
                 console.log("To get started, run the following ", "`" + color(`cd ${name} && reejs serve`, "green") + "`", " commands");
             });
