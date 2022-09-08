@@ -79,8 +79,8 @@ cmds
     const code = fs.readFileSync(file, "utf8") + `//# sourceURL=${file}`;
     //run code with Function
     new Function(
-      "pkg", "cli", "color", "fs", "path", "exec", "spawn", "execSync", "readConfig", "featuresList", "dir", "downloadFile", "isReejsFolder", "logger", "platform", "homedir", "home", "homewin", code)
-      (pkg, cli, color, fs, path, exec, spawn, execSync, readConfig, featuresList, dir, downloadFile, isReejsFolder, logger, platform, homedir, home, homewin);
+      "Import","resolve", "promisify", "pkg", "cli", "color", "fs", "path", "exec", "spawn", "execSync", "readConfig", "featuresList", "dir", "downloadFile", "isReejsFolder", "logger", "platform", "homedir", "home", "homewin", code)
+      (Import, resolve, promisify, pkg, cli, color, fs, path, exec, spawn, execSync, readConfig, featuresList, dir, downloadFile, isReejsFolder, logger, platform, homedir, home, homewin);
   });
 
 cli.parse(process.argv);

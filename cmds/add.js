@@ -17,12 +17,19 @@ cli.command("add [name]")
             let import_map = fs.existsSync(`${process.cwd()}/import-maps.json`) ?
                 JSON.parse(fs.readFileSync(`${process.cwd()}/import-maps.json`, "utf8")) :
                 { imports: {} };
+            let server_import_map = fs.existsSync(`${process.cwd()}/server.import-maps.json`) ?
+                JSON.parse(fs.readFileSync(`${process.cwd()}/server.import-maps.json`, "utf8")) :
+                { imports: {} };
+                //move server imports to import map
+            for (let i in server_import_map.imports) {
+                import_map.imports[i] = server_import_map.imports[i];
+            }
             let keys = Object.keys(import_map.imports);
             console.log(`Installing ${keys.length} packages from import-maps.json`);
             await Promise.all(keys.map(async (_name) => {
                 let name = import_map.imports[_name];
                 let importer = await import("./utils/urlimports.js");
-                let dir = await importer.default(name, null, opts.local);
+                let dir = await importer.default(name, opts.local);
                 pkg.dependencies[_name] = "file:" + (opts.local ?
                     "./.cache/storage/local" + dir.split("/.cache/storage/local")[1]
                     : dir.split("/").slice(0, -1).join("/"));
@@ -41,6 +48,6 @@ cli.command("add [name]")
         }
         if(name){
         let importer = await import("./utils/urlimports.js");
-        await importer.default(name, null, opts.local);
+        await importer.default(name, opts.local);
     }
     });

@@ -67,7 +67,7 @@
               }
               catch (e) {
                 console.log(`[SERVER] Error while rendering ${page.path}`);
-                if (page.component.REE || page.component.ErrorRender) {
+                if (page.component?.REE || page.component?.ErrorRender) {
                   resp = await SSRrender.shallowRender(html`<${page.component.REE || page.component.ErrorRender} req=${req} e=${e} />`);
                 }
                 else {
@@ -81,8 +81,8 @@
                 resp = await SSRrender(html`<${page.component.default} req=${req} />`);
               }
               catch (e) {
-                if (page.component.REE || page.component.ErrorRender) {
-                  resp = await SSRrender(html`<${page.component.REE || page.component.ErrorRender} req=${req} e=${e} />`);
+                if (page.component?.REE || page.component?.ErrorRender) {
+                  resp = await SSRrender(html`<${page.component?.REE || page.component.ErrorRender} req=${req} e=${e} />`);
                 }
                 else {
                   console.log(`[ERROR]`, e);

@@ -2,7 +2,7 @@ import fs from "./fs.js";
 import path from "./path.js";
 import "../polyfill/process.js";
 import { fileURLToPath } from "./url.js";
-import { homedir, platform } from "os";
+import { homedir, platform } from "./os.js";
 import { get } from "./https.js";
 const __filename = fileURLToPath(import.meta.url);
 let __dirname = path.dirname(__filename).split("/").slice(0, -1).join("/");
@@ -56,7 +56,9 @@ export default async function dl(url, local, _domain) {
     if (!mod.endsWith(".js")) {
         mod += ".js";
     }
+    if (mod.startsWith("/")) mod = mod.slice(1);
     if (fs.existsSync(`${process.cwd()}/.cache/storage/local/${mod}`)) {
+        console.log("exists", mod);
         return `${process.cwd()}/.cache/storage/local/${mod}`;
     }
     if (fs.existsSync(`${__dirname}/storage/local/${mod}`)) {
@@ -67,10 +69,10 @@ export default async function dl(url, local, _domain) {
     let code = await _fetch(originalUrl).then(res => res.text());
     try {
         let [_imports] = await lexer.parse(code)
-        _imports = Array.from(new Set(_imports.map(i => i.n))).map(i=>{
-            if(i.startsWith(".")){
+        _imports = Array.from(new Set(_imports.map(i => i.n))).map(i => {
+            if (i.startsWith(".")) {
                 //Urlpath will change from https://esm.sh/hmm/ok to /hmm/
-                let urlPath = originalUrl.split("/").slice(3,-1).join("/");
+                let urlPath = originalUrl.split("/").slice(3, -1).join("/");
                 i = i.replace("./", `/${urlPath}/`);
             }
             return i;
@@ -86,10 +88,18 @@ export default async function dl(url, local, _domain) {
         console.log(e);
         throw new Error(`[DOWNLOAD] ⚠️  Failed to parse ${originalUrl}`);
     };
-
-    if (!fs.existsSync(`${__dirname}/storage/local/${modPath}`)) {
-        fs.mkdirSync(`${__dirname}/storage/local/${modPath}`, { recursive: true });
+    if (!local) {
+        if (!fs.existsSync(`${__dirname}/storage/local/${modPath}`)) {
+            fs.mkdirSync(`${__dirname}/storage/local/${modPath}`, { recursive: true });
+        }
+        fs.writeFileSync(`${__dirname}/storage/local/${mod}`, code);
+        return `${__dirname}/storage/local/${mod}`;
     }
-    fs.writeFileSync(`${__dirname}/storage/local/${mod}`, code);
-    return `${__dirname}/storage/local/${mod}`;
+    else {
+        if (!fs.existsSync(`${process.cwd()}/.cache/storage/local/${modPath}`)) {
+            fs.mkdirSync(`${process.cwd()}/.cache/storage/local/${modPath}`, { recursive: true });
+        }
+        fs.writeFileSync(`${process.cwd()}/.cache/storage/local/${mod}`, code);
+        return `${process.cwd()}/.cache/storage/local/${mod}`;
+    }
 }
