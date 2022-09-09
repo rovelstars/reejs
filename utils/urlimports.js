@@ -28,7 +28,6 @@ if (!process.env.REEJS_CUSTOM_DIR) {
     process.env.REEJS_CUSTOM_DIR = __dirname;
 }
 let dir = fs.existsSync(process.env.REEJS_CUSTOM_DIR) ? process.env.REEJS_CUSTOM_DIR : `${home}/.reejs`;
-
 if (globalThis.fetch) {
     globalThis._fetch = globalThis.fetch;
 }
@@ -61,8 +60,8 @@ export default async function dl(url, local, _domain) {
         console.log("exists", mod);
         return `${process.cwd()}/.cache/storage/local/${mod}`;
     }
-    if (fs.existsSync(`${__dirname}/storage/local/${mod}`)) {
-        return `${__dirname}/storage/local/${mod}`;
+    if (fs.existsSync(`${dir}/storage/local/${mod}`)) {
+        return `${dir}/storage/local/${mod}`;
     }
     if (!originalUrl.startsWith("https://") && !originalUrl.startsWith("http://")) return originalUrl;
     console.log(`[DOWNLOAD] ⏬ ${originalUrl}`);
@@ -79,7 +78,7 @@ export default async function dl(url, local, _domain) {
         });
         if (_imports.length > 0) {
             await Promise.all(_imports.map(async i => {
-                let to = await dl(i, local, domain)
+                let to = await dl(i, local, domain);
                 code = code.replaceAll(i, to);
             }));
         }
@@ -89,11 +88,13 @@ export default async function dl(url, local, _domain) {
         throw new Error(`[DOWNLOAD] ⚠️  Failed to parse ${originalUrl}`);
     };
     if (!local) {
-        if (!fs.existsSync(`${__dirname}/storage/local/${modPath}`)) {
-            fs.mkdirSync(`${__dirname}/storage/local/${modPath}`, { recursive: true });
+        if (!fs.existsSync(`${dir}/storage/local/${modPath}`)) {
+            fs.mkdirSync(`${dir}/storage/local/${modPath}`, { recursive: true });
         }
-        fs.writeFileSync(`${__dirname}/storage/local/${mod}`, code);
-        return `${__dirname}/storage/local/${mod}`;
+        fs.writeFileSync(`${dir}/storage/local/${mod}`, code);
+        
+        if(os=="win32") return "file://"+encodeURI(dir)+"/storage/local/"+mod;
+        else return `${dir}/storage/local/${mod}`;
     }
     else {
         if (!fs.existsSync(`${process.cwd()}/.cache/storage/local/${modPath}`)) {
