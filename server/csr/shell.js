@@ -30,12 +30,14 @@ window.Import = async function (url) {
         return mod;
     }
 }
+
 window.$ = function (selector) {
     return document.querySelector(selector);
 }
 window.$$ = function (selector) {
     return document.querySelectorAll(selector);
 }
+
 window.logger = function (msg, lvl = "debug") {
     lvl = lvl.toUpperCase();
     if (ree.opts.env == "dev" && lvl == "DEBUG") {
@@ -45,6 +47,7 @@ window.logger = function (msg, lvl = "debug") {
         console.log(`[${lvl}]`, msg);
     }
 }
+
 ree.init = async function (options) {
     ree.opts = options;
     let app = $(`#app`);
@@ -57,16 +60,14 @@ ree.init = async function (options) {
     window.addEventListener((ree.opts.mode == "ssr")?"mousemove":"load", async () => {
         if (!routerInitiated) {
             routerInitiated = !routerInitiated;
-            let Router;
-            if (ree.opts.mode == "csr" || ree.opts.mode == "static") {
-                Router = await Import(`/__reejs/assets/router.js${(ree.opts.mode=="static")?"":`?h=${ree.hash}`}`);
+            let Router = await Import(`/__reejs/assets/router.js${(ree.opts.mode=="static")?"":`?h=${ree.hash}`}`);
                 ree.router = new Router();
                 ree.router.startPrefetchLinksInViewport();
-            }
             let { h, render, hydrate } = await Import("preact");
             let htm = await Import('htm');
             let html = htm.bind(h);
             ree.reeact = await Import("preact");
+            window.React = ree.reeact;
             ree.html = html;
             
             let foundRoute;
@@ -80,11 +81,6 @@ ree.init = async function (options) {
                 $$("a").forEach(a => { a.addEventListener('click', (e) => ree.router.onClick(e)) });
                 window.addEventListener('popstate', (e) => ree.router.onPop(e));
                 page?.config?.runAfterInit();
-            }
-            if (ree.opts.mode == "ssr") {
-                Router = await Import(`/__reejs/assets/router.js${(ree.opts.mode=="static")?"":`?h=${ree.hash}`}`);
-                ree.router = new Router();
-                ree.router.startPrefetchLinksInViewport();
             }
         }
     });

@@ -71,8 +71,36 @@ let initServer = async (port) => {
         files = files.filter((f) => !f.startsWith("api/"));
       }
       let results = [];
+      let parser;
       for (let file in files) {
-        results[file] = await Import(`${process.platform == "win32" ? "file://" : `${process.cwd()}/src/pages/`}${files[file]}`);
+        let savedAt;
+        //the order of imports is tsx > ts > jsx > js
+        if (files[file].endsWith(".jsx")) {
+          if (!parser) parser = await Import("https://esm.sh/sucrase?target=node");
+          let code = parser.transform(fs.readFileSync(`${process.cwd()}/src/pages/${files[file]}`, "utf8"), { transforms: ["jsx"] }).code;
+          if (!fs.existsSync(`${__dirname}/../storage/src/pages`)) fs.mkdirSync(`${__dirname}/../storage/src/pages`, { recursive: true });
+          fs.writeFileSync(`${__dirname}/../storage/src/pages/${files[file].slice(0,-4)+".js"}`, code);
+          savedAt = `${__dirname}/../storage/src/pages/${files[file].slice(0, -4)+".js"}`;
+        }
+        if (files[file].endsWith(".ts")) {
+          if (!parser) parser = await Import("https://esm.sh/sucrase?target=node");
+          let code = parser.transform(fs.readFileSync(`${process.cwd()}/src/pages/${files[file]}`, "utf8"), { transforms: ["typescript"] }).code;
+          if (!fs.existsSync(`${__dirname}/../storage/src/pages`)) fs.mkdirSync(`${__dirname}/../storage/src/pages`, { recursive: true });
+          fs.writeFileSync(`${__dirname}/../storage/src/pages/${files[file].slice(0,-3)+".js"}`, code);
+          savedAt = `${__dirname}/../storage/src/pages/${files[file].slice(0, -3)+".js"}`;
+        }
+        if (files[file].endsWith(".tsx")) {
+          if (!parser) parser = await Import("https://esm.sh/sucrase?target=node");
+          let code = parser.transform(fs.readFileSync(`${process.cwd()}/src/pages/${files[file]}`, "utf8"), { transforms: ["typescript", "jsx"] }).code;
+          if (!fs.existsSync(`${__dirname}/../storage/src/pages`)) fs.mkdirSync(`${__dirname}/../storage/src/pages`, { recursive: true });
+          fs.writeFileSync(`${__dirname}/../storage/src/pages/${files[file].slice(0, -4)+".js"}`, code);
+          savedAt = `${__dirname}/../storage/src/pages/${files[file].slice(0, -4)+".js"}`;
+        }
+          
+          //if it's a js file, we don't need to do anything
+          if(!savedAt) savedAt = `${process.platform == "win32" ? "file://" : `${process.cwd()}/src/pages/`}${files[file]}`
+        
+        results[file] = await Import(savedAt);
       }
       return Object.keys(results).map((route) => {
         let path = `/src/pages/${files[route]}`;
@@ -199,19 +227,20 @@ let initServer = async (port) => {
       router.get("/src", async (req, res, next) => {
         let file = useQuery(req).file;
         let filepath = file.replace("/src/pages/", "");
-        if (process.platform != "win32") {
-          filepath = `${process.cwd()}${file}`;
+        if(filepath.endsWith(".jsx")){
+          filepath = `${__dirname.slice(0,-7)}/storage/src/pages/${filepath.slice(0,-4)+".js"}`;
+        }
+        if(filepath.endsWith(".ts")){
+          filepath = `${__dirname.slice(0,-7)}/storage/src/pages/${filepath.slice(0,-3)+".js"}`;
+        }
+        if(filepath.endsWith(".tsx")){
+          filepath = `${__dirname.slice(0,-7)}/storage/src/pages/${filepath.slice(0,-4)+".js"}`;
         }
         if (fs.existsSync(filepath)) {
           try {
             //generate mime type
-            let mime = file.split(".").pop();
-            if (mime == "css") {
-              mime = "text/css";
-            }
-            if (mime == "js") {
-              mime = "application/javascript";
-            }
+            let mimeGen = await Import("https://esm.sh/mime-types?target=node");
+            let mime = mimeGen.lookup(filepath);
             //send mime type header
             appendHeader(res, "Content-Type", mime);
             appendHeader(res, "Cache-Control", "public, max-age=31536000"); // 1 year
@@ -259,7 +288,7 @@ let initServer = async (port) => {
       if (system == "react") {
         let react = fs.readFileSync(`${dir}/server/systems/react.js`, "utf-8") + `//# sourceURL=${dir}/server/systems/react.js`;
         //run code with new Function passing all the context
-        new Function("shouldMinify","cfg", "twind", "twindSSR", "html","consoleProdLog", "fs", "wasListening", "shouldCheckRoutes", "import_maps", "mode", "app", "router", "dir", "isProd", "readConfig", "createRouter", "createApp", "send", "setHeader", "appendHeader", "useQuery", "HTTPCat", "genPages", react)
+        new Function("shouldMinify", "cfg", "twind", "twindSSR", "html", "consoleProdLog", "fs", "wasListening", "shouldCheckRoutes", "import_maps", "mode", "app", "router", "dir", "isProd", "readConfig", "createRouter", "createApp", "send", "setHeader", "appendHeader", "useQuery", "HTTPCat", "genPages", react)
           (shouldMinify, cfg, twind, twindSSR, html, globalThis.consoleProdLog, fs, wasListening, shouldCheckRoutes, import_maps, mode, app, router, dir, isProd, readConfig, createRouter, createApp, send, setHeader, appendHeader, useQuery, HTTPCat, genPages);
       }
     };
@@ -269,7 +298,9 @@ let Listen = async (port) => {
   await initServer(port);
 }
 let polyfills = await Import("./polyfills.js");
-let { h, Component, render } = await Import("preact");
+globalThis.React = await Import("preact");
+let { h, Component, render } = React;
+
 let htm = await Import("htm");
 let html = htm.bind(h);
 polyfills = polyfills({

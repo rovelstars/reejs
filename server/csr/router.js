@@ -28,8 +28,8 @@ export default class Router {
             this.router.insert(route.path, { payload: route.file });
         });
     }
-    lookup(url) {
-        if(!this.router) this.loadRoutes();
+    async lookup(url) {
+        if(!this.router) await this.loadRoutes();
         return this.router.lookup(url);
     }
     onClick(e) {
