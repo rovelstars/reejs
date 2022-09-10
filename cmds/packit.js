@@ -154,5 +154,5 @@ cli.command("pack-it")
     
     fs.writeFileSync(`${process.cwd()}/.packit/__reejs/hash`, __hash, "utf-8");
     fs.writeFileSync(`${process.cwd()}/.packit/index.html`, html);
-    
+    fs.writeFileSync(`${process.cwd()}/.packit/404.html`, html);
   })
