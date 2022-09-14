@@ -29,7 +29,7 @@ npm install reejs
 
 ## Ree.js now supports These!
 
-Hybrid Rendering, Terser's Minifier, URL Imports, Typescript to Javascript (Useful for deno imports), Deno Polyfills, Import Maps, Module Alias, and much more!
+Hybrid Rendering, Terser's Minifier, URL Imports, JSX, Typescript to Javascript (Useful for deno imports), Deno Polyfills, Import Maps, Module Alias, and much more!
 
 > We are looking for contributors and docs maintainers!
 
@@ -53,4 +53,30 @@ let preact = await Import("https://esm.sh/preact");
 
 And the best part? You have the same codebase being delivered to your browser, and the browser is able to use it!
 
-### P.S. We are now shipping with REE() function that handles your errors. Because why not?
+# What about Optimizations? Why should I use Reejs which doesn't even have a build system?
+We heard you, and you need to hear us:
+> Next.js
+
+![](https://ren.reeee.ee/5Hw6_S950.png)
+
+> Ree.js
+
+![](https://ren.reeee.ee/5Hw7wCmif.png)
+
+This above is a screenshot of the performance of Ree.js, and the performance of Next.js. As you can see, Ree.js is faster than Next.js, and it doesn't even have a build system! This is because of the optimizations we have made to Ree.js, and the optimizations we are planning to make in the future.
+This is was ran on our https://github.com/rovelstars/rdl 's frontend folder, which uses Next.js
+FYI: the frontend project is not the highest quality website available, and it uses 2 fonts that are large enough in size + a HD background image as shown below + our logo in Navbar.
+
+I had to make the code compatible with Ree.js before continuing.
+
+## Lighthouse Score
+
+> Ree.js
+
+![](https://images-ext-1.discordapp.net/external/EP-3miP82b7yobr7OSu8-rEU_q3aI-bnsoQgfXz8hy8/https/ren.reeee.ee/ogp/5Hw5oXMNL.png?width=1200&height=489)
+
+> Next.js
+
+![](https://images-ext-1.discordapp.net/external/pgd7Pa8shHBaMG-K5zyWo0HkFBOL6O-deYhDfypk5QA/https/ren.reeee.ee/ogp/5Hw6DYAda.png?width=1200&height=496)
+
+Next is upto you on which next framework you choose!
