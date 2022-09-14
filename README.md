@@ -61,7 +61,7 @@ We heard you, and you need to hear us:
 
 > Ree.js
 
-![](https://ren.reeee.ee/5Hw7wCmif.png)
+![](https://images-ext-2.discordapp.net/external/u0qLvfWMcFE4aa9wzJID6AVDNjaUBU_ZRueC0OYTiiU/https/ren.reeee.ee/ogp/5HwgtOBjp.png)
 
 This above is a screenshot of the performance of Ree.js, and the performance of Next.js. As you can see, Ree.js is faster than Next.js, and it doesn't even have a build system! This is because of the optimizations we have made to Ree.js, and the optimizations we are planning to make in the future.
 This is was ran on our https://github.com/rovelstars/rdl 's frontend folder, which uses Next.js
