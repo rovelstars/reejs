@@ -5,7 +5,7 @@ import { fileURLToPath } from "./url.js";
 import { homedir, platform } from "./os.js";
 import { get } from "./https.js";
 const __filename = fileURLToPath(import.meta.url);
-let __dirname = path.dirname(__filename).split("/").slice(0, -1).join("/");
+globalThis.__dirname = path.dirname(__filename).split("/").slice(0, -1).join("/");
 const originalEmit = process?.emit;
 let home = homedir();
 let os = platform();
@@ -40,6 +40,7 @@ if (!globalThis.lexer) {
     globalThis.lexer = await import("./lexer.js");
     await lexer.init;
 }
+let parser;
 export default async function dl(url, local, _domain) {
     if (local) {
         __dirname = process.cwd() + "/.cache";
@@ -48,10 +49,16 @@ export default async function dl(url, local, _domain) {
         url = url.slice(4, -5);
     }
     let originalUrl = url.startsWith("/") ? `https://${_domain}${url}` : url;
+
+    if(originalUrl.includes("https://deno.land/x/") && (!globalThis.Deno)) {
+        console.log("[REEJS] Installing Polyfills for Deno.land/x");
+        globalThis.Deno = await dl("https://esm.sh/@deno/shim-deno?target=node&bundle");
+        globalThis.Deno = (await import(globalThis.Deno)).Deno;
+}
     let domain = _domain || url.split("/")[2];
     url = url.split("?")[0];
     let mod = url.startsWith("/") ? `https/${url}` : url.replace("https://", "https/");
-    let modPath = mod.split("/").slice(0, -1).join("/");
+
     if (!mod.endsWith(".js")) {
         mod += ".js";
     }
@@ -66,19 +73,26 @@ export default async function dl(url, local, _domain) {
     if (!originalUrl.startsWith("https://") && !originalUrl.startsWith("http://")) return originalUrl;
     console.log(`[DOWNLOAD] ⏬ ${originalUrl}`);
     let code = await _fetch(originalUrl).then(res => res.text());
+    if (originalUrl.split("?")[0].endsWith(".ts")) {
+        console.log("[TYPESCRIPT] ⚙️  Converting to JavaScript", originalUrl);
+        if (!parser) {
+            parser = await dl("https://esm.sh/sucrase?target=node");
+            parser = await import(parser);
+        }
+        code = parser.transform(code, { transforms: ["typescript"], production: true }).code;
+    }
     try {
         let [_imports] = await lexer.parse(code)
-        _imports = Array.from(new Set(_imports.map(i => i.n))).map(i => {
-            if (i.startsWith(".")) {
-                //Urlpath will change from https://esm.sh/hmm/ok to /hmm/
-                let urlPath = originalUrl.split("/").slice(3, -1).join("/");
-                i = i.replace("./", `/${urlPath}/`);
-            }
-            return i;
-        });
+        _imports = Array.from(new Set(_imports.map(i => i.n)));
         if (_imports.length > 0) {
             await Promise.all(_imports.map(async i => {
-                let to = await dl(i, local, domain);
+                let copy = i;
+                if (i.startsWith(".")) {
+                //Urlpath will change from https://esm.sh/hmm/ok to /hmm/
+                let urlPath = originalUrl.split("/").slice(3, -1).join("/");
+                copy = i.replace("./", `/${urlPath}/`);
+            }
+                let to = await (await dl(copy, local, domain)).replaceAll("//", "/");
                 code = code.replaceAll(i, to);
             }));
         }
@@ -87,13 +101,23 @@ export default async function dl(url, local, _domain) {
         console.log(e);
         throw new Error(`[DOWNLOAD] ⚠️  Failed to parse ${originalUrl}`);
     };
+    if (mod.endsWith(".ts")) mod = mod + ".js";
+    let modPath = mod.split("/").slice(0, -1).join("/");
+    if (originalUrl.includes("https://deno.land/x")) {
+        modPath = modPath.replace("https//x", "https/deno.land/x");
+        mod = mod.replace("https//x", "https/deno.land/x");
+    }
+    if (originalUrl.includes("https://esm.sh")) {
+        modPath = modPath.replace("https//v94", "https/esm.sh/v94");
+        mod = mod.replace("https//v94", "https/esm.sh/v94");
+    }
     if (!local) {
         if (!fs.existsSync(`${dir}/storage/local/${modPath}`)) {
             fs.mkdirSync(`${dir}/storage/local/${modPath}`, { recursive: true });
         }
         fs.writeFileSync(`${dir}/storage/local/${mod}`, code);
-        
-        if(os=="win32") return "file://"+encodeURI(dir)+"/storage/local/"+mod;
+
+        if (os == "win32") return "file://" + encodeURI(dir) + "/storage/local/" + mod;
         else return `${dir}/storage/local/${mod}`;
     }
     else {

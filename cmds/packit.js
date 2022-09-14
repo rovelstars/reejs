@@ -60,7 +60,7 @@ cli.command("pack-it")
         //the order of imports is tsx > ts > jsx > js
         if (files[file].endsWith(".jsx")) {
           if (!parser) parser = await Import("https://esm.sh/sucrase?target=node");
-          let code = parser.transform(fs.readFileSync(`${process.cwd()}/src/pages/${files[file]}`, "utf8"), { transforms: ["jsx"] }).code;
+          let code = parser.transform(fs.readFileSync(`${process.cwd()}/src/pages/${files[file]}`, "utf8"), { transforms: ["jsx"], production: true }).code;
           if (!fs.existsSync(`${process.cwd()}/.packit/src/pages`)) fs.mkdirSync(`${process.cwd()}/.packit/src/pages`, { recursive: true });
           fs.writeFileSync(`${process.cwd()}/.packit/src/pages/${files[file].slice(0,-4)+".js"}`, code);
           fs.rmSync(`${process.cwd()}/.packit/src/pages/${files[file]}`);
@@ -68,7 +68,7 @@ cli.command("pack-it")
         }
         if (files[file].endsWith(".ts")) {
           if (!parser) parser = await Import("https://esm.sh/sucrase?target=node");
-          let code = parser.transform(fs.readFileSync(`${process.cwd()}/src/pages/${files[file]}`, "utf8"), { transforms: ["typescript"] }).code;
+          let code = parser.transform(fs.readFileSync(`${process.cwd()}/src/pages/${files[file]}`, "utf8"), { transforms: ["typescript"], production: true }).code;
           if (!fs.existsSync(`${process.cwd()}/.packit/src/pages`)) fs.mkdirSync(`${process.cwd()}/.packit/src/pages`, { recursive: true });
           fs.writeFileSync(`${process.cwd()}/.packit/src/pages/${files[file].slice(0,-3)+".js"}`, code);
           fs.rmSync(`${process.cwd()}/.packit/src/pages/${files[file]}`);
@@ -76,7 +76,7 @@ cli.command("pack-it")
         }
         if (files[file].endsWith(".tsx")) {
           if (!parser) parser = await Import("https://esm.sh/sucrase?target=node");
-          let code = parser.transform(fs.readFileSync(`${process.cwd()}/src/pages/${files[file]}`, "utf8"), { transforms: ["typescript", "jsx"] }).code;
+          let code = parser.transform(fs.readFileSync(`${process.cwd()}/src/pages/${files[file]}`, "utf8"), { transforms: ["typescript", "jsx"], production: true }).code;
           if (!fs.existsSync(`${process.cwd()}/.packit/src/pages`)) fs.mkdirSync(`${process.cwd()}/.packit/src/pages`, { recursive: true });
           fs.writeFileSync(`${process.cwd()}/.packit/src/pages/${files[file].slice(0, -4)+".js"}`, code);
           fs.rmSync(`${process.cwd()}/.packit/src/pages/${files[file]}`);
@@ -116,7 +116,8 @@ cli.command("pack-it")
     
     //copy files recursively to .packit
     copySync(`${process.cwd()}/src`, `${process.cwd()}/.packit/src`);
-    if (fs.existsSync(`${process.cwd()}/assets`)) copySync(`${process.cwd()}/assets`, `${process.cwd()}/.packit/assets`);
+    fs.rmSync(`${process.cwd()}/.packit/src/pages/api`, { recursive: true });
+    if (fs.existsSync(`${process.cwd()}/assets`)) copySync(`${process.cwd()}/assets`, `${process.cwd()}/.packit/__reejs/serve`);
     copySync(`${process.cwd()}/import-maps.json`, `${process.cwd()}/.packit/import-maps.json`);
     copySync(`${process.cwd()}/.reecfg`, `${process.cwd()}/.packit/.reecfg`);
     copySync(`${dir}/server/csr`, `${process.cwd()}/.packit/__reejs/assets`);
@@ -127,7 +128,11 @@ cli.command("pack-it")
     let domains = Object.keys(import_maps).map(e => { let link = import_maps[e]; return link.split("/").slice(0, 3).join("/") });
     domains = Array.from(new Set(domains));
     let pages = await genPages();
-    let apis = await genPages(true);
+    let twConfig = {};
+  if (fs.existsSync(`${process.cwd()}/tailwind.config.js`)) {
+    console.log("[TWIND] Using tailwind.config.js to configure twind");
+    twConfig = await Import(`${process.cwd()}/tailwind.config.js`);
+  }
     let html = `<!DOCTYPE html>
           <html hidden>
           <head>
@@ -147,6 +152,7 @@ cli.command("pack-it")
           ree.hash="${__hash}";
           ree.import_maps=${JSON.stringify(import_maps)};
           ree.needsHydrate="true";
+          ree.twConfig=${JSON.stringify(twConfig)};
           ree.init({env:"prod",mode: "static",twind: true ,run: "none"});
           </script>
           </body>

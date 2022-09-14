@@ -6,12 +6,17 @@
     globalThis._fetch = await import("../utils/fetch.js");
     globalThis._fetch = globalThis._fetch.default;
   }
+  let decoderHTMLEntities = await Import("https://esm.sh/html-entities-decoder@1.0.2?target=node&bundle");
   let SSRrender;
   let shouldSSR = (mode == "ssr" || mode == "auto");
   let shouldCSR = (mode == "csr");
   if (shouldSSR) {
     SSRrender = await Import(import_maps["preact-ssr"]);
     console.log("Rendering with SSR Mode");
+  }
+  let twConfig = false;
+  if (fs.existsSync(`${process.cwd()}/tailwind.config.js`)) {
+    twConfig = true;
   }
   let pages = await genPages();
   let apis = await genPages(true);
@@ -85,7 +90,7 @@
                   resp = await SSRrender(html`<${page.component?.REE || page.component.ErrorRender} req=${req} e=${e} />`);
                 }
                 else {
-                  console.log(`[ERROR]`, e);
+                  console.log(`[ERROR]`,`${page.path} is causing: `, e);
                   return HTTPCat(500, e.message);
                 }
               }
@@ -98,6 +103,9 @@
             if (twindSSR) {
               cssTW = twind.extract(resp).css;
             }
+            let boody = page.component?.config?.body || ((p)=>{return html`<body><div id="app">${p.children}</div></body>`});
+            boody = await SSRrender(html`<${boody}>${resp}</${boody}>`);
+            boody = decoderHTMLEntities(boody.slice(0, -7));
             resp = `<!DOCTYPE html>
           <html ${(!twindSSR && page.component?.config?.twind) ? "hidden" : ""}>
           <head>
@@ -106,10 +114,7 @@
           ${headel}
           ${twindSSR ? `<style id="old-twind">${cssTW}</style>` : ""}
           </head>
-          <body>
-          <div id="app">
-          ${resp}
-          </div>
+          ${boody}
           <script src="/__reejs/assets/shell.js?h=${__hash}" type="module"></script>
           <script type="module">
           ree.routes=${JSON.stringify(pages)};
@@ -120,12 +125,13 @@
           ree.hash="${__hash}";
           ree.import_maps=${JSON.stringify(import_maps)};
           ree.needsHydrate=${page.component?.config?.hydrate ? "true" : "false"};
+          ree.twConfig=${twConfig};
           ${page.component?.config?.runBeforeInit ? `(${page.component.config.runBeforeInit.toString()})();` : ""}
           ree.init({env:"${isProd ? "prod" : "dev"}",mode: "ssr" ,twind: ${page.component?.config?.twind == true} ,run:\`${page.component?.config?.runAfterInit ? `(${page.component.config.runAfterInit.toString().replaceAll("`", "\\`").replaceAll("$", "\\$")})` : "none"}\`});
           </script>
           </body>
           </html>`;
-
+          resp = decoderHTMLEntities(resp);
           if(shouldMinify){
             let minifier = await Import("https://esm.sh/html-minifier-terser@7.0.0?target=node&bundle");
             let minified = await minifier.minify(resp,{

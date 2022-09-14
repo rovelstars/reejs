@@ -10,20 +10,23 @@ cli.command("init [url] [name]")
                 console.log(color("Initiating the current directory as a reejs directory.", "green"));
                 fs.writeFileSync(".reecfg",
                     `system: react
-# Can be react.
-env: dev
-# Can be dev / prod.
-check: true
-# Can be true / false. This visits all the routes and checks if they are valid.
-minify: false
-# Can be true / false. This minifies the assets and keeps them in memory.
-twindSSR: true
-# Can be true / false. This uses the twind SSR server to render the app.
-allowCaching: true
-# Globally enables / disables caching. This overrides the cache setting in the configs of pages.
-# Disable the above to use less memory. Enable it to be more performant.
-version: 0.0.1
-# Do not edit this!`, "utf8");
+                    # Can be react.
+                    mode: auto
+                    # Can be auto/ssr/csr
+                    env: dev
+                    # Can be dev / prod.
+                    check: true
+                    # Can be true / false. This visits all the routes and checks if they are valid.
+                    minify: false
+                    # Can be true / false. This minifies the assets and keeps them in memory.
+                    twindSSR: true
+                    # Can be true / false. This uses the twind SSR server to render the app.
+                    allowCaching: true
+                    # Globally enables / disables caching. This overrides the cache setting in the configs of pages.
+                    # Disable the above to use less memory. Enable it to be more performant.
+                    version: 0.0.1
+                    # Do not edit this!
+                    `, "utf8");
                 //create the src/pages and src/components
                 fs.mkdirSync("./src/pages/api", { recursive: true });
                 fs.mkdirSync("./src/components", { recursive: true });
@@ -52,7 +55,7 @@ if (ree.canRun){
     server.listen(parseInt(process.argv[2]) || 3000);
 }`, "utf8");
                 fs.writeFileSync("./import-maps.json",
-                    `{
+                    JSON.stringify({
                         "imports": {
                             "preact": "https://esm.sh/preact@10.10.0",
                             "react": "https://esm.sh/preact@10.10.0",
@@ -60,42 +63,42 @@ if (ree.canRun){
                             "@twind/cdn": "https://esm.run/@twind/cdn@next",
                             "@twind/preset-tailwind": "https://esm.run/@twind/preset-tailwind@next"
                         }
-                    }`, "utf8");
+                    }, null, 2), "utf8");
                 fs.writeFileSync("./server.import-maps.json",
-                    `{
-                    "imports": {
-                      "reejs": "./node_modules/reejs/server/index.js",
-                      "twind": "https://esm.sh/twind@next",
-                      "preact-ssr": "https://esm.sh/preact-render-to-string@5.2.0",
-                      "h3": "https://esm.sh/h3@0.7.16?target=node",
-                      "undici": "https://esm.sh/undici@5.10.0?target=node&bundle"
-                    }
-                  }`, "utf8");
+                    JSON.stringify({
+                        "imports": {
+                            "reejs": "./node_modules/reejs/server/index.js",
+                            "twind": "https://esm.sh/twind@next",
+                            "preact-ssr": "https://esm.sh/preact-render-to-string@5.2.0",
+                            "h3": "https://esm.sh/h3@0.7.16?target=node",
+                            "undici": "https://esm.sh/undici@5.10.0?target=node&bundle"
+                        }
+                    }, null, 2), "utf8");
                 if (!fs.existsSync("./package.json")) {
                     console.log(color("Generating package.json", "green"));
                     fs.writeFileSync("./package.json",
-                        `{
-    "name": "${process.cwd().split("/").pop()}",
-    "version": "1.0.0",
-    "description": "An App Made With Ree.js",
-    "main": "index.js",
-    "type": "module",
-    "scripts": {
-      "start": "node index.js"
-    }
-}`, "utf8");
+                        JSON.stringify({
+                            "name": "${process.cwd().split(" / ").pop()}",
+                            "version": "1.0.0",
+                            "description": "An App Made With Ree.js",
+                            "main": "index.js",
+                            "type": "module",
+                            "scripts": {
+                                "start": "node index.js"
+                            }
+                        }, null, 2), "utf8");
                 }
                 else {
-                    let packageJson = JSON.parse(fs.readFileSync("./package.json", "utf8"));
+                    console.log("Reading package.json", `${process.cwd()}/package.json`);
+                    let packageJson = JSON.parse(fs.readFileSync(`${process.cwd()}/package.json`, "utf8"));
                     if (packageJson.type != "module") {
                         packageJson.type = "module";
                     }
                     if (!packageJson.scripts.start) {
                         packageJson.scripts.start = "node index.js";
                     }
-                    fs.writeFileSync("./package.json", JSON.stringify(packageJson, null, 2), "utf8");
+                    fs.writeFileSync(`${process.cwd()}/package.json`, JSON.stringify(packageJson, null, 2), "utf8");
                 }
-                execSync("reejs i", { stdio: "inherit" });
                 //check if node_modules is present
                 if (!fs.existsSync(`${process.cwd()}/node_modules`)) {
                     //create node_modules
@@ -106,6 +109,7 @@ if (ree.canRun){
                     fs.symlinkSync(`${dir}`, `${process.cwd()}/node_modules/reejs`);
                     console.log(`[REE.JS] Linked Reejs:`, dir, "to", `${process.cwd()}/node_modules/reejs`);
                 }
+                execSync("reejs i", { stdio: "inherit", cwd: process.cwd() });
                 fs.writeFileSync(`${process.cwd()}/package.json`, JSON.stringify(pkg));
                 return;
             }

@@ -40,6 +40,26 @@ function getImportMap(name) {
 }
 
 export default async (specifier) => {
+    if(specifier.startsWith("src") || specifier.startsWith("/src")){
+        //return the js file from storage
+        if(!specifier.startsWith("/")) specifier= "/" + specifier;
+        let mod = await import(`../storage${specifier.slice(0, specifier.lastIndexOf("."))}.js`);
+        try {
+            let namespace = {};
+            let keys = Object.keys(mod).filter(k => k !== "default");
+            if (Object.keys(mod).includes("default")) {
+                namespace = mod.default;
+            }
+            keys.forEach(k => {
+                namespace[k] = mod[k];
+            });
+            namespace.default = mod.default;
+            return namespace;
+        }
+        catch (e) {
+            return mod;
+        }
+    }
     specifier = getImportMap(specifier);
     if (specifier.startsWith("https://") || specifier.startsWith("http://")) {
         let dl = await import("../utils/urlimports.js");

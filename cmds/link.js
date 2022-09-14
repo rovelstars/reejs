@@ -1,6 +1,6 @@
 cli
   .command("link")
-  .describe(`Link ${color("assets/libs", "blueBright")} folder!`)
+  .describe(`Link ${color("reejs", "blueBright")} folder!`)
   .action(() => { 
     //check if node_modules is present
             if (!fs.existsSync(`${process.cwd()}/node_modules`)) {

@@ -14,6 +14,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 import { homedir, platform } from "../utils/os.js";
 import HTTPCat from "./statusCats.js";
+let mimeGen;
 let app;
 let cfg = fs.readFileSync(`${process.cwd()}/.reecfg`, "utf-8").split("\n");
 //generate hash that is unique everytime
@@ -32,10 +33,21 @@ if (twindSSR) {
   console.log("[TWIND] Enabled!");
   twind = await Import(import_maps["twind"]);
   let presetTW = await Import(import_maps["@twind/preset-tailwind"]);
+  let twConfig = {};
+  if (fs.existsSync(`${process.cwd()}/tailwind.config.js`)) {
+    console.log("[TWIND] Using tailwind.config.js to configure twind");
+    twConfig = await Import(`${process.cwd()}/tailwind.config.js`);
+  }
   twind.setup({
     /* config */
-    presets: [presetTW]
+    presets: [presetTW],
+    theme: { ...twConfig.theme },
+    darkMode: twConfig.darkMode,
   });
+}
+if (!globalThis.lexer) {
+  globalThis.lexer = await import("../utils/lexer.js");
+  await lexer.init;
 }
 globalThis.__hash = hash();
 let initServer = async (port) => {
@@ -62,8 +74,8 @@ let initServer = async (port) => {
       return files.reduce((a, f) => a.concat(f), []);
     }
     let genPages = async (api = false) => {
-      let files = await getFiles(`${process.cwd()}/src/pages`);
-      files = files.map((f) => f.replace(`${process.cwd()}/src/pages/`, "")).filter((f) => f.endsWith(".js") || f.endsWith(".jsx") || f.endsWith(".ts") || f.endsWith(".tsx"));
+      let files = await getFiles(`${process.cwd()}/src/`);
+      files = files.map((f) => f.replace(`${process.cwd()}/src/`, "")).filter((f) => f.endsWith(".js") || f.endsWith(".jsx") || f.endsWith(".ts") || f.endsWith(".tsx"));
       if (api) {
         files = files.filter((f) => f.startsWith("api/"));
       }
@@ -74,36 +86,33 @@ let initServer = async (port) => {
       let parser;
       for (let file in files) {
         let savedAt;
-        //the order of imports is tsx > ts > jsx > js
+        if (!fs.existsSync(`${__dirname}/../storage/src/${files[file]}`)) {
+          fs.mkdirSync(`${__dirname}/../storage/src/${files[file].slice(0, files[file].lastIndexOf("/"))}`, { recursive: true });
+        }
         if (files[file].endsWith(".jsx")) {
           if (!parser) parser = await Import("https://esm.sh/sucrase?target=node");
-          let code = parser.transform(fs.readFileSync(`${process.cwd()}/src/pages/${files[file]}`, "utf8"), { transforms: ["jsx"] }).code;
-          if (!fs.existsSync(`${__dirname}/../storage/src/pages`)) fs.mkdirSync(`${__dirname}/../storage/src/pages`, { recursive: true });
-          fs.writeFileSync(`${__dirname}/../storage/src/pages/${files[file].slice(0,-4)+".js"}`, code);
-          savedAt = `${__dirname}/../storage/src/pages/${files[file].slice(0, -4)+".js"}`;
+          let code = parser.transform(fs.readFileSync(`${process.cwd()}/src/${files[file]}`, "utf8"), { transforms: ["jsx"], production: true }).code;
+          fs.writeFileSync(`${__dirname}/../storage/src/${files[file].slice(0, -4) + ".js"}`, code);
+          savedAt = `${__dirname}/../storage/src/${files[file].slice(0, -4) + ".js"}`;
         }
         if (files[file].endsWith(".ts")) {
           if (!parser) parser = await Import("https://esm.sh/sucrase?target=node");
-          let code = parser.transform(fs.readFileSync(`${process.cwd()}/src/pages/${files[file]}`, "utf8"), { transforms: ["typescript"] }).code;
-          if (!fs.existsSync(`${__dirname}/../storage/src/pages`)) fs.mkdirSync(`${__dirname}/../storage/src/pages`, { recursive: true });
-          fs.writeFileSync(`${__dirname}/../storage/src/pages/${files[file].slice(0,-3)+".js"}`, code);
-          savedAt = `${__dirname}/../storage/src/pages/${files[file].slice(0, -3)+".js"}`;
+          let code = parser.transform(fs.readFileSync(`${process.cwd()}/src/${files[file]}`, "utf8"), { transforms: ["typescript"], production: true }).code;
+          fs.writeFileSync(`${__dirname}/../storage/src/${files[file].slice(0, -3) + ".js"}`, code);
+          savedAt = `${__dirname}/../storage/src/${files[file].slice(0, -3) + ".js"}`;
         }
         if (files[file].endsWith(".tsx")) {
           if (!parser) parser = await Import("https://esm.sh/sucrase?target=node");
-          let code = parser.transform(fs.readFileSync(`${process.cwd()}/src/pages/${files[file]}`, "utf8"), { transforms: ["typescript", "jsx"] }).code;
-          if (!fs.existsSync(`${__dirname}/../storage/src/pages`)) fs.mkdirSync(`${__dirname}/../storage/src/pages`, { recursive: true });
-          fs.writeFileSync(`${__dirname}/../storage/src/pages/${files[file].slice(0, -4)+".js"}`, code);
-          savedAt = `${__dirname}/../storage/src/pages/${files[file].slice(0, -4)+".js"}`;
+          let code = parser.transform(fs.readFileSync(`${process.cwd()}/src/${files[file]}`, "utf8"), { transforms: ["typescript", "jsx"], production: true }).code;
+          fs.writeFileSync(`${__dirname}/../storage/src/${files[file].slice(0, -4) + ".js"}`, code);
+          savedAt = `${__dirname}/../storage/src/${files[file].slice(0, -4) + ".js"}`;
         }
-          
-          //if it's a js file, we don't need to do anything
-          if(!savedAt) savedAt = `${process.platform == "win32" ? "file://" : `${process.cwd()}/src/pages/`}${files[file]}`
-        
+        //if it's a js file, we don't need to do anything
+        if (!savedAt) savedAt = `${process.platform == "win32" ? "file://" : `${process.cwd()}/src/`}${files[file]}`
         results[file] = await Import(savedAt);
       }
-      return Object.keys(results).map((route) => {
-        let path = `/src/pages/${files[route]}`;
+      return Object.keys(results).filter(r=>{return (files[r].startsWith("pages/") || files[r].startsWith("api/"))}).map((route) => {
+        let path = `/src/${files[route]}`;
         let pathReg = path
           .replace(/\/src\/pages|index|\.tsx|\.jsx|\.ts|\.js$/g, "");
         pathReg = pathReg
@@ -176,19 +185,40 @@ let initServer = async (port) => {
         return __hash;
       })
       let cacheAssets = [];
+      router.get("/serve/**", async (req, res, next) => {
+        let file = req.url.replaceAll("/../", "/").replace("/serve/", "").split("?")[0].split("&")[0];
+        let filepath = `${process.cwd()}/assets/${file}`;
+        if(file=="tailwind.config.js"){
+          filepath = `${process.cwd()}/tailwind.config.js`;
+        }
+        if (!mimeGen) mimeGen = await Import("https://esm.sh/mime-types?target=node");
+        let mime = mimeGen.lookup(filepath);
+        appendHeader(res, "Content-Type", mime);
+        appendHeader(res, "Cache-Control", "public, max-age=31536000");
+        if (cacheAssets.findIndex((d) => { return d.filepath == filepath }) != -1) {
+          return send(res, cacheAssets[cacheAssets.findIndex((d) => { return d.filepath == filepath })].code);
+        }
+        if (fs.existsSync(filepath)) {
+          let code = fs.readFileSync(filepath, (mime == "text/javascript" || mime == "text/css") ? "utf8" : null);
+          if (shouldMinify && mime == "text/javascript") {
+            let minified = await terser.minify(code);
+            code = minified.code;
+          }
+          cacheAssets.push({ filepath, code });
+          return send(res, code);
+        }
+        else{
+          console.log("File not found", filepath);
+          next();
+        }
+      });
       router.get("/assets/**", async (req, res, next) => {
         let file = req.url.replace("/assets/", "").split("?")[0];
         let filepath = `${dir}/server/csr/${file}`;
         if (fs.existsSync(filepath)) {
           try {
-            //generate mime type
-            let mime = file.split(".").pop();
-            if (mime == "css") {
-              mime = "text/css";
-            }
-            if (mime == "js") {
-              mime = "application/javascript";
-            }
+            if (!mimeGen) mimeGen = await Import("https://esm.sh/mime-types?target=node");
+            let mime = mimeGen.lookup(filepath);
             //send mime type header
             appendHeader(res, "Content-Type", mime);
             appendHeader(res, "Cache-Control", "public, max-age=31536000"); // 1 year
@@ -226,20 +256,20 @@ let initServer = async (port) => {
       let cacheFiles = [];
       router.get("/src", async (req, res, next) => {
         let file = useQuery(req).file;
-        let filepath = file.replace("/src/pages/", "");
-        if(filepath.endsWith(".jsx")){
-          filepath = `${__dirname.slice(0,-7)}/storage/src/pages/${filepath.slice(0,-4)+".js"}`;
+        let filepath = file.replace("/src/", "");
+        if (filepath.endsWith(".jsx")) {
+          filepath = `${__dirname.slice(0, -7)}/storage/src/${filepath.slice(0, -4) + ".js"}`;
         }
-        if(filepath.endsWith(".ts")){
-          filepath = `${__dirname.slice(0,-7)}/storage/src/pages/${filepath.slice(0,-3)+".js"}`;
+        if (filepath.endsWith(".ts")) {
+          filepath = `${__dirname.slice(0, -7)}/storage/src/${filepath.slice(0, -3) + ".js"}`;
         }
-        if(filepath.endsWith(".tsx")){
-          filepath = `${__dirname.slice(0,-7)}/storage/src/pages/${filepath.slice(0,-4)+".js"}`;
+        if (filepath.endsWith(".tsx")) {
+          filepath = `${__dirname.slice(0, -7)}/storage/src/${filepath.slice(0, -4) + ".js"}`;
         }
         if (fs.existsSync(filepath)) {
           try {
             //generate mime type
-            let mimeGen = await Import("https://esm.sh/mime-types?target=node");
+            if (!mimeGen) mimeGen = await Import("https://esm.sh/mime-types?target=node");
             let mime = mimeGen.lookup(filepath);
             //send mime type header
             appendHeader(res, "Content-Type", mime);

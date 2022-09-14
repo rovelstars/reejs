@@ -30,12 +30,13 @@ cli.command("add [name]")
                 let name = import_map.imports[_name];
                 let importer = await import("./utils/urlimports.js");
                 let dir = await importer.default(name, opts.local);
+                if(dir.startsWith("./node_modules/")) return;
                 pkg.dependencies[_name] = "file:" + (opts.local ?
                     "./.cache/storage/local" + dir.split("/.cache/storage/local")[1]
                     : dir.split("/").slice(0, -1).join("/"));
                 if (!fs.existsSync(`${process.cwd()}/node_modules/${_name}`))
                     fs.mkdirSync(`${process.cwd()}/node_modules/${_name}`, { recursive: true });
-                spawn("ln", ["-s", dir, `${process.cwd()}/node_modules/${_name}/index.js`]);
+                if(!dir.startsWith("./")) spawn("ln", ["-s", dir, `${process.cwd()}/node_modules/${_name}/index.js`]);
                 fs.writeFileSync(`${dir.split("/").slice(0, -1).join("/")}/package.json`, JSON.stringify({
                     main: dir.split("/")[dir.split("/").length - 1],
                     name: _name,

@@ -1,2 +1,3 @@
 import Form from "./form.js";
-export default {Form};
+import Image from "./image.js";
+export {Form, Image};

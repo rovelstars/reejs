@@ -44,14 +44,35 @@ export default class Router {
         if (!foundRoute) foundRoute = this.router.lookup(c.next.replace(location.origin, "").slice(0, -1));
         if (foundRoute) {
             let page = await Import(foundRoute.payload);
+            let lastPage = await Import(ree.pageUrl);
+            if(page?.config?.body && (lastPage?.config?.body!=page?.config?.body)) {
+                let vbody = document.createElement("body");
+                ree.reeact.render(ree.html`<${page.config.body} />`, vbody);
+                ree.vbody = vbody;
+                document.body.outerHTML = vbody.outerHTML;
+            }
+            if(!page?.config?.body){
+                //make default body
+                document.body.outerHTML = `<body><div id="app"></div></body>`;
+            }
             ree.pageUrl = foundRoute.payload;
+            $("html").setAttribute("hidden","");
+            $("#app").innerHTML="";
+            try{
             ree.reeact.render(ree.html`<${page.default} />`, $("#app"));
+            }catch(e){
+                console.log(e);
+                location.reload(); // the error if there, tells us that render is not defined, reload the page
+            }
             if (!$("head style[data-twind]") && page.config?.twind) {
                 logger("Starting TWIND", "DEBUG");
                 ree.twind = await Import("@twind/cdn");
                 ree.twind.setup();
             }
+            [...$$("head")].filter(e=>e.outerHTML=="<head></head>").forEach(e=>e.remove())
             $("head style#old-twind")?.remove();
+            $("html").removeAttribute("hidden");
+            if(page?.config?.runAfterInit) await page?.config?.runAfterInit();
             $$("a").forEach(a => { a.addEventListener('click', (e) => this.onClick(e)) });
             if(page.head){
                 let newHead = document.createElement("head");
@@ -176,5 +197,9 @@ export default class Router {
         links.forEach(link => {
             observer.observe(link);
         });
+    }
+    load(url){
+        this.addToHistory(url);
+        this.reconstructDOM({next: url});
     }
 }

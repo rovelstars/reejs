@@ -5,9 +5,8 @@ if (canRun) {
     globalThis.Import = Import;
     server = await import("./server.js");
     server = server.default;
-    components = await import("./components/index.js");
-    components = components.default;
+    server.polyfills.components = await import("./components/index.js");
 }
 import readConfig from "./readConfig.js";
 
-export default {canRun, Import, readConfig, server, IS_BROWSER: false, components};
+export default {canRun, Import, readConfig, server, IS_BROWSER: false};
