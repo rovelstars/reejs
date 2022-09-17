@@ -6,6 +6,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 import stdNodeMappings from "./deno/stdNodeMappings.js";
 import readConfig from "./readConfig.js";
+import { platform } from "../utils/os.js";
 
 if (!process.env.REEJS_CUSTOM_DIR) {
     process.env.REEJS_CUSTOM_DIR = __dirname.split("/").slice(0, -1).join("/");
@@ -39,11 +40,11 @@ function getImportMap(name) {
     return name;
 }
 
-export default async (specifier) => {
+export default async (specifier, opts) => {
     if(specifier.startsWith("src") || specifier.startsWith("/src")){
         //return the js file from storage
         if(!specifier.startsWith("/")) specifier= "/" + specifier;
-        let mod = await import(`../storage${specifier.slice(0, specifier.lastIndexOf("."))}.js`);
+        let mod = await import(`../storage${specifier.slice(0, specifier.lastIndexOf("."))}.js`,opts);
         try {
             let namespace = {};
             let keys = Object.keys(mod).filter(k => k !== "default");
@@ -64,7 +65,8 @@ export default async (specifier) => {
     if (specifier.startsWith("https://") || specifier.startsWith("http://")) {
         let dl = await import("../utils/urlimports.js");
         let savedAt = await dl.default(specifier);
-        let mod = await import(savedAt);
+        if(platform=="win32") savedAt = "file:///" + savedAt;
+        let mod = await import(savedAt, opts);
         try {
             let namespace = {};
             let keys = Object.keys(mod).filter(k => k !== "default");
@@ -100,5 +102,12 @@ export default async (specifier) => {
         catch (e) {
             return mod;
         }
+    }
+}
+export async function initDeno(){
+    if (typeof Deno == "undefined") {
+        let dl = await import("../utils/urlimports.js");
+        dl = dl.default;
+        globalThis.Deno = (await import(await dl("https://esm.sh/@deno/shim-deno?target=node&bundle"))).Deno;
     }
 }

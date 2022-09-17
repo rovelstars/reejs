@@ -63,10 +63,7 @@ function downloadFile(url, dest, cb) {
     });
   });
 }
-if (!fs.existsSync(`${dir}/storage/features`)) {
-  fs.writeFileSync(`${dir}/storage/features`, "", "utf8");
-}
-let featuresList = fs.readFileSync(`${dir}/storage/features`, "utf8").split("\n").filter((e) => { return e != "" });
+
 const cli = sade("reejs");
 cli.version(pkg.version);
 
@@ -79,8 +76,8 @@ cmds
     const code = fs.readFileSync(file, "utf8") + `//# sourceURL=${file}`;
     //run code with Function
     new Function(
-      "__dirname","Import","resolve", "promisify", "pkg", "cli", "color", "fs", "path", "exec", "spawn", "execSync", "readConfig", "featuresList", "dir", "downloadFile", "isReejsFolder", "logger", "platform", "homedir", "home", "homewin", code)
-      (__dirname, Import, resolve, promisify, pkg, cli, color, fs, path, exec, spawn, execSync, readConfig, featuresList, dir, downloadFile, isReejsFolder, logger, platform, homedir, home, homewin);
+      "__dirname","Import","resolve", "promisify", "pkg", "cli", "color", "fs", "path", "exec", "spawn", "execSync", "readConfig", "dir", "downloadFile", "isReejsFolder", "logger", "platform", "homedir", "home", "homewin", code)
+      (__dirname, Import, resolve, promisify, pkg, cli, color, fs, path, exec, spawn, execSync, readConfig, dir, downloadFile, isReejsFolder, logger, platform, homedir, home, homewin);
   });
 
 cli.parse(process.argv);

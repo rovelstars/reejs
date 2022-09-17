@@ -83,15 +83,16 @@ export default async function dl(url, local, _domain) {
     }
     try {
         let [_imports] = await lexer.parse(code)
-        _imports = Array.from(new Set(_imports.map(i => i.n)));
+        _imports = Array.from(new Set(_imports.map(i => i.n))).filter(i=>!!i);
         if (_imports.length > 0) {
             await Promise.all(_imports.map(async i => {
                 let copy = i;
                 if (i.startsWith(".")) {
                 //Urlpath will change from https://esm.sh/hmm/ok to /hmm/
-                let urlPath = originalUrl.split("/").slice(3, -1).join("/");
-                copy = i.replace("./", `/${urlPath}/`);
+                let urlPath = new URL(i, originalUrl).href;
+                copy = urlPath;
             }
+            if(i.endsWith(".json.js")) i = i.slice(0, -3);
                 let to = await (await dl(copy, local, domain)).replaceAll("//", "/");
                 code = code.replaceAll(i, to);
             }));
@@ -102,15 +103,8 @@ export default async function dl(url, local, _domain) {
         throw new Error(`[DOWNLOAD] ⚠️  Failed to parse ${originalUrl}`);
     };
     if (mod.endsWith(".ts")) mod = mod + ".js";
+    if(mod.endsWith(".json.js")) mod = mod.slice(0, -3);
     let modPath = mod.split("/").slice(0, -1).join("/");
-    if (originalUrl.includes("https://deno.land/x")) {
-        modPath = modPath.replace("https//x", "https/deno.land/x");
-        mod = mod.replace("https//x", "https/deno.land/x");
-    }
-    if (originalUrl.includes("https://esm.sh")) {
-        modPath = modPath.replace("https//v94", "https/esm.sh/v94");
-        mod = mod.replace("https//v94", "https/esm.sh/v94");
-    }
     if (!local) {
         if (!fs.existsSync(`${dir}/storage/local/${modPath}`)) {
             fs.mkdirSync(`${dir}/storage/local/${modPath}`, { recursive: true });

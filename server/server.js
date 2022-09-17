@@ -41,8 +41,8 @@ if (twindSSR) {
   twind.setup({
     /* config */
     presets: [presetTW],
-    theme: { ...twConfig.theme },
-    darkMode: twConfig.darkMode,
+    theme: { ...twConfig?.theme },
+    darkMode: twConfig?.darkMode,
   });
 }
 if (!globalThis.lexer) {
@@ -75,7 +75,7 @@ let initServer = async (port) => {
     }
     let genPages = async (api = false) => {
       let files = await getFiles(`${process.cwd()}/src/`);
-      files = files.map((f) => f.replace(`${process.cwd()}/src/`, "")).filter((f) => f.endsWith(".js") || f.endsWith(".jsx") || f.endsWith(".ts") || f.endsWith(".tsx"));
+      files = files.map((f) => f.replace(`${process.cwd()}/src/`, "")).filter((f) => f.endsWith(".js") || f.endsWith(".jsx") || f.endsWith(".ts") || f.endsWith(".tsx") || f.endsWith(".md"));
       if (api) {
         files = files.filter((f) => f.startsWith("api/"));
       }
@@ -84,10 +84,27 @@ let initServer = async (port) => {
       }
       let results = [];
       let parser;
+      let mdxParser;
+      let gfm;
       for (let file in files) {
+        console.log(files[file]);
         let savedAt;
         if (!fs.existsSync(`${__dirname}/../storage/src/${files[file]}`)) {
           fs.mkdirSync(`${__dirname}/../storage/src/${files[file].slice(0, files[file].lastIndexOf("/"))}`, { recursive: true });
+        }
+        if (files[file].endsWith(".md")) {
+          if (!gfm) {
+            gfm = await Import(import_maps["remark-gfm"] || "https://esm.sh/remark-gfm?target=node&bundle");
+          }
+          if (!mdxParser) {
+            mdxParser = await Import(import_maps["@mdx-js/mdx"] || "https://esm.sh/@mdx-js/mdx@2.1.3?target=node&bundle");
+          }
+          let code = fs.readFileSync(`${process.cwd()}/src/${files[file]}`, "utf-8");
+          code = String(await mdxParser.compile(code, { useDynamicImport: true, remarkPlugins: [gfm] }));
+          code = `let {Fragment: _Fragment, jsx: _jsx, jsxs: _jsxs} = await Import("https://esm.sh/preact/jsx-runtime.js");\n`
+            + code.split("\n").slice(2).join("\n");
+          fs.writeFileSync(`${__dirname}/../storage/src/${files[file].slice(0, -3) + ".js"}`, code);
+          savedAt = `${__dirname}/../storage/src/${files[file].slice(0, -3) + ".js"}`;
         }
         if (files[file].endsWith(".jsx")) {
           if (!parser) parser = await Import("https://esm.sh/sucrase?target=node");
@@ -111,7 +128,7 @@ let initServer = async (port) => {
         if (!savedAt) savedAt = `${process.platform == "win32" ? "file://" : `${process.cwd()}/src/`}${files[file]}`
         results[file] = await Import(savedAt);
       }
-      return Object.keys(results).filter(r=>{return (files[r].startsWith("pages/") || files[r].startsWith("api/"))}).map((route) => {
+      return Object.keys(results).filter(r => { return (files[r].startsWith("pages/") || files[r].startsWith("api/")) }).map((route) => {
         let path = `/src/${files[route]}`;
         let pathReg = path
           .replace(/\/src\/pages|index|\.tsx|\.jsx|\.ts|\.js$/g, "");
@@ -188,7 +205,7 @@ let initServer = async (port) => {
       router.get("/serve/**", async (req, res, next) => {
         let file = req.url.replaceAll("/../", "/").replace("/serve/", "").split("?")[0].split("&")[0];
         let filepath = `${process.cwd()}/assets/${file}`;
-        if(file=="tailwind.config.js"){
+        if (file == "tailwind.config.js") {
           filepath = `${process.cwd()}/tailwind.config.js`;
         }
         if (!mimeGen) mimeGen = await Import("https://esm.sh/mime-types?target=node");
@@ -207,7 +224,7 @@ let initServer = async (port) => {
           cacheAssets.push({ filepath, code });
           return send(res, code);
         }
-        else{
+        else {
           console.log("File not found", filepath);
           next();
         }
@@ -257,6 +274,9 @@ let initServer = async (port) => {
       router.get("/src", async (req, res, next) => {
         let file = useQuery(req).file;
         let filepath = file.replace("/src/", "");
+        if (filepath.endsWith(".md")) {
+          filepath = `${__dirname.slice(0, -7)}/storage/src/${filepath.slice(0, -3) + ".js"}`;
+        }
         if (filepath.endsWith(".jsx")) {
           filepath = `${__dirname.slice(0, -7)}/storage/src/${filepath.slice(0, -4) + ".js"}`;
         }

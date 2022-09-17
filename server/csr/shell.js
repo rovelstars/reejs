@@ -1,8 +1,8 @@
 window.ree = {
     IS_BROWSER: true,
 };
-
-window.Import = async function (url) {
+if(!window.Import) console.log("Adding Import");
+if(!window.Import) window.Import = async function (url) {
     window.__USE_STATIC = (ree.opts.mode == "static");
     if(url.startsWith("src/")) url= "/"+url;
     if (url.startsWith("/src") && !__USE_STATIC) {
@@ -124,7 +124,6 @@ ree.init = async function (options) {
                     }, 2000);
                 }
             } catch (e) {
-                logger("Error getting hash, is server offline?", "RELOADER");
             }
         }, 5000);
     }

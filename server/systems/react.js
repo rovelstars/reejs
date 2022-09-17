@@ -24,15 +24,15 @@
   let cachedPages = [];
   if (shouldCSR) {
     console.log("Rendering with CSR Mode");
-    let domains = Object.keys(import_maps).map(e=>{let link = import_maps[e];return link.split("/").slice(0, 3).join("/")});
+    let domains = Object.keys(import_maps).map(e => { let link = import_maps[e]; return link.split("/").slice(0, 3).join("/") });
     domains = Array.from(new Set(domains));
-    router.get("/**",async(req,res)=>{
+    router.get("/**", async (req, res) => {
       return `<!DOCTYPE html>
       <html hidden>
       <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      ${(domains.length>0)?domains.map(e=>`<link rel="preconnect" href="${e}">`).join("\n"):""}
+      ${(domains.length > 0) ? domains.map(e => `<link rel="preconnect" href="${e}">`).join("\n") : ""}
       </head>
       <body>
       <div id="app">
@@ -90,22 +90,42 @@
                   resp = await SSRrender(html`<${page.component?.REE || page.component.ErrorRender} req=${req} e=${e} />`);
                 }
                 else {
-                  console.log(`[ERROR]`,`${page.path} is causing: `, e);
+                  console.log(`[ERROR]`, `${page.path} is causing: `, e);
                   return HTTPCat(500, e.message);
                 }
               }
             }
+            let boody = page.component?.config?.body || ((p) => {
+              return html`<body>
+  <div id="app">${p.children}</div>
+</body>` });
+            boody = await SSRrender(html`<${boody}>${resp}</${boody}>`);
+            boody = decoderHTMLEntities(boody);
             let headel = "";
             if (page.component.head) {
               headel = await SSRrender(html`<${page.component.head} />`);
             }
+            if (page?.config?.serverHydrate) {
+              let dom = await Import("https://esm.sh/happy-dom?target=node&bundle");
+              let { Window } = dom;
+              let _window = new Window();
+              let _document = _window.document;
+              _document.querySelector("html").outerHTML = boody;
+              let $ = function (selector) {
+                return _document.querySelector(selector);
+              }
+              let $$ = function (selector) {
+                return _document.querySelectorAll(selector);
+              }
+              _window.ree = ree;
+              _window.eval(page?.config?.serverHydrate);
+              boody = $("body").outerHTML.slice(0, -7);
+            }
             let cssTW = "";
             if (twindSSR) {
               cssTW = twind.extract(resp).css;
+              cssTW = cssTW.replaceAll("background-clip:text", "background-clip:text;-webkit-background-clip:text");
             }
-            let boody = page.component?.config?.body || ((p)=>{return html`<body><div id="app">${p.children}</div></body>`});
-            boody = await SSRrender(html`<${boody}>${resp}</${boody}>`);
-            boody = decoderHTMLEntities(boody.slice(0, -7));
             resp = `<!DOCTYPE html>
           <html ${(!twindSSR && page.component?.config?.twind) ? "hidden" : ""}>
           <head>
@@ -131,22 +151,22 @@
           </script>
           </body>
           </html>`;
-          resp = decoderHTMLEntities(resp);
-          if(shouldMinify){
-            let minifier = await Import("https://esm.sh/html-minifier-terser@7.0.0?target=node&bundle");
-            let minified = await minifier.minify(resp,{
-              removeAttributeQuotes: true,
-              removeComments: true,
-              removeCommentsFromCDATA: true,
-              removeCDATASectionsFromCDATA: true,
-              collapseWhitespace: true,
-              collapseBooleanAttributes: true,
-              removeAttributeQuotes: true,
-              removeEmptyAttributes: true
-            });
-            console.log(`[SERVER] Minified ${page.path} from ${resp.length/1000} to ${minified.length/1000} kb, saved ${(resp.length - minified.length)/1000} kb!`);
-            resp = minified;
-          }
+            resp = decoderHTMLEntities(resp);
+            if (shouldMinify) {
+              let minifier = await Import("https://esm.sh/html-minifier-terser@7.0.0?target=node&bundle");
+              let minified = await minifier.minify(resp, {
+                removeAttributeQuotes: true,
+                removeComments: true,
+                removeCommentsFromCDATA: true,
+                removeCDATASectionsFromCDATA: true,
+                collapseWhitespace: true,
+                collapseBooleanAttributes: true,
+                removeAttributeQuotes: true,
+                removeEmptyAttributes: true
+              });
+              console.log(`[SERVER] Minified ${page.path} from ${resp.length / 1000} to ${minified.length / 1000} kb, saved ${(resp.length - minified.length) / 1000} kb!`);
+              resp = minified;
+            }
             //save to cache
             if (page.component?.config?.cache && readConfig(cfg, "allowCaching") == "true") {
               cachedPages.push({ path: req.url, resp });
