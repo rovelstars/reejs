@@ -1,0 +1,39 @@
+import env, { projectDir } from "./env.js";
+import NativeImport from "./nativeImport.js";
+import DynamicImport from "./dynamicImport.js";
+import dl from "./URLImportInstaller.js";
+
+if (env == "browser") {
+  throw new Error(
+    "You cannot consume URLImport.js in the browser/edge. Use import maps and link url deps to npm package names."
+  );
+}
+let fs = await NativeImport("node:fs");
+let path = await NativeImport("node:path");
+
+export default async function URLImport(url) {
+  url = new URL(url);
+  if (url.protocol == "node:") {
+    return await NativeImport(url.pathname);
+  }
+  if (url.protocol == "http:" || url.protocol == "https:") {
+    return DynamicImport(await import(await dl(url.href)));
+  }
+  throw new Error("Invalid URL");
+}
+
+export async function Import(
+  name,
+  opts = {
+    host: "esm.sh",
+    target: "node",
+    bundle: true,
+  }
+) {
+  let url = new URL(
+    `https://${opts.host}/${name}?target=${opts.target}${
+      opts.bundle ? "&bundle" : ""
+    }`
+  );
+  return await URLImport(url);
+}

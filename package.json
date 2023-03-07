@@ -1,0 +1,19 @@
+{
+  "name": "reejs",
+  "version": "0.7.1-beta-1",
+  "description": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "@rovelstars",
+  "license": "MIT",
+  "bin": {
+	"reejs": "./src/cli/index.js"
+  },
+  "dependencies": {
+	  "@reejs/imports": "file://./src/imports"
+  }
+}
