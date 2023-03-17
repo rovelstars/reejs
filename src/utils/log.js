@@ -5,9 +5,13 @@ let oc = console;
 function logWithStyle(type, message, ...styles) {
   //if message was an instance of Error, log the stack
   if (message instanceof Error) {
-    oc[type](chalk.red(message.stack));
+    oc.error(message);
     return;
   }
+	//if message is an object or json, return back to original console.
+	if(typeof message === "object" || typeof message === "json"){
+		return oc[type](message,...styles);
+	}
   if (!message?.includes("%c") || !styles?.length) {
     return oc[type](message, ...styles);
   }

@@ -17,6 +17,7 @@ let crypto = await NativeImport("node:crypto");
 import "../utils/log.js";
 if (!fs.existsSync(path.join(reejsDir, "cache"))) {
   fs.mkdirSync(path.join(reejsDir, "cache"), { recursive: true });
+	fs.writeFileSync(path.join(reejsDir, "cache", "package.json"), JSON.stringify({type:"module"}));
 }
 globalThis.__CACHE_SHASUM = {};
 let URLToFile = function (url, noFolderPath = false) {
@@ -64,20 +65,25 @@ let dl = async function (url, cli = false, remove = false) {
     reejsDir = path.join(process.cwd(), ".reejs");
     if (!fs.existsSync(path.join(reejsDir, "cache"))) {
       fs.mkdirSync(path.join(reejsDir, "cache"), { recursive: true });
+		fs.writeFileSync(path.join(reejsDir, "cache", "package.json"), JSON.stringify({type:"module"}));
     }
   }
   if (url.startsWith("node:")) return url;
   if (url.startsWith("npm:")) {
     url = "https://esm.sh/" + url.replace("npm:", "") + "?target=node&bundle";
   }
-  if (!url.startsWith("https://") && !url.startsWith("http://")) {
+  if (!url.startsWith("https://") && !url.startsWith("http://") && !url.startsWith("/")) {
     return "node:" + url;
   }
+	if(url.startsWith("/")){
+		throw new Error("Absolute paths are not supported.");
+	}
   if (!remove && fs.existsSync(URLToFile(url))) {
     return URLToFile(url);
   }
-  let res = !remove ? await followRedirect(url) : null;
-  if (!remove && fs.existsSync(URLToFile(res))) {
+	let res = await followRedirect(url);
+	if(fs.existsSync(URLToFile(res))){
+		if(res != url){
     console.log(
       "%c[WARNING] %cURLImportInstaller.js: %cPlease use specific version for %c" +
         url +
@@ -92,6 +98,7 @@ let dl = async function (url, cli = false, remove = false) {
       "color: blue",
       "color: white"
     );
+		}
     return URLToFile(res);
   }
   if (!lexer) {
@@ -163,16 +170,25 @@ let dl = async function (url, cli = false, remove = false) {
             "https://esm.sh/" + e.replace("npm:", "") + "?target=node&bundle"
           );
         }
+		  else if(e.startsWith("/")) {
+			  let eurl = new URL(finalURL);
+			  return (eurl.origin + e);
+		  }
         return e;
       })
     )
-  ).map((e) => {
+  );
+		files = files.map((e) => {
     return URLToFile(e, true);
   });
 
   await Promise.all(
     packs.map(async (p, i) => {
       code = code.replaceAll(p, files[i]);
+		if(p.startsWith("/")){
+			let eurl = new URL(finalURL);
+			p = eurl.origin + p;
+		}
       return await dl(p, null, remove);
     })
   );
@@ -208,8 +224,33 @@ let save = (e) => {
     path.join(reejsDir, "cache", "cache.json"),
     JSON.stringify(totalCache, null, 2)
   );
-  console.log("%c[SAVE] %cSHA256 Cache...", "color:blue", "color:yellow");
-  if (e) throw e;
+	if(e){
+		console.log("%c[INFO] %cSaving important data...", "color:blue", "color:yellow");
+		if(e.stack.includes(".ts") || e.stack.includes(".tsx") || e.stack.includes(".jsx")){
+			console.log("%c[TIP] %cIf the error in your code is in any of the following extensions (.ts, .tsx, .jsx), kindly not focus on the line number as the line numbers depict the compiled code and not the original one.","color: yellow","color: white")
+		}
+		let arr = Object.entries(totalCache);
+		let result = arr.map(pair => {
+			let newObj = {};
+			newObj["file://"+path.join(reejsDir,"cache", pair[1])] = pair[0];
+			return newObj;
+		});
+		result = Object.assign({}, ...result);
+
+		//change e stack and change the file names to the urls
+		let stack = e.stack.split("\n");
+		stack = stack.map((e) => {
+			//replace the file names with the urls
+			Object.entries(result).forEach(([key, value]) => {
+				e = e.replaceAll(key, value);
+			});
+			return e;
+		});
+		e.stack = stack.join("\n");
+ console.error(e);
+	process.removeAllListeners("exit"); // dont run save again
+	process.exit(1);
+}
 };
 process.on("exit", save);
 process.on("uncaughtException", save);

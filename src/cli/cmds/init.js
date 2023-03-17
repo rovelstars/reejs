@@ -13,6 +13,11 @@ let pkgJson2 = DynamicImport(
     assert: { type: "json" },
   })
 );
+let pkgJson3 = DynamicImport(
+	await import("../../server/package.json", {
+		assert: { type: "json" },
+	})
+);
 import { Import } from "../../imports/URLImport.js";
 let ora = await Import("ora@6.1.2");
 export default function (prog) {
@@ -57,6 +62,7 @@ export default function (prog) {
             dependencies: {
               reejs: `^${pkgJson.version}`,
               "@reejs/imports": `^${pkgJson2.version}`,
+				"@reejs/server": `^${pkgJson3.version}`,
             },
             license: "MIT",
           },
@@ -88,7 +94,10 @@ export default function (prog) {
         path.join(process.cwd(), name, "import_map.json"),
         JSON.stringify(
           {
-            imports: {},
+            imports: {
+				"hono": "https://esm.sh/hono@3.0.3?target=node&bundle",
+    "@hono/node-server": "https://esm.sh/@hono/node-server@0.3.0?target=node&bundle"
+			},
             browserImports: {},
           },
           null,

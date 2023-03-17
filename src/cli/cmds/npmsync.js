@@ -21,12 +21,13 @@ export default function add(prog) {
       let import_map = JSON.parse(
         fs.readFileSync(path.join(process.cwd(), "import_map.json"), "utf-8")
       );
-      import_map = import_map.imports;
-      let deps = pkgJson.dependencies;
+      let deps = pkgJson.dependencies || {};
       await Promise.all(
-        Object.keys(import_map).map(async (key) => {
+        Object.keys(import_map.imports).map(async (key) => {
+			let urldest = await followRedirect(import_map.imports[key]);
+			import_map.imports[key] = urldest;
           let value = URLToFile(
-            await followRedirect(import_map[key]),
+            urldest,
             true
           ).slice(2);
           if (!fs.existsSync(path.join(process.cwd(), ".reejs", "deps", key))) {
@@ -46,9 +47,16 @@ export default function add(prog) {
                 2
               )
             );
+			let code = fs.readFileSync(path.join(process.cwd(), ".reejs", "cache",value));
+			  //simple check to check whether main file exports	default or not
+			code = code.includes("export { default }");
+			//numSlash is the number of slashes in key
+			let numSlash = key.split("/").length - 1;
+			//if numSlash is 1, numSlash = ../, if numSlash is 2, numSlash = ../../ etc.
+			numSlash = "../".repeat(numSlash);
             fs.writeFileSync(
               path.join(process.cwd(), ".reejs", "deps", key, "index.js"),
-              `export * from "../../cache/${value}";export {default} from "../../cache/${value}"`
+              `export * from "../../${numSlash}cache/${value}";${code?`export {default} from "../../${numSlash}cache/${value}"`:""}`
             );
           }
           deps[key] = `file:./.reejs/deps/${key}`;
@@ -59,10 +67,16 @@ export default function add(prog) {
         path.join(process.cwd(), "package.json"),
         JSON.stringify(pkgJson, null, 2)
       );
+		fs.writeFileSync(
+			path.join(process.cwd(), "import_map.json"),
+			JSON.stringify(import_map, null, 2)
+		);
       console.log(
-        "%c[REEJS] %cSynced dependencies with package.json",
+        "%c[REEJS] %cSynced dependencies with package.json. Run %cnpm install%c or something similar to it if you use any other package manager to link them.",
         "color: #805ad5",
-        "color: green"
+        "color: green",
+		  "color: blue",
+		  "color: green"
       );
     });
 }

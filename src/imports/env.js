@@ -2,7 +2,7 @@
 let dirname = new URL("..", import.meta.url).pathname.slice(0, -1);
 let projectDir = dirname.slice(0, dirname.lastIndexOf("/"));
 let reejsDir = projectDir.includes("node_modules")
-  ? projectDir.slice(0, projectDir.lastIndexOf("node_modules"))
+  ? projectDir.slice(0, projectDir.lastIndexOf("node_modules/"))+"/.reejs"
   : projectDir + "/.reejs";
 let runtime = "browser";
 if (typeof Deno !== "undefined") {

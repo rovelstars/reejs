@@ -9,6 +9,9 @@ export default function add(prog) {
     .option("-b, --browser", "Install as browser dependency")
     .describe("Add a package to your project")
     .action(async (name, url, opts) => {
+		// we would show time taken to install the package
+		let start = Date.now();
+		let isBrowser = opts.browser || opts.b ? "browserImports" : "imports";
       if (!fs.existsSync(path.join(process.cwd(), ".reecfg"))) {
         console.log(
           "%c[REEJS] %cThis is not a reejs project!",
@@ -26,19 +29,20 @@ export default function add(prog) {
         let import_map = JSON.parse(
           fs.readFileSync(path.join(process.cwd(), "import_map.json"))
         );
-        for (let key in import_map.imports) {
-          await dl(import_map.imports[key], true);
-        }
+		  await Promise.all(Object.keys(import_map.imports).map(async (key) => {
+			  await dl(import_map.imports[key], true);
+		  }));
+		  let end = Date.now();
+		  let time = (end - start)/1000;
         console.log(
-          "%c[DOWNLOAD] %cInstalled all packages!",
+          "%c[DOWNLOAD] %cInstalled all packages in " + time + "s",
           "color: green",
           "color: blue"
         );
         return;
       }
       if (!url) {
-        let isBrowser = opts.browser || opts.b ? "browserImports" : "imports";
-        if (fs.existsSync(path.join(process.cwd(), "import_map.json"))) {
+                if (fs.existsSync(path.join(process.cwd(), "import_map.json"))) {
           let import_map = JSON.parse(
             fs.readFileSync(path.join(process.cwd(), "import_map.json"))
           );
@@ -83,14 +87,17 @@ export default function add(prog) {
         let import_map = fs.readFileSync(
           path.join(process.cwd(), "import_map.json")
         );
+		  console.log(isBrowser,name, url);
         import_map[isBrowser][name] = url;
         fs.writeFileSync(
           path.join(process.cwd(), "import_map.json"),
           JSON.stringify(import_map, null, 2)
         );
       }
+		let end = Date.now();
+		let time = (end - start)/1000;
       console.log(
-        "%c[DOWNLOAD] %cInstalled " + name,
+        "%c[DOWNLOAD] %cInstalled " + name + " in " + time + "s",
         "color:green",
         "color:blue;font-weight:bold;"
       );
