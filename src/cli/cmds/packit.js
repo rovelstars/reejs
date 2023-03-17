@@ -267,8 +267,8 @@ export default async function (prog) {
 	if(service=="vercel"){
 		fs.mkdirSync(path.join(packitDir, "pages/api"),{recursive: true});
 				fs.writeFileSync(path.join(packitDir, "pages/api/[...route].js"),`import ReeServer from "@reejs/server";
-	  import { Hono } from "${getPackage("hono")}";
-	  import { handle } from "${getPackage("@hono/nextjs")}";
+	  import { Hono } from "../../${getPackage("hono")}";
+	  import { handle } from "../../${getPackage("@hono/nextjs")}";
 
 	  let server = new ReeServer(Hono, { handle, runtime: "vercel", path: "/" });
 ${
@@ -280,7 +280,7 @@ ${
           `import file_${page[1]
             .split("serve/")[1]
             .split(".")[0]
-            .slice(0, 6)} from "./${page[1]}";server.app.get("/${
+            .slice(0, 6)} from "../../${page[1]}";server.app.get("/${
             page[0]
           }",(c)=>c.text(render(file_${page[1]
             .split("serve/")[1]
@@ -300,7 +300,7 @@ ${
           `import file_${api[1]
             .split("serve/")[1]
             .split(".")[0]
-            .slice(0, 6)} from "./${api[1]}";server.app.get("/api/${
+            .slice(0, 6)} from "../../${api[1]}";server.app.get("/api/${
             api[0]
           }",file_${api[1].split("serve/")[1].split(".")[0].slice(0, 6)});`
       )
