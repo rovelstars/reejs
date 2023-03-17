@@ -265,8 +265,8 @@ export default async function (prog) {
       );
 	}
 	if(service=="vercel"){
-		fs.mkdirSync(path.join(packitDir, "api"));
-				fs.writeFileSync(path.join(packitDir, "api/[...route].js"),`import ReeServer from "@reejs/server";
+		fs.mkdirSync(path.join(packitDir, "pages/api"),{recursive: true});
+				fs.writeFileSync(path.join(packitDir, "pages/api/[...route].js"),`import ReeServer from "@reejs/server";
 	  import { Hono } from "${getPackage("hono")}";
 	  import { handle } from "${getPackage("@hono/nextjs")}";
 
