@@ -118,7 +118,7 @@ export default async function (prog) {
             api
               .replace("index", "")
               .replace(".tsx", "")
-              .replace(".      ts", "")
+              .replace(".ts", "")
               .replace(".jsx", "")
               .replace(".js", ""),
             d,
@@ -194,17 +194,14 @@ export default async function (prog) {
         })};export default __fs;`
       );
 
-	if(service == "node"){
       fs.writeFileSync(
         path.join(packitDir, "index.js"),
         `import ReeServer from "@reejs/server";
 		import { Hono } from "${getPackage("hono")}";${
           service === "node"
             ? `
-		import { serve } from "${getPackage("@hono/node-server")}";`
-            : ""
-        }
-	    import { serveStatic } from "${getPackage("@hono/serve-static")}"
+		import { serve } from "${getPackage("@hono/node-server")}";
+	    import { serveStatic } from "${getPackage("@hono/serve-static")}"`:""}
 		import render from "${getPackage("render")}";
 		const server = new ReeServer(Hono, {${service === "node" ? "serve," : ""}});
 	${
@@ -225,18 +222,6 @@ export default async function (prog) {
       )
       .join("\n")}
 			`
-      : ""
-  }
-  ${
-    ccomponents.length > 0
-      ? `
-  ${ccomponents
-    .map(
-      (component) => `
-  server.app.get("/__reejs/components/${component[0]}",serveStatic({path: "./${component[1]}"}));
-  `
-    )
-    .join("\n")}`
       : ""
   }
 		${
@@ -261,56 +246,9 @@ export default async function (prog) {
         ? "server.app.get('/__reejs/cache.json',serveStatic({path:'./.reejs/cache/cache.json'}));server.app.get('/**',serveStatic({root:'./public'}));server.listen(process.env.PORT || 3000, () => console.log(`Server started on port ${process.env.PORT || 3000}`));"
         : ""
     }
+	${service=="workers"?"export default server.app;":""}
 			`
       );
-	}
-	if(service=="vercel"){
-		fs.mkdirSync(path.join(packitDir, "pages/api"),{recursive: true});
-				fs.writeFileSync(path.join(packitDir, "pages/api/[...route].js"),`import ReeServer from "@reejs/server";
-	  import { Hono } from "../${getPackage("hono")}";
-	  import { handle } from "../${getPackage("@hono/nextjs")}";
-
-	  let server = new ReeServer(Hono, { handle, runtime: "vercel", path: "/" });
-${
-    cpages.length > 0
-      ? `
-		${cpages
-      .map(
-        (page) =>
-          `import file_${page[1]
-            .split("serve/")[1]
-            .split(".")[0]
-            .slice(0, 6)} from "../${page[1]}";server.app.get("/${
-            page[0]
-          }",(c)=>c.text(render(file_${page[1]
-            .split("serve/")[1]
-            .split(".")[0]
-            .slice(0, 6)})));`
-      )
-      .join("\n")}
-			`
-      : ""
-  }
-		${
-      capis.length > 0
-        ? `
-		${capis
-      .map(
-        (api) =>
-          `import file_${api[1]
-            .split("serve/")[1]
-            .split(".")[0]
-            .slice(0, 6)} from "../${api[1]}";server.app.get("/api/${
-            api[0]
-          }",file_${api[1].split("serve/")[1].split(".")[0].slice(0, 6)});`
-      )
-      .join("\n")}`
-        : ""
-    }
-
-	  export default server.listen();
-				`);
-	}
 
       end = Date.now();
       console.log(`Packit took ${(end - start) / 1000}s to pack your project`);
