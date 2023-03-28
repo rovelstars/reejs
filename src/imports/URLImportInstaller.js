@@ -1,8 +1,7 @@
 // this file allows you to download files from a URL.
-import env from "./env.js";
+import env, {dirname} from "./env.js";
 import {reejsDir as dir, runtime} from "./env.js";
 import NativeImport from "./nativeImport.js";
-
 if (runtime == "browser") {
   throw new Error(
       "URLImportInstaller.js is not for edge/browsers. Install them via reejs cli and use them.");
@@ -15,6 +14,7 @@ let https = await NativeImport("node:https");
 import fetch from "./fetch.js";
 let crypto = await NativeImport("node:crypto");
 import "../utils/log.js";
+import DynamicImport from "./dynamicImport.js";
 if (!fs.existsSync(path.join(reejsDir, "cache"))) {
   fs.mkdirSync(path.join(reejsDir, "cache"), {recursive : true});
   fs.writeFileSync(path.join(reejsDir, "cache", "package.json"),
@@ -35,14 +35,37 @@ let URLToFile = function(url, noFolderPath = false) {
                          crypto.createHash("sha256").update(url).digest("hex") +
                              ".js");
 };
-
-let followRedirect = async function(url) {
+// user agent
+let UA;
+let pkgJson =
+    DynamicImport(await import("../../package.json", {assert: {type: "json"}}));
+switch (env) {
+case "node":
+  UA = `Node/${process.version} (reejs/${pkgJson.version})`;
+  break;
+case "deno":
+  UA = `Deno/${Deno.version.deno} (reejs/${pkgJson.version})`;
+  break;
+case "browser":
+  UA = `Mozilla/5.0 (reejs/${pkgJson.version})`;
+  break;
+case "bun":
+  UA = `Bun/${Bun.version} (reejs/${pkgJson.version})`;
+  break;
+}
+let followRedirect = async function(url, forBrowser = false) {
   if (url.startsWith("node:"))
     return url;
   if (url.startsWith("npm:")) {
     console.log(url);
-    return (await fetch("https://esm.sh/" + url.replace("npm:", "") +
-                        "?target=node&bundle"))
+    return (await fetch(
+                "https://esm.sh/" + url.replace("npm:", "") + "?bundle", {
+                  headers : {
+                    "User-Agent" :
+                        forBrowser ? `Mozilla/5.0 (reejs/${pkgJson.version})`
+                                   : UA,
+                  }
+                }))
         .url;
   }
   if (!url.startsWith("https://") && !url.startsWith("http://")) {
@@ -50,7 +73,8 @@ let followRedirect = async function(url) {
   }
   try {
     let finalURL = url;
-    let res = await fetch(url, {method : "HEAD"});
+    let res =
+        await fetch(url, {method : "HEAD", headers : {"User-Agent" : UA}});
     finalURL = res.url;
     return finalURL;
   } catch (e) {
@@ -60,7 +84,7 @@ let followRedirect = async function(url) {
 
 let lexer, parser;
 
-let dl = async function(url, cli = false, remove = false) {
+let dl = async function(url, cli = false, remove = false, forBrowser = false) {
   if (cli) {
     reejsDir = path.join(process.cwd(), ".reejs");
     if (!fs.existsSync(path.join(reejsDir, "cache"))) {
@@ -72,7 +96,7 @@ let dl = async function(url, cli = false, remove = false) {
   if (url.startsWith("node:"))
     return url;
   if (url.startsWith("npm:")) {
-    url = "https://esm.sh/" + url.replace("npm:", "") + "?target=node&bundle";
+    url = "https://esm.sh/" + url.replace("npm:", "") + "?bundle";
   }
   if (!url.startsWith("https://") && !url.startsWith("http://") &&
       !url.startsWith("/")) {
@@ -84,7 +108,7 @@ let dl = async function(url, cli = false, remove = false) {
   if (!remove && fs.existsSync(URLToFile(url))) {
     return URLToFile(url);
   }
-  let res = await followRedirect(url);
+  let res = await followRedirect(url, forBrowser);
   if (fs.existsSync(URLToFile(res))) {
     if (res != url) {
       console.log(
@@ -122,7 +146,11 @@ let dl = async function(url, cli = false, remove = false) {
       };
     }
   }
-  res = await fetch(url);
+  res = await fetch(url, {
+    headers : {
+      "User-Agent" : forBrowser ? `Mozilla/5.0 (reejs/${pkgJson.version})` : UA,
+    }
+  });
   let finalURL = res.url;
   let code = await res.text();
   if (!remove)
@@ -152,8 +180,8 @@ let dl = async function(url, cli = false, remove = false) {
   // url
   let files = (await Promise.all(packs.map(async (e) => {
     if (e.startsWith("npm:")) {
-      return await followRedirect("https://esm.sh/" + e.replace("npm:", "") +
-                                  "?target=node&bundle");
+      return await followRedirect(
+          "https://esm.sh/" + e.replace("npm:", "") + "?bundle", forBrowser);
     } else if (e.startsWith("/")) {
       let eurl = new URL(finalURL);
       return (eurl.origin + e);
@@ -200,7 +228,7 @@ let save = (e) => {
     console.log("%c[INFO] %cSaving important data...", "color:blue",
                 "color:yellow");
     if (e.stack.includes(".ts") || e.stack.includes(".tsx") ||
-        e.stack.includes(".jsx")) {
+        e.stack.includes(".jsx") || e.stack.includes(".js")) {
       console.log(
           "%c[TIP] %cIf the error in your code is in any of the following extensions (.ts, .tsx, .jsx), kindly not focus on the line number as the line numbers depict the compiled code and not the original one.",
           "color: yellow", "color: white")
@@ -209,10 +237,10 @@ let save = (e) => {
     let result = arr.map(pair => {
       let newObj = {};
       newObj["file://" + path.join(reejsDir, "cache", pair[1])] = pair[0];
+      newObj[path.join(reejsDir, "cache", pair[1])] = pair[0];
       return newObj;
     });
     result = Object.assign({}, ...result);
-
     // change e stack and change the file names to the urls
     let stack = e.stack.split("\n");
     stack = stack.map((e) => {

@@ -1,16 +1,15 @@
 #!/usr/bin/env node
-import env, { dirname } from "../imports/env.js";
+import env, {dirname} from "../imports/env.js";
 import NativeImport from "../imports/nativeImport.js";
 import "../utils/log.js";
-import { Import } from "../imports/URLImport.js";
+import {Import} from "../imports/URLImport.js";
 import DynamicImport from "../imports/dynamicImport.js";
 let sade = await Import("sade@1.8.1");
 let fs = await NativeImport("node:fs");
 let path = await NativeImport("node:path");
-let pkgJson = DynamicImport(
-  await import("../../package.json", { assert: { type: "json" } })
-);
-//recursively import all files from cmds folder
+let pkgJson =
+    DynamicImport(await import("../../package.json", {assert: {type: "json"}}));
+// recursively import all files from cmds folder
 let cmds = fs.readdirSync(path.join(dirname, "./cli/cmds"));
 let cmdsObj = {};
 let prog = sade("reejs");

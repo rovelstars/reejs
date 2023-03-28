@@ -7,12 +7,18 @@ import copyFolderSync from "../../utils/copyFolder.js";
 let fs = await NativeImport("node:fs");
 let path = await NativeImport("node:path");
 let terser = await Import("terser@5.16.6");
-let importmap = DynamicImport(
-    await import(`${process.cwd()}/import_map.json`, {assert: {type: "json"}}));
+let importmap =
+    fs.existsSync(path.join(process.env.PWD, "import_map.json"))
+        ? DynamicImport(await import(`${process.cwd()}/import_map.json`,
+                                     {assert: {type: "json"}}))
+        : {};
 let cachemap =
-    DynamicImport(await import(`${process.cwd()}/.reejs/cache/cache.json`, {
-      assert: {type: "json"},
-    }));
+    fs.existsSync(path.join(process.env.PWD, ".reejs", "cache", "cache.json"))
+        ? DynamicImport(
+              await import(`${process.cwd()}/.reejs/cache/cache.json`, {
+                assert: {type: "json"},
+              }))
+        : {};
 
 let getPackage = (pkg) => {
   let url = importmap.imports?.[pkg] || importmap.browserImports?.[pkg];
@@ -25,22 +31,6 @@ let getPackage = (pkg) => {
 let pagesDir = path.join(process.cwd(), "src", "pages");
 let componentsDir = path.join(process.cwd(), "src", "components");
 let apisDir = path.join(pagesDir, "api");
-
-let pages = fs.readdirSync(pagesDir).filter((file) => {
-  // filter only js files that are not inside api folder
-  return (!file.startsWith("api") &&
-          (file.endsWith(".js") || file.endsWith(".jsx") ||
-           file.endsWith(".ts") || file.endsWith(".tsx")));
-});
-
-let components = fs.readdirSync(componentsDir).filter((file) => {
-  return (file.endsWith(".js") || file.endsWith(".jsx") ||
-          file.endsWith(".ts") || file.endsWith(".tsx"));
-});
-
-let apis = fs.readdirSync(apisDir).filter(
-    (file) => { return file.endsWith(".js") || file.endsWith(".ts"); });
-
 export default async function(prog) {
   prog.command("packit [service]")
       .describe(
@@ -54,6 +44,20 @@ export default async function(prog) {
           return;
         }
         let start = Date.now();
+        let pages = fs.readdirSync(pagesDir).filter((file) => {
+          // filter only js files that are not inside api folder
+          return (!file.startsWith("api") &&
+                  (file.endsWith(".js") || file.endsWith(".jsx") ||
+                   file.endsWith(".ts") || file.endsWith(".tsx")));
+        });
+
+        let components = fs.readdirSync(componentsDir).filter((file) => {
+          return (file.endsWith(".js") || file.endsWith(".jsx") ||
+                  file.endsWith(".ts") || file.endsWith(".tsx"));
+        });
+        let apis = fs.readdirSync(apisDir).filter(
+            (file) => { return file.endsWith(".js") || file.endsWith(".ts"); });
+
         // transpile pages, components and apis
         let cpages = await Promise.all(pages.map(async (page) => {
           let pagePath = path.join(pagesDir, page);
