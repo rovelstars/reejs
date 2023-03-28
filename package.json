@@ -1,6 +1,6 @@
 {
   "name": "reejs",
-  "version": "0.8.6",
+  "version": "0.8.8",
   "description": "",
   "type": "module",
   "main": "index.js",

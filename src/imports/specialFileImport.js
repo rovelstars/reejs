@@ -14,12 +14,12 @@ if (!fs.existsSync(path.join(reejsDir, "serve"))) {
   fs.mkdirSync(path.join(reejsDir, "serve"), {recursive : true});
 }
 let importmap =
-    fs.existsSync(path.join(process.env.PWD, "import_map.json"))
+    fs.existsSync(path.join(process.cwd(), "import_map.json"))
         ? DynamicImport(await import(`${process.env.PWD}/import_map.json`, {
             assert: {type: "json"},
           }))
         : {};
-let cachemap = fs.existsSync(path.join(process.env.PWD, "cache.json"))
+let cachemap = fs.existsSync(path.join(reejsDir, "cache", "cache.json"))
                    ? DynamicImport(await import(
                          `${process.env.PWD}/.reejs/cache/cache.json`, {
                            assert: {type: "json"},

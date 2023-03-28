@@ -41,7 +41,7 @@ export default function(prog) {
                          JSON.stringify({
                            name : name,
                            version : "0.0.1",
-                           features : opts.features,
+                           features : {},
                          },
                                         null, 2));
         fs.writeFileSync(path.join(process.cwd(), name, "package.json"),
@@ -85,26 +85,31 @@ export default function(prog) {
         // features
         let optionalDeps = {};
         if (opts.features.includes("react")) {
-          optionalDeps["react"] = "https://esm.sh/preact@10.13.1/compat?bundle";
+          optionalDeps.react =
+              "https://esm.sh/preact@10.13.1/compat?target=node&bundle"
           optionalDeps["render"] =
-              "https://esm.sh/preact-render-to-string@5.2.6?bundle";
+              "https://esm.sh/preact-render-to-string@5.2.6?bundle"
           optionalDeps["@hono/serve-static"] =
-              "https://esm.sh/@hono/node-server@0.3.0/serve-static?bundle";
+              "https://esm.sh/@hono/node-server@0.3.0/serve-static?bundle"
         }
-
         fs.writeFileSync(
             path.join(process.cwd(), name, "import_map.json"),
             JSON.stringify({
               imports : {
-                "hono" : "https://esm.sh/hono@3.0.3?bundle",
+                "hono" : "https://esm.sh/hono@3.0.3?target=node&bundle",
                 "@hono/node-server" :
-                    "https://esm.sh/@hono/node-server@0.3.0?bundle",
+                    "https://esm.sh/@hono/node-server@0.3.0?target=node&bundle",
+
                 ...optionalDeps,
               },
               browserImports : {},
             },
                            null, 2));
         spinner.succeed("Project initialized!");
+        let {install} = DynamicImport(await import("./add.js"));
+        await install(null, null, null, path.join(process.cwd(), name));
+        let {sync} = DynamicImport(await import("./npmsync.js"));
+        await sync(path.join(process.cwd(), name));
         // ask user what package manager to use
         let rl = readline.createInterface({
           input : process.stdin,
@@ -112,7 +117,7 @@ export default function(prog) {
         });
         rl.question(
             `${chalk.blue("What package manager do you want to use?")} ${
-                chalk.yellow("(npm/yarn/pnpm)")} `,
+                chalk.yellow("(npm/yarn/pnpm/none)")} `,
             (answer) => {
               rl.close();
               // install dependencies using the package manager
@@ -159,8 +164,8 @@ export default function(prog) {
                        console.log(stderr);
                      });
               } else {
-                console.log("%c[REEJS] %cInvalid package manager!",
-                            "color: #805ad5", "color:red");
+                console.log("%c[REEJS] %cSkipped Installing Dependencies!",
+                            "color: #805ad5", "color:yellow");
               }
             });
       });

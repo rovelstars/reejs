@@ -43,6 +43,22 @@ export default async function(prog) {
               "color: #ff0000", "color: #ffffff", "color: blue");
           return;
         }
+        if (service == "node") {
+          if (!importmap.imports["@hono/node-server"]) {
+            console.log(
+                "%c[PACKIT] %cPlease add @hono/node-server to %c`import_map.json`%c use this service.",
+                "color: #ff0000", "color: #ffffff", "color: blue",
+                "color: #ffffff");
+            return;
+          }
+          if (!importmap.imports["@hono/serve-static"]) {
+            console.log(
+                "%c[PACKIT] %cPlease add @hono/serve-static to %c`import_map.json`%c use this service.",
+                "color: #ff0000", "color: #ffffff", "color: blue",
+                "color: #ffffff");
+            return;
+          }
+        }
         let start = Date.now();
         let pages = fs.readdirSync(pagesDir).filter((file) => {
           // filter only js files that are not inside api folder
@@ -174,11 +190,11 @@ export default async function(prog) {
                                            .split(".")[0]
                                            .slice(0, 6)} from "./${
                                        page[1]}";server.app.get("/${
-                                       page[0]}",(c)=>c.text(render(file_${
+                                       page[0]}",(c)=>c.html(render(file_${
                                        page[1]
                                            .split("serve/")[1]
                                            .split(".")[0]
-                                           .slice(0, 6)})));`)
+                                           .slice(0, 6)}())));`)
                               .join("\n")}
 			`
                     : ""}
@@ -206,6 +222,7 @@ export default async function(prog) {
                     ? "server.app.get('/__reejs/cache.json',serveStatic({path:'./.reejs/cache/cache.json'}));server.app.get('/**',serveStatic({root:'./public'}));server.listen(process.env.PORT || 3000, () => console.log(`Server started on port ${process.env.PORT || 3000}`));"
                     : ""}
 	${service == "workers" ? "export default server.app;" : ""}
+	${service == "deno-deploy" ? "serve(server.app.fetch)" : ""}
 			`);
 
         end = Date.now();

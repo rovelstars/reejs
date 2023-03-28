@@ -86,7 +86,7 @@ let lexer, parser;
 
 let dl = async function(url, cli = false, remove = false, forBrowser = false) {
   if (cli) {
-    reejsDir = path.join(process.cwd(), ".reejs");
+    reejsDir = path.join(process.cwd(), cli == true ? "" : cli, ".reejs");
     if (!fs.existsSync(path.join(reejsDir, "cache"))) {
       fs.mkdirSync(path.join(reejsDir, "cache"), {recursive : true});
       fs.writeFileSync(path.join(reejsDir, "cache", "package.json"),

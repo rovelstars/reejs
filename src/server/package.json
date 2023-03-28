@@ -1,11 +1,14 @@
 {
   "name": "@reejs/server",
-  "version": "0.8.2",
+  "version": "0.8.8",
   "description": "",
   "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+	  "@reejs/imports":"file://../imports/index.js"
   },
   "keywords": [],
   "author": "",
