@@ -3,6 +3,8 @@ import env, {dirname} from "../imports/env.js";
 import NativeImport from "../imports/nativeImport.js";
 import "../utils/log.js";
 import {Import} from "../imports/URLImport.js";
+await Promise.all(
+    [ Import("sade@1.8.1"), Import("ora@6.1.2"), Import("terser@5.16.6") ]);
 import DynamicImport from "../imports/dynamicImport.js";
 let sade = await Import("sade@1.8.1");
 let fs = await NativeImport("node:fs");

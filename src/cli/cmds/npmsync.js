@@ -1,6 +1,6 @@
 import NativeImport from "../../imports/nativeImport.js";
 import {followRedirect, URLToFile} from "../../imports/URLImportInstaller.js";
-export let sync = async (dir) => {
+export let sync = async (smt, dir) => {
   let fs = await NativeImport("node:fs");
   let path = await NativeImport("node:path");
   if (!fs.existsSync(path.join(dir || process.cwd(), ".reecfg"))) {
@@ -46,7 +46,14 @@ export let sync = async (dir) => {
               code ? `export {default} from "../../${numSlash}cache/${value}"`
                    : ""}`);
     }
-    deps[key] = `file:./.reejs/deps/${key}`;
+    // depKey is the key of the dependency in package.json. if the depKey
+    // startsWith @, allow only one "/" and the next word after that "/".
+    // otherwise remove the "/" and only keep the first word
+    let depKey = key.startsWith("@")
+                     ? key.split("/")[0] + "/" + key.split("/")[1]
+                     : key.split("/")[0];
+    console.log(depKey);
+    deps[depKey] = `file:./.reejs/deps/${depKey}`;
   }));
   pkgJson.dependencies = deps;
   fs.writeFileSync(path.join(dir || process.cwd(), "package.json"),

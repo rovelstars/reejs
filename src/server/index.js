@@ -1,4 +1,4 @@
-import env from "@reejs/imports/env.js";
+import env from "../imports/env.js";
 // create a constructor function for the server
 class ReeServer {
   constructor(server, opts) {

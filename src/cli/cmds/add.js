@@ -4,12 +4,11 @@ import path from "node:path";
 import dl from "../../imports/URLImportInstaller.js";
 
 export let install =
-    async (name, url, opts, dir) => {
+    async (name, url, opts) => {
   // we would show time taken to install the package
   let start = Date.now();
-  let projectName = dir?.split(path.sep)?.pop();
   let isBrowser = opts?.browser || opts?.b ? "browserImports" : "imports";
-  if (!fs.existsSync(path.join(dir || process.cwd(), ".reecfg"))) {
+  if (!fs.existsSync(path.join(process.cwd(), ".reecfg"))) {
     console.log("%c[REEJS] %cThis is not a reejs project!", "color: red",
                 "color: yellow");
     return;
@@ -19,10 +18,10 @@ export let install =
         "%c[DOWNLOAD] %cInstalling all packages mentioned in import_map.json ...",
         "color: #805ad5", "color: yellow");
     let import_map = JSON.parse(
-        fs.readFileSync(path.join(dir || process.cwd(), "import_map.json")));
-    await Promise.all(Object.keys(import_map.imports).map(async (key) => {
-      await dl(import_map.imports[key], projectName);
-    }));
+        fs.readFileSync(path.join(process.cwd(), "import_map.json")));
+    await Promise.all(
+        Object.keys(import_map.imports)
+            .map(async (key) => { await dl(import_map.imports[key], true); }));
     let end = Date.now();
     let time = (end - start) / 1000;
     console.log("%c[DOWNLOAD] %cInstalled all packages in " + time + "s",
@@ -30,9 +29,9 @@ export let install =
     return;
   }
   if (!url) {
-    if (fs.existsSync(path.join(dir || process.cwd(), "import_map.json"))) {
+    if (fs.existsSync(path.join(process.cwd(), "import_map.json"))) {
       let import_map = JSON.parse(
-          fs.readFileSync(path.join(dir || process.cwd(), "import_map.json")));
+          fs.readFileSync(path.join(process.cwd(), "import_map.json")));
       if (import_map[isBrowser][name]) {
         url = import_map[isBrowser][name];
       } else {
@@ -51,20 +50,20 @@ export let install =
           console.log(url);
         }
       }
-      await dl(url, projectName);
+      await dl(url, true);
       // add to import_map.json
       import_map[isBrowser][name] = url;
-      fs.writeFileSync(path.join(dir || process.cwd(), "import_map.json"),
+      fs.writeFileSync(path.join(process.cwd(), "import_map.json"),
                        JSON.stringify(import_map, null, 2));
     }
   } else {
-    await dl(url, projectName);
+    await dl(url, true);
     // add to import_map.json
     let import_map =
-        fs.readFileSync(path.join(dir || process.cwd(), "import_map.json"));
+        fs.readFileSync(path.join(process.cwd(), "import_map.json"));
     console.log(isBrowser, name, url);
     import_map[isBrowser][name] = url;
-    fs.writeFileSync(path.join(dir || process.cwd(), "import_map.json"),
+    fs.writeFileSync(path.join(process.cwd(), "import_map.json"),
                      JSON.stringify(import_map, null, 2));
   }
   let end = Date.now();

@@ -14,6 +14,9 @@ let pkgJson2 = DynamicImport(await import("../../imports/package.json", {
 let pkgJson3 = DynamicImport(await import("../../server/package.json", {
   assert: {type: "json"},
 }));
+let pkgJson4 = DynamicImport(await import("../../react/package.json", {
+  assert: {type: "json"},
+}));
 import {Import} from "../../imports/URLImport.js";
 let ora = await Import("ora@6.1.2");
 export default function(prog) {
@@ -44,6 +47,13 @@ export default function(prog) {
                            features : {},
                          },
                                         null, 2));
+        let optionalPkgs = {};
+        if (opts.features.includes("react")) {
+          optionalPkgs = {
+            ...optionalPkgs,
+            "@reejs/react" : pkgJson4.version,
+          };
+        }
         fs.writeFileSync(path.join(process.cwd(), name, "package.json"),
                          JSON.stringify({
                            name : name,
@@ -54,6 +64,7 @@ export default function(prog) {
                              reejs : `^${pkgJson.version}`,
                              "@reejs/imports" : `^${pkgJson2.version}`,
                              "@reejs/server" : `^${pkgJson3.version}`,
+                             ...optionalPkgs,
                            },
                            license : "MIT",
                          },
@@ -64,18 +75,44 @@ export default function(prog) {
         fs.mkdirSync(path.join(process.cwd(), name, "public"), {
           recursive : true,
         });
+        if (opts.features.includes("tailwind")) {
+          fs.writeFileSync(path.join(process.cwd(), name, "twind.config.js"),
+                           `import { defineConfig } from "@twind/core";
+import presetAutoprefix from "@twind/preset-autoprefix";
+import presetTailwind from "@twind/preset-tailwind";
 
+export default defineConfig({
+  presets: [presetAutoprefix, presetTailwind],
+  darkMode: "class",
+});`);
+        }
         if (opts.features.includes("react")) {
           fs.writeFileSync(
               path.join(process.cwd(), name, "src", "pages", "index.jsx"),
               `export default function(){
-			return <h1>Hello World!</h1>
+			return <h1${
+                  opts.features.includes("tailwind")
+                      ? ' className="text-3xl font-bold text-violet-600"'
+                      : ''}>Hello from Reejs!</h1>
 		}`);
+          fs.writeFileSync(
+              path.join(process.cwd(), name, "src", "pages", "_app.jsx"),
+              `import App from "@reejs/react/app";
+export default ${
+                  opts.features.includes("tailwind")
+                      ? "App"
+                      : "function({ children }){return <App children={children} className=\"!block\" style={{display: 'none'}} />}"};`);
           fs.mkdirSync(path.join(process.cwd(), name, "src", "components"), {
             recursive : true,
           });
         }
-
+        if (opts.features.includes("tailwind")) {
+          fs.writeFileSync(
+              path.join(process.cwd(), name, "src", "pages", "_twind.js"),
+              `import install from "@twind/with-react";
+import config from "../../twind.config.js";
+export default install(config);`);
+        }
         fs.mkdirSync(path.join(process.cwd(), name, "src", "styles"));
         fs.writeFileSync(
             path.join(process.cwd(), name, "src", "styles", "index.css"),
@@ -84,32 +121,54 @@ export default function(prog) {
         // optional dependencies that are added to import maps if asked in
         // features
         let optionalDeps = {};
+        let optionalDeps2 = {};
         if (opts.features.includes("react")) {
-          optionalDeps.react =
-              "https://esm.sh/preact@10.13.1/compat?target=node&bundle"
+          optionalDeps.react = "https://esm.sh/preact@10.13.2/compat",
           optionalDeps["render"] =
-              "https://esm.sh/preact-render-to-string@5.2.6?bundle"
+              "https://esm.sh/preact-render-to-string@6.0.2"
           optionalDeps["@hono/serve-static"] =
               "https://esm.sh/@hono/node-server@0.3.0/serve-static?bundle"
+          optionalDeps["debug"] = "https://esm.sh/preact@10.13.2/debug";
+          optionalDeps2.debug = optionalDeps.debug;
+          optionalDeps2.react = optionalDeps.react;
+        }
+        if (opts.features.includes("tailwind")) {
+          optionalDeps["@twind/core"] =
+              "https://cdn.jsdelivr.net/npm/@twind/core/+esm";
+          optionalDeps2["@twind/core"] = optionalDeps["@twind/core"];
+          optionalDeps["@twind/preset-autoprefix"] =
+              "https://cdn.jsdelivr.net/npm/@twind/preset-autoprefix/+esm";
+          optionalDeps2["@twind/preset-autoprefix"] =
+              optionalDeps["@twind/preset-autoprefix"];
+          optionalDeps["@twind/preset-tailwind"] =
+              "https://cdn.jsdelivr.net/npm/@twind/preset-tailwind/+esm";
+          optionalDeps2["@twind/preset-tailwind"] =
+              optionalDeps["@twind/preset-tailwind"];
+          optionalDeps["@twind/with-react"] =
+              "https://cdn.jsdelivr.net/npm/@twind/with-react/+esm";
+          optionalDeps2["@twind/with-react"] =
+              optionalDeps["@twind/with-react"];
+          optionalDeps["@twind/with-react/inline"] =
+              "https://cdn.jsdelivr.net/npm/@twind/with-react/inline/+esm";
+          optionalDeps2["@twind/with-react/inline"] =
+              optionalDeps["@twind/with-react/inline"];
         }
         fs.writeFileSync(
             path.join(process.cwd(), name, "import_map.json"),
             JSON.stringify({
               imports : {
-                "hono" : "https://esm.sh/hono@3.0.3?target=node&bundle",
+                "hono" : "https://esm.sh/hono@3.0.3?bundle",
                 "@hono/node-server" :
-                    "https://esm.sh/@hono/node-server@0.3.0?target=node&bundle",
+                    "https://esm.sh/@hono/node-server@0.3.0?bundle",
 
                 ...optionalDeps,
               },
-              browserImports : {},
+              browserImports : {
+                ...optionalDeps2,
+              },
             },
                            null, 2));
         spinner.succeed("Project initialized!");
-        let {install} = DynamicImport(await import("./add.js"));
-        await install(null, null, null, path.join(process.cwd(), name));
-        let {sync} = DynamicImport(await import("./npmsync.js"));
-        await sync(path.join(process.cwd(), name));
         // ask user what package manager to use
         let rl = readline.createInterface({
           input : process.stdin,

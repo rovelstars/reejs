@@ -27,13 +27,17 @@ let URLToFile = function(url, noFolderPath = false) {
   if (!url.startsWith("https://") && !url.startsWith("http://"))
     return "node:" + url;
   __CACHE_SHASUM[url] =
-      crypto.createHash("sha256").update(url).digest("hex") + ".js";
+      crypto.createHash("sha256").update(url).digest("hex").slice(0, 6) + ".js";
   return noFolderPath
-             ? "./" + crypto.createHash("sha256").update(url).digest("hex") +
+             ? "./" +
+                   crypto.createHash("sha256").update(url).digest("hex").slice(
+                       0, 6) +
                    ".js"
-             : path.join(reejsDir, "cache",
-                         crypto.createHash("sha256").update(url).digest("hex") +
-                             ".js");
+             : path.join(
+                   reejsDir, "cache",
+                   crypto.createHash("sha256").update(url).digest("hex").slice(
+                       0, 6) +
+                       ".js");
 };
 // user agent
 let UA;
