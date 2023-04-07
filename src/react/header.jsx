@@ -1,0 +1,10 @@
+
+export default function Header({children}) {
+	return (
+		<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+			{children}
+		</head>
+	)
+}
