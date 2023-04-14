@@ -15,7 +15,8 @@ import fetch from "./fetch.js";
 let crypto = await NativeImport("node:crypto");
 import "../utils/log.js";
 import DynamicImport from "./dynamicImport.js";
-if (!fs.existsSync(path.join(reejsDir, "cache"))) {
+if (!fs.existsSync(path.join(reejsDir, "cache")) &&
+    fs.existsSync(path.join(process.cwd(), ".reecfg"))) {
   fs.mkdirSync(path.join(reejsDir, "cache"), {recursive : true});
   fs.writeFileSync(path.join(reejsDir, "cache", "package.json"),
                    JSON.stringify({type : "module"}));
@@ -88,7 +89,12 @@ let followRedirect = async function(url, forBrowser = false) {
 
 let lexer, parser;
 
-let dl = async function(url, cli = false, remove = false, forBrowser = false) {
+let dl =
+    async function(url, cli = false, remove = false, forBrowser = false, ua) {
+  if (ua)
+    UA = ua;
+  if (UA.startsWith("Deno"))
+    return url; // Deno does not need to download files
   if (cli) {
     reejsDir = path.join(process.cwd(), cli == true ? "" : cli, ".reejs");
     if (!fs.existsSync(path.join(reejsDir, "cache"))) {
@@ -157,6 +163,7 @@ let dl = async function(url, cli = false, remove = false, forBrowser = false) {
   });
   let finalURL = res.url;
   let code = await res.text();
+  let oldCode = code;
   if (!remove)
     console.log("%c[DOWNLOAD] %c" + url, "color:blue", "color:yellow");
   if (finalURL.endsWith(".ts")) {
@@ -177,8 +184,11 @@ let dl = async function(url, cli = false, remove = false, forBrowser = false) {
   try {
     packs = lexer.parse(code);
   } catch (e) {
-    console.log("%c[ERROR] %c" + finalURL, "color:red", "color:blue");
-    throw e;
+    console.log(
+        "%c[ERROR] %cSkipping %c" + finalURL + "%c because of %cParse Error",
+        "color:red", "color:blue", "color:yellow", "color:blue", "color:red");
+    code = oldCode;
+    packs = [];
   }
   // map packs , find the npm: and and run followRedirect on it and return the
   // url

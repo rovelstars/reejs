@@ -12,7 +12,8 @@ import {Import} from "./URLImport.js";
 import dl from "./URLImportInstaller.js";
 let terser;
 let reejsDir = path.join(process.cwd(), ".reejs");
-if (!fs.existsSync(path.join(reejsDir, "serve"))) {
+if (!fs.existsSync(path.join(reejsDir, "serve")) &&
+    fs.existsSync(path.join(process.cwd(), ".reecfg"))) {
   fs.mkdirSync(path.join(reejsDir, "serve"), {recursive : true});
 }
 
@@ -30,7 +31,7 @@ let cachemap = fs.existsSync(path.join(reejsDir, "cache", "cache.json"))
                    : {};
 let react = importmap.imports?.react || importmap.browserImports?.react;
 let lexer;
-export default async function SpecialFileImport(file, parentFile) {
+export default async function SpecialFileImport(file, parentFile, service) {
   if (!terser)
     terser = await Import("terser@5.16.6");
   if (!lexer) {
@@ -123,12 +124,16 @@ jsxFragmentPragma : "Fragment",*/
       ppack = ppack.replace(packFileName, TheFile);
       // compile the react file and save in .reejs/serve
       let reactFile =
-          "./" +
-          path.join(reejsDir, "serve",
-                    (await SpecialFileImport(
-                         path.join(process.cwd(), "node_modules", ppack), file))
-                        .split("serve/")[1])
-              .split("serve/")[1];
+          /*(service == "deno-deploy")
+              ? ("../../node_modules/" + ppack)
+              :*/
+          ("./" +
+           path.join(reejsDir, "serve",
+                     (await SpecialFileImport(
+                          path.join(process.cwd(), "node_modules", ppack), file,
+                          service))
+                         .split("serve/")[1])
+               .split("serve/")[1]);
       return reactFile;
     } else if (pack.n.startsWith("./") || pack.n.startsWith("../")) {
       let ppack = pack.n;
@@ -152,27 +157,43 @@ jsxFragmentPragma : "Fragment",*/
         ppack = pack.n;
       }
       let reactFile =
-          "./" + path.join(reejsDir, "serve",
-                           (await SpecialFileImport(path.join(
-                                file.split("/").slice(0, -1).join("/"), ppack)))
-                               .split("serve/")[1])
-                     .split("serve/")[1];
+          /*  (service == "deno-deploy")
+                ? ("../../" + path.join(file.split("/").slice(0,
+             -1).join("/"), pack.n.split("/").slice(0, -1).join("/"),
+                                        TheFile)
+                                  .replace(process.cwd(), ""))
+                      .replace("//", "/")
+                :*/
+          "./" +
+          path.join(
+                  reejsDir, "serve",
+                  (await SpecialFileImport(
+                       path.join(file.split("/").slice(0, -1).join("/"), ppack),
+                       null, service))
+                      .split("serve/")[1])
+              .split("serve/")[1];
       return reactFile;
     } else {
       // check if package is in the import map
       if (importmap.imports[pack.n]) {
-        return `../cache/${cachemap[importmap.imports[pack.n]]}`;
+        return (service != "deno-deploy")
+                   ? `../cache/${cachemap[importmap.imports[pack.n]]}`
+                   : importmap.imports[pack.n];
       } else if (importmap.browserImports[pack.n]) {
-        return `../cache/${cachemap[importmap.browserImports[pack.n]]}`;
+        return (service != "deno-deploy")
+                   ? `../cache/${cachemap[importmap.browserImports[pack.n]]}`
+                   : importmap.browserImports[pack.n];
       } else {
-        console.log("Package not found in import map: ", pack.n);
-        return null;
+        return pack.n;
       }
     }
   }));
   packs.map((p, i) => { result = result.replace(p.n, files[i]); });
   if (result.includes("React")) {
-    result = `import React from "../cache/${cachemap[react]}";\n` + result;
+    result =
+        `import React from "${
+            (cachemap[react]) ? `../cache/${cachemap[react]}` : react}";\n` +
+        result;
   }
   // save it to reejsDir/serve/[hash].js
   let savedAt = path.join(

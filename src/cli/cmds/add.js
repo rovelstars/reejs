@@ -5,6 +5,7 @@ import dl from "../../imports/URLImportInstaller.js";
 
 export let install =
     async (name, url, opts) => {
+  let ua = opts["user-agent"] || opts["u"];
   // we would show time taken to install the package
   let start = Date.now();
   let isBrowser = opts?.browser || opts?.b ? "browserImports" : "imports";
@@ -19,9 +20,9 @@ export let install =
         "color: #805ad5", "color: yellow");
     let import_map = JSON.parse(
         fs.readFileSync(path.join(process.cwd(), "import_map.json")));
-    await Promise.all(
-        Object.keys(import_map.imports)
-            .map(async (key) => { await dl(import_map.imports[key], true); }));
+    await Promise.all(Object.keys(import_map.imports).map(async (key) => {
+      await dl(import_map.imports[key], true, null, null, ua);
+    }));
     let end = Date.now();
     let time = (end - start) / 1000;
     console.log("%c[DOWNLOAD] %cInstalled all packages in " + time + "s",
@@ -50,14 +51,14 @@ export let install =
           console.log(url);
         }
       }
-      await dl(url, true);
+      await dl(url, true, null, null, ua);
       // add to import_map.json
       import_map[isBrowser][name] = url;
       fs.writeFileSync(path.join(process.cwd(), "import_map.json"),
                        JSON.stringify(import_map, null, 2));
     }
   } else {
-    await dl(url, true);
+    await dl(url, true, null, null, ua);
     // add to import_map.json
     let import_map =
         fs.readFileSync(path.join(process.cwd(), "import_map.json"));
@@ -77,6 +78,7 @@ export default function add(prog) {
       .alias([ "install", "i" ])
       .option("-f, --force", "Install default URLs")
       .option("-b, --browser", "Install as browser dependency")
+      .option("-u", "--user-agent", "Set user agent to download the package")
       .describe("Add a package to your project")
       .action(install)
 }

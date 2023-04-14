@@ -28,7 +28,8 @@ let getPackage = (pkg) => {
   if (!url) {
     throw new Error(`Package ${pkg} not found in import map.`);
   }
-  return "./" + path.join(".reejs", "cache", cachemap[url]);
+  return cachemap[url] ? ("./" + path.join(".reejs", "cache", cachemap[url]))
+                       : url;
 };
 
 let pagesDir = path.join(process.cwd(), "src", "pages");
@@ -100,8 +101,9 @@ export let packit = async (service, isDevMode) => {
   // transpile pages, components and apis
   let cpages = await Promise.all(pages.map(async (page) => {
     let pagePath = path.join(pagesDir, page);
-    let d = path.join(".reejs", "serve",
-                      (await SpecialFileImport(pagePath)).split("serve/")[1]);
+    let d = path.join(
+        ".reejs", "serve",
+        (await SpecialFileImport(pagePath, null, service)).split("serve/")[1]);
     return [
       page.replace("index", "")
           .replace(".tsx", "")
@@ -113,9 +115,9 @@ export let packit = async (service, isDevMode) => {
   }));
   let ccomponents = await Promise.all(components.map(async (component) => {
     let componentPath = path.join(componentsDir, component);
-    let d =
-        path.join(".reejs", "serve",
-                  (await SpecialFileImport(componentPath)).split("serve/")[1]);
+    let d = path.join(".reejs", "serve",
+                      (await SpecialFileImport(componentPath, null, service))
+                          .split("serve/")[1]);
     return [
       component.replace(".tsx", "")
               .replace(".ts", "")
@@ -127,8 +129,9 @@ export let packit = async (service, isDevMode) => {
   }));
   let capis = await Promise.all(apis.map(async (api) => {
     let apiPath = path.join(apisDir, api);
-    let d = path.join(".reejs", "serve",
-                      (await SpecialFileImport(apiPath)).split("serve/")[1]);
+    let d = path.join(
+        ".reejs", "serve",
+        (await SpecialFileImport(apiPath, null, service)).split("serve/")[1]);
     return [
       api.replace("index", "")
           .replace(".tsx", "")
@@ -206,39 +209,7 @@ export let packit = async (service, isDevMode) => {
                               file.endsWith(".jsx") || file.endsWith(".tsx"));
                     })[0];
   appFile = await SpecialFileImport(
-      path.join(process.cwd(), "src", "pages", appFile));
-  let reejsSavedFilesCache =
-      fs.readdirSync(path.join(process.cwd(), ".reejs", "cache"));
-  let reejsSavedFilesServe =
-      fs.readdirSync(path.join(process.cwd(), ".reejs", "serve"));
-  let reejsSavedFilesString = "";
-  if (service == "node") {
-    reejsSavedFilesString =
-        reejsSavedFilesCache
-            .map((file) => {
-              return `let cache_${
-                  file.replace(".", "")} = fs.readFileSync("./.reejs/cache/${
-                  file}");server.app.get("/__reejs/cache/${
-                  file}", (c)=>{c.header('Content-type','${
-                  file.endsWith(".js")
-                      ? "text/javascript"
-                      : "application/json"}');return c.body(cache_${
-                  file.replace(".", "")})});`;
-            })
-            .join("\n") +
-        reejsSavedFilesServe
-            .map((file) => {
-              return `let serve_${
-                  file.replace(".", "")} = fs.readFileSync("./.reejs/serve/${
-                  file}");server.app.get("/__reejs/serve/${
-                  file}", (c)=>{c.header('Content-type','${
-                  file.endsWith(".js")
-                      ? "text/javascript"
-                      : "application/json"}');return c.body(serve_${
-                  file.replace(".", "")})});`;
-            })
-            .join("\n");
-  }
+      path.join(process.cwd(), "src", "pages", appFile), null, service);
   // if cpages includes an array whose first element is "_browser", return back
   // the file to it.
   let browserFn = cpages.filter((page) => page[0] == "_browser");
@@ -311,18 +282,28 @@ import tw from "./${twindFn[0][1]}";`
 		${
                     capis
                         .map(
-                            (api) => `import file_${
-                                api[1].split("serve/")[1].split(
-                                    ".")[0]} from "./${
-                                api[1]}";server.app.get("/api/${api[0]}",file_${
-                                api[1].split("serve/")[1].split(".")[0]});`)
+                            (api) =>
+                                (api[0].startsWith("_"))
+                                                                    ? `import "./${api[1]}";`
+                                                                    : `import * as file_${
+                                          api[1].split("serve/")[1].split(
+                                              ".")[0]} from "./${
+                                          api[1]}";server.app[file_${
+                                          api[1].split("serve/")[1].split(".")
+                                              [0]}?.method?.toLowerCase() || "get"]("/api/${
+                                          api[0]}",file_${
+                                          api[1].split("serve/")[1].split(
+                                              ".")[0]}.default);`)
                         .join("\n")}`
                                               : ""                                }
 
-${reejsSavedFilesString}
 		${
+          (service === "node")
+                                              ? "server.app.get('/__reejs/**',serveStatic({root:'./__reejs/',rewriteRequestPath:(p)=>p.replace('/__reejs','')}));server.app.get('/**',serveStatic({root:'./public',rewriteRequestPath:(p)=>p.replace('/public','')}));"
+                                              : ""                                }
+	  ${
           service === "node"
-                                              ? "server.app.get('/**',serveStatic({root:'./public'}));server.listen(process.env.PORT || 3000, () => console.log(`Server started on port ${process.env.PORT || 3000}`));"
+                                              ? "server.listen(process.env.PORT || 3000, () => console.log(`Server started on port ${process.env.PORT || 3000}`));"
                                               : ""                                }
 	${service == "workers" ? "export default server.app;" : ""                                }
 	${service == "deno-deploy" ? "serve(server.app.fetch)" : ""                                }
