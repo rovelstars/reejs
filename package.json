@@ -1,12 +1,14 @@
 {
   "name": "reejs",
-  "version": "0.9.0",
+  "version": "0.9.8",
   "description": "",
   "type": "module",
-  "main": "index.js",
+  "main": "src/cli/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-	"start": "node src/server/server.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@reejs/utils": "^1.0.0"
   },
   "keywords": [],
   "author": "@rovelstars",

@@ -3,6 +3,8 @@
 let runtime = "browser";
 if (typeof Deno !== "undefined") {
   runtime = "deno";
+} else if (typeof Bun !== "undefined") {
+  runtime = "bun";
 } else if (typeof process !== "undefined") {
   if (process.versions.node) {
     runtime = "node";
@@ -15,13 +17,15 @@ if (typeof Deno !== "undefined") {
       return originalEmit.apply(process, arguments);
     };
   }
-} else if (typeof Bun !== "undefined") {
-  runtime = "bun";
 }
 let dirname, projectDir, reejsDir;
-if (runtime == "node" || runtime == "bun") {
+if (runtime == "node" || runtime == "bun" || runtime == "deno") {
   dirname = new URL("..", import.meta.url).pathname.slice(0, -1);
-  process.env.PWD = process.cwd();
+  if(new URL("..", import.meta.url).protocol!="file:"){
+    dirname = globalThis?.Deno?.env?.get('DENO_INSTALL') || "/tmp"
+      }
+  if(globalThis?.process)process.env.PWD = process.cwd();
+  if(globalThis?.Deno) Deno.env.set("PWD", Deno.cwd());
   projectDir = dirname.slice(0, dirname.lastIndexOf("/"));
   reejsDir =
       projectDir.includes("node_modules")

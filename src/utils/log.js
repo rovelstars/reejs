@@ -12,7 +12,7 @@ function logWithStyle(type, message, ...styles) {
 	if(typeof message === "object" || typeof message === "json"){
 		return oc[type](message,...styles);
 	}
-  if (!message?.includes("%c") || !styles?.length) {
+  if (!message?.includes?.("%c") || !styles?.length) {
     return oc[type](message, ...styles);
   }
   // Split the message by the placeholder %c and trim the spaces

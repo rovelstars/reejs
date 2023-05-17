@@ -20,23 +20,24 @@ export default async function reender(page, browserFn) {
     let file = e.getAttribute("__filename");
     let fn = e.getAttribute("__compname") || "default";
     let p = (await import("/__reejs/serve/" + file))[fn];
-    React.hydrate(React.createElement(p), e);
+    React.render(React.createElement(p), e);
   }
 
   load = $$("[island='client:idle']");
-  for (let i = 0; i < load.length; i++) {
-    // load the component and react when the browser is idle
-    let e = load[i];
-    console.log(e);
-    let file = e.getAttribute("__filename");
-    let fn = e.getAttribute("__compname") || "default";
-    window.requestIdleCallback(async () => {
-      if (!React)
-        React = (await import("react"));
-      let p = (await import("/__reejs/serve/" + file))[fn];
-      React.hydrate(React.createElement(p), e);
-    });
-  }
+    for (let i = 0; i < load.length; i++) {
+      // load the component and react when the browser is idle
+      let e = load[i];
+      let file = e.getAttribute("__filename");
+      let fn = e.getAttribute("__compname") || "default";
+      window.requestIdleCallback(async () => {
+        setTimeout(async()=>{
+        if (!React)
+          React = (await import("react"));
+        let p = (await import("/__reejs/serve/" + file))[fn];
+        React.render(React.createElement(p), e);
+        }, 2000);
+      });
+    }
 
   load = $$("[island='client:visible']");
   if (load.length > 0) {
@@ -49,7 +50,7 @@ export default async function reender(page, browserFn) {
           let file = e.getAttribute("__filename");
           let fn = e.getAttribute("__compname") || "default";
           let p = (await import("/__reejs/serve/" + file))[fn];
-          React.hydrate(React.createElement(p), e);
+          React.render(React.createElement(p), e);
         }
       });
     });
@@ -72,9 +73,9 @@ export default async function reender(page, browserFn) {
         if (!React)
           React = (await import("react"));
         let p = (await import("/__reejs/serve/" + file))[fn];
-        React.hydrate(React.createElement(p), e);
+        React.render(React.createElement(p), e);
       } else {
-        mql.addEventListener("change", listener, {once : true});
+        mql.addEventListener("change", listener, { once: true });
       }
     };
     listener(mql);
@@ -89,10 +90,10 @@ export default async function reender(page, browserFn) {
       if (!React)
         React = (await import("react"));
       let p = (await import("/__reejs/serve/" + file))[fn];
-      React.hydrate(React.createElement(p), e);
+      React.render(React.createElement(p), e);
       // click the child element to register the click from user now
       e.children[0].click();
-    }, {once : true});
+    }, { once: true });
   }
 
   load = $$("[island='user:hover']");
@@ -104,7 +105,7 @@ export default async function reender(page, browserFn) {
       if (!React)
         React = (await import("react"));
       let p = (await import("/__reejs/serve/" + file))[fn];
-      React.hydrate(React.createElement(p), e);
-    }, {once : true});
+      React.render(React.createElement(p), e);
+    }, { once: true });
   }
 }

@@ -11,17 +11,8 @@ import DynamicImport from "./dynamicImport.js";
 
 export default async function NativeImport(m, isChild = false) {
   let mod;
-  if (env === "node" || env === "bun") {
+  if (env === "node" || env === "bun" || env === "deno") {
     mod = DynamicImport(await import(m));
-  } else if (env === "deno") {
-    mod = DynamicImport(
-      await import(
-        `https://deno.land/x/std@${Deno.version.deno}/node/${m.replace(
-          "node:",
-          ""
-        )}.ts`
-      )
-    );
   } else {
     throw new Error("Unsupported runtime", env);
   }
