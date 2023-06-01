@@ -1,12 +1,15 @@
 {
-  "name": "@reejs/utils",
-  "version": "1.0.0",
-  "description": "",
-  "type": "module",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+    "name": "@reejs/utils",
+    "version": "1.0.8",
+    "description": "",
+    "type": "module",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "@reejs/imports": "*"
+    }
 }

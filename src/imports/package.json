@@ -1,20 +1,20 @@
 {
-  "name": "@reejs/imports",
-  "version": "2.1.0",
-  "description": "URL Imports, Native Imports and Dynamic Imports helper for Reejs. Can be easily used without installing Reejs.",
-  "main": "index.js",
-  "type": "module",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "dependencies": {
-    "@reejs/utils": "^1.0.0"
-  },
-  "keywords": [],
-  "author": "@rovelstars",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/rovelstars/reejs.git"
-  }
+    "name": "@reejs/imports",
+    "version": "2.1.7",
+    "description": "URL Imports, Native Imports and Dynamic Imports helper for Reejs. Can be easily used without installing Reejs.",
+    "main": "index.js",
+    "type": "module",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "dependencies": {
+        "@reejs/utils": "*"
+    },
+    "keywords": [],
+    "author": "@rovelstars",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/rovelstars/reejs.git"
+    }
 }

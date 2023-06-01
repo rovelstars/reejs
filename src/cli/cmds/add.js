@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import dl from "../../imports/URLImportInstaller.js";
+import dl from "@reejs/imports/URLImportInstaller.js";
 
 export let install =
   async (name, url, opts) => {

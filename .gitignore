@@ -1,3 +1,7 @@
 .reejs
-node_modules
+**/package-lock.json
+**/node_modules 
 package-lock.json
+**/version.js
+**/bun.lockb
+bun.lockb

@@ -1,5 +1,5 @@
-import DynamicImport from "../imports/dynamicImport.js";
-import env from "../imports/env.js";
+import DynamicImport from "@reejs/imports/dynamicImport.js";
+import env from "@reejs/imports/env.js";
 let chalk = DynamicImport(await import("./chalk.js"));
 let oc = console;
 function logWithStyle(type, message, ...styles) {
@@ -16,7 +16,7 @@ function logWithStyle(type, message, ...styles) {
     return oc[type](message, ...styles);
   }
   // Split the message by the placeholder %c and trim the spaces
-  let messageArray = message.split("%c").map((e) => e.trim());
+  let messageArray = message.split("%c");
   // Remove the first empty string
   if (messageArray[0].trim() == "") messageArray.shift();
   // Initialize an array to store the chalk objects
@@ -97,6 +97,7 @@ function logWithStyle(type, message, ...styles) {
 }
 if (env == "node" || env == "bun") {
   globalThis.console = {
+    ...oc,
     log: (...args) => {
       logWithStyle("log", ...args);
     },
@@ -108,6 +109,6 @@ if (env == "node" || env == "bun") {
     },
     info: (...args) => {
       logWithStyle("info", ...args);
-    },
+    }
   };
 }

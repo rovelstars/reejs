@@ -1,7 +1,7 @@
 import path from "path";
-import SpecialFileImport from "../../imports/specialFileImport.js";
+import SpecialFileImport from "@reejs/imports/specialFileImport.js";
 import URLImport
-  from "../../imports/URLImport.js";
+  from "@reejs/imports/URLImport.js";
 let processCwd = globalThis?.process?.cwd?.() || Deno.cwd();
 //create __dirname
 Object.defineProperty(globalThis, "__dirname", {
@@ -9,8 +9,6 @@ Object.defineProperty(globalThis, "__dirname", {
   configurable: true,
   enumerable: true,
 });
-
-if(!globalThis?.fetch){ globalThis.fetch = (await import("../../imports/fetch.js")).default; }
 
 export default async function (prog) {
   prog

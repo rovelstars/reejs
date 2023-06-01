@@ -1,8 +1,8 @@
-import DynamicImport from "../../imports/dynamicImport.js";
-import NativeImport from "../../imports/nativeImport.js";
-import SpecialFileImport from "../../imports/specialFileImport.js";
-import { Import } from "../../imports/URLImport.js";
-import copyFolderSync from "../../utils/copyFolder.js";
+import DynamicImport from "@reejs/imports/dynamicImport.js";
+import NativeImport from "@reejs/imports/nativeImport.js";
+import SpecialFileImport from "@reejs/imports/specialFileImport.js";
+import { Import } from "@reejs/imports/URLImport.js";
+import copyFolderSync from "@reejs/utils/copyFolder.js";
 
 let fs = await NativeImport("node:fs");
 let path = await NativeImport("node:path");

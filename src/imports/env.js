@@ -18,6 +18,14 @@ if (typeof Deno !== "undefined") {
     };
   }
 }
+//create path.join polyfill for all runtimes
+
+function joinPath() {
+  var paths = Array.prototype.slice.call(arguments);
+  return paths.join('/').replace(/\/+/g, '/');
+}
+
+
 let dirname, projectDir, reejsDir;
 if (runtime == "node" || runtime == "bun" || runtime == "deno") {
   dirname = new URL("..", import.meta.url).pathname.slice(0, -1);
@@ -29,9 +37,9 @@ if (runtime == "node" || runtime == "bun" || runtime == "deno") {
   projectDir = dirname.slice(0, dirname.lastIndexOf("/"));
   reejsDir =
       projectDir.includes("node_modules")
-          ? projectDir.slice(0, projectDir.lastIndexOf("node_modules/")) +
-                "/.reejs"
-          : projectDir + "/.reejs";
+          ? joinPath(projectDir.slice(0, projectDir.lastIndexOf("node_modules")),
+                ".reejs")
+          : joinPath(projectDir, ".reejs");
 }
 export {runtime, reejsDir, projectDir, dirname};
 export default runtime;

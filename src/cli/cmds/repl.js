@@ -1,13 +1,26 @@
 import repl, { REPLServer } from 'repl';
-import Import, { NativeImport, DynamicImport,URLImport } from "../../imports/index.js";
-import dl from '../../imports/URLImportInstaller.js';
+import Import, { NativeImport, DynamicImport,URLImport } from "@reejs/imports/index.js";
+import dl from '@reejs/imports/URLImportInstaller.js';
+import chalk from '@reejs/utils/chalk.js';
 import doctor from "./doctor.js";
+let fs = await NativeImport("node:fs");
 export default async function (prog) {
   prog
     .command("repl")
     .describe("Start a quick repl to test out reejs")
     .action(async function () {
-      let r = repl.start("> ");
+      if(!globalThis.Deno){
+        //setup Deno namespace shim
+        console.log("%c[DENO] Setting up Deno namespace shim","color:yellow;");
+        globalThis.Deno = DynamicImport(await URLImport("https://esm.sh/@deno/shim-deno@0.16.0"));
+        if(!Deno.readFile){
+          Deno.readFile = async function(path){
+            return fs.readFileSync(path);
+          }
+        }
+      }
+      console.log("%c[REPL] %cStarting ReePL","color:#7c3aed", "color:#db2777");
+      let r = repl.start(chalk.hex("db2777")("> "));
       Object.defineProperty(r.context, "dl", {
         value: dl
       });

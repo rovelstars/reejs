@@ -11,12 +11,11 @@ let fs = await NativeImport("node:fs");
 let path = await NativeImport("node:path");
 let http = await NativeImport("node:http");
 let https = await NativeImport("node:https");
-if (!globalThis?.fetch) { globalThis.fetch = (await import("./fetch.js")).default; }
+
 let crypto = await NativeImport("node:crypto");
 import "@reejs/utils/log.js";
 import DynamicImport from "./dynamicImport.js";
 import URLImport from "./URLImport.js";
-
 let processCwd = globalThis?.process?.cwd?.() || Deno.cwd();
 
 if (!fs.existsSync(path.join(reejsDir, "cache")) &&
@@ -31,7 +30,7 @@ let URLToFile = function (url, noFolderPath = false) {
     return url;
   let isJson = false;
   let fileExt = path.extname(url).split("?")[0];
-  if(![".json",".js",".wasm"].includes(fileExt)) {
+  if (![".json", ".js", ".wasm"].includes(fileExt)) {
     fileExt = ".js";
   }
   if (!url.startsWith("https://") && !url.startsWith("http://"))
@@ -52,8 +51,7 @@ let URLToFile = function (url, noFolderPath = false) {
 };
 // user agent
 let UA;
-let pkgJson =
-  DynamicImport(await import("../../package.json", { assert: { type: "json" } }));
+let pkgJson = DynamicImport(await import("./version.js")).reejs;
 switch (env) {
   case "node":
     UA = `Node/${process.version} (reejs/${pkgJson.version})`;
@@ -91,7 +89,9 @@ let followRedirect = async function (url, forBrowser = false) {
   try {
     let finalURL = url;
     let res =
-      await fetch(url, { method: "HEAD", headers: { "User-Agent": UA } });
+      await fetch(url, { method: "HEAD", headers: { "User-Agent": UA } }).catch(()=>{
+        throw new Error("URLImportInstaller: Couldn't fetch the URL: "+url);
+      });
     finalURL = res.url;
     return finalURL;
   } catch (e) {
@@ -99,7 +99,7 @@ let followRedirect = async function (url, forBrowser = false) {
   }
 };
 
-async function waitUntilArrayDoesntHaveValue(array, value,checkInterval=200) {
+async function waitUntilArrayDoesntHaveValue(array, value, checkInterval = 200) {
   //if the value isn't removed after 10 seconds, throw an error.
   // let timeout = setTimeout(() => {
   //   throw new Error("TimeoutError: The value was not removed from the array: "+value);
@@ -117,23 +117,23 @@ globalThis.MODULES_SENT_TO_DOWNLOAD = [];
 let lexer, parser;
 
 let dl =
-  async function (url, cli = false, remove = false, forBrowser = false, ua=UA) {
+  async function (url, cli = false, remove = false, forBrowser = false, ua = UA) {
     url = url;
-    if (ua && ua!="Set user agent to download the package") UA = ua;
+    if (ua && ua != "Set user agent to download the package") UA = ua;
     if (UA.startsWith("Deno"))
       return url; // I hope Deno's URL Import Installer is faster than this.
     // now we can look for deno.land imports
-    if(url.startsWith("https://deno.land/x/")) {
+    if (url.startsWith("https://deno.land/x/")) {
       ua = "Deno/1.33.3";
-  }
-    if (cli) 
+    }
+    if (cli)
       reejsDir = path.join(processCwd, cli == true ? "" : cli, ".reejs");
-      
-      if (!fs.existsSync(path.join(reejsDir, "cache"))) {
-        fs.mkdirSync(path.join(reejsDir, "cache"), { recursive: true });
-        fs.writeFileSync(path.join(reejsDir, "cache", "package.json"),
-          JSON.stringify({ type: "module" }));
-      }
+
+    if (!fs.existsSync(path.join(reejsDir, "cache"))) {
+      fs.mkdirSync(path.join(reejsDir, "cache"), { recursive: true });
+      fs.writeFileSync(path.join(reejsDir, "cache", "package.json"),
+        JSON.stringify({ type: "module" }));
+    }
 
     if (url.startsWith("node:"))
       return url;
@@ -193,10 +193,12 @@ let dl =
       headers: {
         "User-Agent": forBrowser ? `Mozilla/5.0 (reejs/${pkgJson.version})` : UA,
       }
+    }).catch(()=>{
+      throw new Error("URLImportInstaller: Couldn't fetch the URL: "+url);
     });
     let finalURL = await followRedirect(res.url, forBrowser);
-    await waitUntilArrayDoesntHaveValue(CURRENT_DOWNLOADING,finalURL);
-    if(MODULES_SENT_TO_DOWNLOAD.includes(finalURL)) {
+    await waitUntilArrayDoesntHaveValue(CURRENT_DOWNLOADING, finalURL);
+    if (MODULES_SENT_TO_DOWNLOAD.includes(finalURL)) {
       //idk why this happens, but it does fix the issue regarding infinite loop of downloading modules...
       return URLToFile(finalURL);
     }
@@ -207,15 +209,17 @@ let dl =
     MODULES_SENT_TO_DOWNLOAD.push(finalURL);
     let code = await res.text();
     let tries = 0;
-     while(code=="" && (finalURL==url)){
-       code = await (await fetch(finalURL, {
-         headers: {
-           "User-Agent": forBrowser ? `Mozilla/5.0 (reejs/${pkgJson.version})` : UA,
-         }
-         })).text();
-        tries++;
-         if(code=="") console.log(tries+" try: Retry due to Empty code for "+finalURL);
-     }
+    while (code == "" && (finalURL == url)) {
+      code = await (await fetch(finalURL, {
+        headers: {
+          "User-Agent": forBrowser ? `Mozilla/5.0 (reejs/${pkgJson.version})` : UA,
+        }
+      })).text();
+      tries++;
+      if (code == "" && tries>10) console.log(tries + " try: Retry due to Empty code for " + finalURL);
+      //sleep for x * 100ms
+      await new Promise((resolve) => setTimeout(resolve, (tries) * 100));
+    }
     let oldCode = code;
     if (!remove && (globalThis?.process?.env?.DEBUG || globalThis?.Deno?.env?.get("DEBUG")))
       console.log("%c[DOWNLOAD] %c" + url, "color:blue", "color:yellow");
@@ -265,11 +269,11 @@ let dl =
       let dlUrl;
       if (p.startsWith("/")) {
         let eurl = new URL(finalURL);
-        dlUrl = eurl.protocol+"//"+path.join(eurl.host, p);
+        dlUrl = eurl.protocol + "//" + path.join(eurl.host, p);
       }
-      else if(p.startsWith("./")){
+      else if (p.startsWith("./")) {
         let eurl = new URL(finalURL);
-        dlUrl = eurl.protocol+"//"+eurl.hostname+path.join(path.dirname(eurl.pathname), p);
+        dlUrl = eurl.protocol + "//" + eurl.hostname + path.join(path.dirname(eurl.pathname), p);
         code = code.replaceAll(p, URLToFile(dlUrl, true));
       }
       //if(p.endsWith(".json.js")) p = p.replace(".json.js",".json");
@@ -281,9 +285,19 @@ let dl =
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
-      if(code==""){
-        console.log("%c[WARN] %cSkipping %c" + finalURL + "%c because of %cEmpty Code","color:red", "color:blue", "color:yellow", "color:blue", "color:red");
+      if (code == "") {
+        console.log("%c[WARN] %cSkipping %c" + finalURL + "%c because of %cEmpty Code", "color:red", "color:blue", "color:yellow", "color:blue", "color:red");
         return URLToFile(finalURL); // this crashes but it wont save the file, so it can be fetched next time
+      }
+      if (code.includes(".wasm")) {
+        code = code.replaceAll(/(__dirname\s*(,|\+)\s*)?(("|'|`)[^("|'|`)]+\.wasm("|'|`))/g, (e) => {
+          // e is the match, like __dirname+"./file.wasm"
+          let ematch = JSON.stringify(e).replace("__dirname", "").replaceAll(" ", "").replaceAll("+", "").replaceAll(",", "").replaceAll('"', "").replaceAll("'", "").replaceAll("`", "");
+          let eurl = new URL(finalURL);
+          let wasmUrl = eurl.protocol + "//" + eurl.hostname + path.join(path.dirname(eurl.pathname), ematch);
+          console.log("WASM found: " + wasmUrl);
+          return URLToFile(wasmUrl, true);
+        });
       }
       fs.writeFileSync(URLToFile(finalURL), code)
     }
@@ -326,7 +340,7 @@ let save = (e) => {
     let result = arr.map(pair => {
       let newObj = {};
       newObj["file://" + path.join(reejsDir, "cache", pair[1])] = pair[0];
-      newObj["./"+pair[1]] = (new URL(pair[0])).pathname;
+      newObj["./" + pair[1]] = (new URL(pair[0])).pathname;
       newObj[path.join(reejsDir, "cache", pair[1])] = pair[0];
       return newObj;
     });

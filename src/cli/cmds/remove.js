@@ -1,4 +1,4 @@
-import dl from "../../imports/URLImportInstaller.js";
+import dl from "@reejs/imports/URLImportInstaller.js";
 import fs from "node:fs";
 import path from "node:path";
 export default function add(prog) {

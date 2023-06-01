@@ -1,0 +1,10 @@
+src/imports
+src/react
+src/server
+src/utils
+.reejs
+node_modules
+.git
+scripts/*
+**/bun.lockb
+bun.lockb

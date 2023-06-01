@@ -1,5 +1,5 @@
-import NativeImport from "../../imports/nativeImport.js";
-import { followRedirect, URLToFile } from "../../imports/URLImportInstaller.js";
+import NativeImport from "@reejs/imports/nativeImport.js";
+import { followRedirect, URLToFile } from "@reejs/imports/URLImportInstaller.js";
 export let sync = async (smt, dir) => {
   let fs = await NativeImport("node:fs");
   let path = await NativeImport("node:path");
@@ -18,7 +18,7 @@ export let sync = async (smt, dir) => {
     import_map.imports[key] = urldest;
     let value = URLToFile(urldest, true).slice(2);
     if (!fs.existsSync(
-      path.join(dir || process.cwd(), ".reejs", "deps", key))) {
+      path.join(dir || process.cwd(), ".reejs", "deps", key, "package.json"))) {
       fs.mkdirSync(path.join(dir || process.cwd(), ".reejs", "deps", key), {
         recursive: true,
       });

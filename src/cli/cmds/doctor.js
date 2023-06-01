@@ -1,7 +1,6 @@
-import { runtime } from "../../imports/env.js";
-import DynamicImport from "../../imports/dynamicImport.js";
-let pkg =
-  DynamicImport(await import("../../../package.json", { assert: { type: "json" } }));
+import { runtime } from "@reejs/imports/env.js";
+import DynamicImport from "@reejs/imports/dynamicImport.js";
+let pkg = (DynamicImport(await import("../version.js"))).reejs;
 import fs from "node:fs";
 import path from "node:path";
 let projectCacheJson = {};

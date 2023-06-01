@@ -1,19 +1,27 @@
 {
-  "name": "reejs",
-  "version": "0.9.8",
-  "description": "",
-  "type": "module",
-  "main": "src/cli/index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "dependencies": {
-    "@reejs/utils": "^1.0.0"
-  },
-  "keywords": [],
-  "author": "@rovelstars",
-  "license": "MIT",
-  "bin": {
-    "reejs": "./src/cli/index.js"
-  }
+    "name": "reejs",
+    "version": "0.9.15",
+    "description": "",
+    "type": "module",
+    "main": "src/cli/index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "write-version": "node ./scripts/write-version.js",
+        "bump-test": "node ./scripts/bump-test.js",
+        "bump-small": "node ./scripts/bump-small.js",
+        "bump-mid": "node ./scripts/bump-mid.js",
+        "bump-major": "node ./scripts/bump-major.js",
+        "publish-all": "npm publish && cd src/imports && npm publish && cd ../server && npm publish && cd ../utils && npm publish && cd ../react && npm publish && cd ../.."
+    },
+    "dependencies": {
+        "@reejs/imports": "latest",
+        "@reejs/server": "latest",
+        "@reejs/utils": "latest"
+    },
+    "keywords": [],
+    "author": "@rovelstars",
+    "license": "MIT",
+    "bin": {
+        "reejs": "./src/cli/index.js"
+    }
 }

@@ -1,13 +1,13 @@
 {
-  "name": "@reejs/react",
-  "version": "0.9.5",
-  "description": "",
-  "type": "module",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "MIT"
+    "name": "@reejs/react",
+    "version": "0.9.12",
+    "description": "",
+    "type": "module",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "MIT"
 }

@@ -1,19 +1,13 @@
-import DynamicImport from "../../imports/dynamicImport.js";
-import NativeImport from "../../imports/nativeImport.js";
+import DynamicImport from "@reejs/imports/dynamicImport.js";
+import NativeImport from "@reejs/imports/nativeImport.js";
 
-let pkgJson = DynamicImport(await import("../../../package.json", {
-  assert: { type: "json" },
-}));
-let pkgJson2 = DynamicImport(await import("../../imports/package.json", {
-  assert: { type: "json" },
-}));
-let pkgJson3 = DynamicImport(await import("../../server/package.json", {
-  assert: { type: "json" },
-}));
-let pkgJson4 = DynamicImport(await import("../../react/package.json", {
-  assert: { type: "json" },
-}));
-import { Import } from "../../imports/URLImport.js";
+let pkg = DynamicImport(await import("../version.js"));
+let pkgJson = pkg.reejs;
+let pkgJson2 = pkg.imports;
+let pkgJson3 = pkg.server;
+let pkgJson4 = pkg.react;
+
+import { Import } from "@reejs/imports/URLImport.js";
 let ora = await Import("ora@6.1.2");
 export default function (prog) {
   prog.command("init [name]")
@@ -34,7 +28,7 @@ export default function (prog) {
         console.log("%c[REEJS] %cFeatures to be installed: " + opts.features,
           "color: #805ad5", "color: green");
       }
-      if(!opts.features){
+      if (!opts.features) {
         console.log("%c[REEJS] %cNo features specified, creating a basic project.", "color: #805ad5", "color: blue");
       }
       let spinner = ora("Initializing project...").start();
@@ -43,14 +37,14 @@ export default function (prog) {
         JSON.stringify({
           name: name,
           version: "0.0.1",
-          features: opts.features=="" ? [] : opts.features,
+          features: opts.features == "" ? [] : opts.features,
         },
           null, 2));
       let optionalPkgs = {};
       if (opts.features.includes("react")) {
         optionalPkgs = {
           ...optionalPkgs,
-          "@reejs/react": pkgJson4.version,
+          "@reejs/react": `^${pkgJson4.version}`,
         };
       }
       fs.writeFileSync(path.join(process.cwd(), name, "package.json"),
@@ -68,6 +62,7 @@ export default function (prog) {
           license: "MIT",
         },
           null, 2));
+          fs.writeFileSync(path.join(process.cwd(),name,"packit.config.js"));
       if (opts.features.includes("api")) {
         fs.mkdirSync(path.join(process.cwd(), name, "src", "pages", "api"), {
           recursive: true,
@@ -77,11 +72,11 @@ export default function (prog) {
           return c.json({hello: "world"})
         }`);
       }
-      if(opts.features.includes("static")){
-      fs.mkdirSync(path.join(process.cwd(), name, "public"), {
-        recursive: true,
-      });
-    }
+      if (opts.features.includes("static")) {
+        fs.mkdirSync(path.join(process.cwd(), name, "public"), {
+          recursive: true,
+        });
+      }
       if (opts.features.includes("react")) {
         fs.writeFileSync(
           path.join(process.cwd(), name, "src", "pages", "index.jsx"),
@@ -115,6 +110,7 @@ export default defineConfig({
   presets: [presetAutoprefix, presetTailwind],
   darkMode: "class",
 });`);
+        fs.writeFileSync(path.join(process.cwd(),name,"tailwind.config.js"),"");
       }
       if (opts.features.includes("css")) {
         fs.mkdirSync(path.join(process.cwd(), name, "src", "styles"), {
@@ -124,7 +120,7 @@ export default defineConfig({
           path.join(process.cwd(), name, "src", "styles", "index.css"),
           `/* insert styles here */`);
       }
-      if(opts.features.length === 0){
+      if (opts.features.length === 0) {
         fs.mkdirSync(path.join(process.cwd(), name, "src"), {
           recursive: true,
         });
@@ -164,12 +160,12 @@ export default defineConfig({
         optionalDeps2["@twind/with-react/inline"] =
           optionalDeps["@twind/with-react/inline"];
       }
-      if(opts.features.includes("react") || opts.features.includes("static") || opts.features.includes("api")){
+      if (opts.features.includes("react") || opts.features.includes("static") || opts.features.includes("api")) {
         optionalDeps["@hono/node-server"] =
-          "https://esm.sh/@hono/node-server@0.3.0?bundle";
-        optionalDeps["hono"] = "https://esm.sh/hono@3.0.3?bundle";
+          "https://esm.sh/@hono/node-server@1.0.2?bundle";
+        optionalDeps["hono"] = "https://esm.sh/hono@3.1.8?bundle";
         optionalDeps["@hono/serve-static"] =
-          "https://esm.sh/@hono/node-server@0.3.0/serve-static?bundle";
+          "https://esm.sh/@hono/node-server@1.0.2/serve-static?bundle";
         optionalDeps["hono/compress"] = "https://esm.sh/hono@3.1.8/compress?bundle";
       }
       fs.writeFileSync(

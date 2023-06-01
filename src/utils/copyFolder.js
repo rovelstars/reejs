@@ -1,4 +1,4 @@
-import NativeImport from "../imports/nativeImport.js";
+import NativeImport from "@reejs/imports/nativeImport.js";
 let fs = await NativeImport("node:fs");
 let path = await NativeImport("node:path");
 
