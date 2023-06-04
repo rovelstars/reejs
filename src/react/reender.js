@@ -8,11 +8,13 @@ export default async function reender(page, browserFn) {
   let $ = (selector) => document.querySelector(selector);
   let $$ = (selector) => document.querySelectorAll(selector);
   let React;
+  globalThis.ISLAND_COUNT = 0;
   // available attributes: client:load, client:idle, client:visible,
   // client:media, user:click, user:hover
 
   // client:load
   let load = $$("[island='client:load']");
+  ISLAND_COUNT += load.length;
   for (let i = 0; i < load.length; i++) {
     if (!React)
       React = (await import("react")).default;
@@ -24,22 +26,24 @@ export default async function reender(page, browserFn) {
   }
 
   load = $$("[island='client:idle']");
-    for (let i = 0; i < load.length; i++) {
-      // load the component and react when the browser is idle
-      let e = load[i];
-      let file = e.getAttribute("__filename");
-      let fn = e.getAttribute("__compname") || "default";
-      window.requestIdleCallback(async () => {
-        setTimeout(async()=>{
+  ISLAND_COUNT += load.length;
+  for (let i = 0; i < load.length; i++) {
+    // load the component and react when the browser is idle
+    let e = load[i];
+    let file = e.getAttribute("__filename");
+    let fn = e.getAttribute("__compname") || "default";
+    window.requestIdleCallback(async () => {
+      setTimeout(async () => {
         if (!React)
           React = (await import("react"));
         let p = (await import("/__reejs/serve/" + file))[fn];
         React.render(React.createElement(p), e);
-        }, 2000);
-      });
-    }
+      }, 2000);
+    });
+  }
 
   load = $$("[island='client:visible']");
+  ISLAND_COUNT += load.length;
   if (load.length > 0) {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(async (entry) => {
@@ -60,6 +64,7 @@ export default async function reender(page, browserFn) {
   }
 
   load = $$("[island='client:media']");
+  ISLAND_COUNT += load.length;
   for (let i = 0; i < load.length; i++) {
     let e = load[i];
     let file = e.getAttribute("__filename");
@@ -82,6 +87,7 @@ export default async function reender(page, browserFn) {
   }
 
   load = $$("[island='user:click']");
+  ISLAND_COUNT += load.length;
   for (let i = 0; i < load.length; i++) {
     let e = load[i];
     let file = e.getAttribute("__filename");
@@ -97,6 +103,7 @@ export default async function reender(page, browserFn) {
   }
 
   load = $$("[island='user:hover']");
+  ISLAND_COUNT += load.length;
   for (let i = 0; i < load.length; i++) {
     let e = load[i];
     let file = e.getAttribute("__filename");
@@ -107,5 +114,14 @@ export default async function reender(page, browserFn) {
       let p = (await import("/__reejs/serve/" + file))[fn];
       React.render(React.createElement(p), e);
     }, { once: true });
+  }
+  if (!ISLAND_COUNT) {
+    if (!React)
+      React = (await import("react"));
+    let p = (await import("/__reejs/serve/" + page.split("/")[2])).default;
+    React.render(React.createElement(p), $("#root"));
+  }
+  else {
+    console.log(ISLAND_COUNT);
   }
 }

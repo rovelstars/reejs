@@ -3,7 +3,8 @@ import env from "../imports/env.js";
 class ReeServer {
   constructor(server, opts) {
     this.server = server;
-    this.app = new this.server();
+	  //{Hono} from hono package is `server` in this case
+    this.app = new this.server({strict: false});
     this.opts = opts;
   }
   pickup(pages, components, api) { pages.forEach((page) => {}); }

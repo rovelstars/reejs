@@ -286,7 +286,7 @@ export let packit = async (service, isDevMode) => {
   };
   fs.writeFileSync(
     path.join(packitDir, "index.js"),
-    `${isDevMode ? "import 'reejs/src/imports/URLImportInstaller.js';" : ""}
+    `${isDevMode ? "import '@reejs/utils/log.js';" : ""}
     import "${getPackage("debug")}";
 	  ${twindFnNeed
       ? `import inline from "${getPackage("@twind/with-react/inline")}";

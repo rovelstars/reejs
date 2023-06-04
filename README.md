@@ -26,6 +26,9 @@ reejs install && reejs sync
 ```
 
 ### Start the development server
+
+> Currently dev server can only spawn node processes.
+
 ```bash
 reejs packit <runtime> -d
 ```

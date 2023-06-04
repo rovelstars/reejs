@@ -62,7 +62,7 @@ export default function (prog) {
           license: "MIT",
         },
           null, 2));
-          fs.writeFileSync(path.join(process.cwd(),name,"packit.config.js"));
+          fs.writeFileSync(path.join(process.cwd(),name,"packit.config.js"),"");
       if (opts.features.includes("api")) {
         fs.mkdirSync(path.join(process.cwd(), name, "src", "pages", "api"), {
           recursive: true,
