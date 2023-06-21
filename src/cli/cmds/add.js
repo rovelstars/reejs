@@ -76,7 +76,7 @@ export default function add(prog) {
     .alias(["install", "i"])
     .option("-f, --force", "Install default URLs")
     .option("-b, --browser", "Install as browser dependency")
-    .option("-u", "--user-agent", "Set user agent to download the package")
+    .option("-u, --user-agent", "Set user agent to download the package")
     .describe("Add a package to your project")
     .action(install)
 }

@@ -89,8 +89,8 @@ let followRedirect = async function (url, forBrowser = false) {
   try {
     let finalURL = url;
     let res =
-      await fetch(url, { method: "HEAD", headers: { "User-Agent": UA } }).catch(()=>{
-        throw new Error("URLImportInstaller: Couldn't fetch the URL: "+url);
+      await fetch(url, { method: "HEAD", headers: { "User-Agent": UA } }).catch(async () => {
+        return await fetch(url, { method: "GET", headers: { "User-Agent": UA } });
       });
     finalURL = res.url;
     return finalURL;
@@ -119,15 +119,10 @@ let lexer, parser;
 let dl =
   async function (url, cli = false, remove = false, forBrowser = false, ua = UA) {
     url = url;
+    let wasmFiles = [];
     if (ua && ua != "Set user agent to download the package") UA = ua;
-    if (UA.startsWith("Deno"))
-      return url; // I hope Deno's URL Import Installer is faster than this.
-    // now we can look for deno.land imports
-    if (url.startsWith("https://deno.land/x/")) {
-      ua = "Deno/1.33.3";
-    }
     if (cli)
-      reejsDir = path.join(processCwd, cli == true ? "" : cli, ".reejs");
+      reejsDir = path.join(processCwd, ".reejs");
 
     if (!fs.existsSync(path.join(reejsDir, "cache"))) {
       fs.mkdirSync(path.join(reejsDir, "cache"), { recursive: true });
@@ -193,8 +188,8 @@ let dl =
       headers: {
         "User-Agent": forBrowser ? `Mozilla/5.0 (reejs/${pkgJson.version})` : UA,
       }
-    }).catch(()=>{
-      throw new Error("URLImportInstaller: Couldn't fetch the URL: "+url);
+    }).catch(async() => {
+      return await fetch(url, { method: "GET", headers: { "User-Agent": UA } });
     });
     let finalURL = await followRedirect(res.url, forBrowser);
     await waitUntilArrayDoesntHaveValue(CURRENT_DOWNLOADING, finalURL);
@@ -216,7 +211,7 @@ let dl =
         }
       })).text();
       tries++;
-      if (code == "" && tries>10) console.log(tries + " try: Retry due to Empty code for " + finalURL);
+      if (code == "" && tries > 10) console.log(tries + " try: Retry due to Empty code for " + finalURL);
       //sleep for x * 100ms
       await new Promise((resolve) => setTimeout(resolve, (tries) * 100));
     }
@@ -271,7 +266,7 @@ let dl =
         let eurl = new URL(finalURL);
         dlUrl = eurl.protocol + "//" + path.join(eurl.host, p);
       }
-      else if (p.startsWith("./")) {
+      else if (p.startsWith("./") || p.startsWith("../")) {
         let eurl = new URL(finalURL);
         dlUrl = eurl.protocol + "//" + eurl.hostname + path.join(path.dirname(eurl.pathname), p);
         code = code.replaceAll(p, URLToFile(dlUrl, true));
@@ -294,13 +289,19 @@ let dl =
           // e is the match, like __dirname+"./file.wasm"
           let ematch = JSON.stringify(e).replace("__dirname", "").replaceAll(" ", "").replaceAll("+", "").replaceAll(",", "").replaceAll('"', "").replaceAll("'", "").replaceAll("`", "");
           let eurl = new URL(finalURL);
-          let wasmUrl = eurl.protocol + "//" + eurl.hostname + path.join(path.dirname(eurl.pathname), ematch);
-          console.log("WASM found: " + wasmUrl);
-          return URLToFile(wasmUrl, true);
+          let wasmUrl = eurl.protocol + "//" + eurl.hostname + path.join(path.dirname(eurl.pathname), ematch).replaceAll("\\","");
+          wasmFiles.push(wasmUrl);
+          return `new URL("${URLToFile(wasmUrl, true)}",import.meta.url).href.slice(7)`;
         });
       }
       fs.writeFileSync(URLToFile(finalURL), code)
     }
+    await Promise.all(wasmFiles.map(async (e) => {
+      let f = await (await fetch(e)).arrayBuffer();
+      fs.writeFileSync(URLToFile(e), Buffer.from(f));
+      if (!remove && (globalThis?.process?.env?.DEBUG || globalThis?.Deno?.env?.get("DEBUG")))
+      console.log("%c[DOWNLOAD] %c" + e, "color:blue", "color:yellow");
+    }));
     if (remove && fs.existsSync(URLToFile(finalURL))) {
       console.log("%c[REMOVE] %c" + finalURL, "color:red", "color:blue");
       fs.unlinkSync(URLToFile(finalURL));
@@ -325,8 +326,12 @@ let save = (e) => {
   let totalCache = { ...oldCache, ...__CACHE_SHASUM };
   fs.writeFileSync(path.join(reejsDir, "cache", "cache.json"),
     JSON.stringify(totalCache, null, 2));
-  let copyE = structuredClone(e);
+  let copyE = e;
   if (e instanceof Error) {
+    if (globalThis?.process?.env?.DEBUG || globalThis?.Deno?.env?.get("DEBUG")){
+      console.log("%cGenerating doctor report...", "color:yellow");
+      globalThis?.REEJS_doctorReport();
+    }
     console.log("%c[INFO] %cSaving important data...", "color:blue",
       "color:yellow");
     if (e.stack.includes(".ts") || e.stack.includes(".tsx") ||
@@ -356,14 +361,24 @@ let save = (e) => {
     e.stack = stack.join("\n");
     console.error((globalThis?.process?.env?.DEBUG || globalThis?.Deno?.env?.get("DEBUG")) ? copyE : e);
     globalThis?.process.removeAllListeners("exit"); // dont run save again
+    globalThis?.process.removeAllListeners("beforeExit");
+    globalThis?.process.removeAllListeners("uncaughtException");
+    globalThis?.process.removeAllListeners("SIGINT");
+    globalThis?.process.removeAllListeners("SIGTERM");
+    globalThis?.process.removeAllListeners("SIGHUP");
     globalThis?.window?.removeEventListener("unload", save);
     globalThis?.process?.exit(1);
     globalThis?.Deno?.exit(1);
   }
 };
+
 if (globalThis?.process) {
+  process.on("beforeExit", save);
   process.on("exit", save);
   process.on("uncaughtException", save);
+  process.on("SIGINT", save);
+  process.on("SIGTERM", save);
+  process.on("SIGHUP", save);
 } else {
   //deno
   globalThis.window.addEventListener("unload", save);

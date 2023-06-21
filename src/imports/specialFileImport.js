@@ -36,7 +36,9 @@ let lexer;
 let MODIFIED_FILES;
 //check if .reejs/serve.cache exists
 if (!fs.existsSync(path.join(".reejs", "serve.cache"))) {
-  fs.writeFileSync(path.join(".reejs", "serve.cache"), "[]");
+  if (fs.existsSync(".reecfg.json")) {
+    fs.writeFileSync(path.join(".reejs", "serve.cache"), "[]");
+  }
 }
 try {
   MODIFIED_FILES = JSON.parse(fs.readFileSync(path.join(".reejs", "serve.cache")).toString());
@@ -45,6 +47,7 @@ try {
 }
 // I decided its better to load modified files at boot and not inside the function, while this does slows at initial boot, subsequent calls are faster.
 export default async function SpecialFileImport(file, parentFile, service) {
+  if (service == "deno") service = "deno-deploy";
   file = file.replace(processCwd + "/", "");
   if (globalThis?.process?.env?.PSC_DISABLE != "true" && globalThis?.Deno?.env?.get("PSC_DISABLE") != "true") {
     // check if the file was modified, by comparing the mtime
@@ -88,12 +91,15 @@ lexer = {
 
   // usage: let routeData = SpecialFileImport(path.join(pagesDir, page));
   // this imports sucrase and returns the result of sucrase.transform
-  let sucrase = await Import("sucrase@3.29.0");
+  let sucrase = await Import("sucrase@3.32.0");
   let ext = file?.split(".")?.pop();
   let code = fs.readFileSync(file).toString();
-  if (ext === "md") {
+  if (ext === "md" || ext === "mdx") {
     let compile = (await Import("@mdx-js/mdx@2.3.0")).compile;
-    code = (await compile(code, { jsx: true })).value;
+    let rehypePlugins = [
+      ...(globalThis?.mdxPlugins || []),
+    ];
+    code = (await compile(code, { jsx: true, rehypePlugins })).value;
     ext = "jsx";
   }
   let transforms = ext === "jsx" ? ["jsx"]
@@ -137,7 +143,7 @@ jsxFragmentPragma : "Fragment",*/
     packs = lexer.parse(result);
   } catch (e) {
     console.log("Error while parsing the file: ", file);
-    throw e;
+    console.trace(e);
   }
   // replace @reejs/react with ./node_modules/@reejs/react
   let files = await Promise.all(packs.map(async (pack) => {
@@ -158,7 +164,7 @@ jsxFragmentPragma : "Fragment",*/
         fs.readdirSync(
           path.join(processCwd, "node_modules", "@reejs", "react"))
           .filter((e) => e.endsWith(".ts") || e.endsWith(".tsx") ||
-            e.endsWith(".js") || e.endsWith(".jsx") || e.endsWith(".md"));
+            e.endsWith(".js") || e.endsWith(".jsx") || e.endsWith(".md") || e.endsWith(".mdx"));
       let packFileName = pack.n.split("/").pop();
       let TheFile = availableFilesInsideNodeModules.find(
         (e) => e.startsWith(packFileName.split(".")[0]));
@@ -190,7 +196,7 @@ jsxFragmentPragma : "Fragment",*/
               pack.n.split("/").slice(0, -1).join("/")
               : ".")))
           .filter((e) => e.endsWith(".ts") || e.endsWith(".tsx") ||
-            e.endsWith(".js") || e.endsWith(".jsx") || e.endsWith(".md"));
+            e.endsWith(".js") || e.endsWith(".jsx") || e.endsWith(".md") || e.endsWith(".mdx"));
       let packFileName = pack.n.split("/").pop();
       let TheFile = availableFilesInsideNodeModules.find(
         (e) => e.startsWith(packFileName.split(".")[0]));
@@ -218,6 +224,7 @@ jsxFragmentPragma : "Fragment",*/
             .split("serve/")[1];
       } catch (e) {
         console.log("Error while importing file: ", file, ppack);
+        console.error(e);
       }
       return reactFile;
     } else {
@@ -235,10 +242,16 @@ jsxFragmentPragma : "Fragment",*/
       }
     }
   }));
-  packs.map((p, i) => { result = result.replace(p.n, files[i]); });
-  if (result.includes("React")) {
+  packs.map(async (p, i) => {
+
+    result = result.replace(`from "${p.n}"`, `from "${files[i]}"`)
+      .replace(`from '${p.n}'`, `from '${files[i]}'`)
+      .replace("from `" + p.n + "`", "from `" + files[i] + "`");
+
+  });
+  if ((result.includes("React.createElement") || result.includes("React.Component")) && (!result.includes("import React from"))) {
     result =
-      `import React from "${(cachemap[react]) ? `../cache/${cachemap[react]}` : react}";\n` +
+      `import React from "${(cachemap[react]) ? `../cache/${cachemap[react]}` : await dl(react, true)}";\n` +
       result;
   }
   result += "\n//# sourceURL=" + file.replace(processCwd, ".");
@@ -252,10 +265,14 @@ jsxFragmentPragma : "Fragment",*/
   //add savedAt to MODIFIED_FILES array as {file: savedAt, at: mtime} where mtime is the mtime of the file
   MODIFIED_FILES.push({ f: file, s: savedAt, at: fs.statSync(file).mtimeMs });
   //run fs async save MODIFIED_FILES as it should not block the main thread
-  fs.writeFile(
-    path.join(".reejs", "serve.cache"),
-    JSON.stringify(MODIFIED_FILES),
-    () => { });
+  if (fs.existsSync(".reecfg.json")) {
+    fs.writeFile(
+      path.join(".reejs", "serve.cache"),
+      JSON.stringify(MODIFIED_FILES),
+      () => { });
+  }
+  if (!fs.existsSync(path.dirname(savedAt)))
+    fs.mkdirSync(path.dirname(savedAt), { recursive: true });
   fs.writeFileSync(savedAt, result);
   return savedAt;
 }

@@ -116,9 +116,10 @@ export default async function reender(page, browserFn) {
     }, { once: true });
   }
   if (!ISLAND_COUNT) {
+    let p = (await import("/__reejs/serve/" + page.split("/")[2])).default;
+    if(p.name=="DoNotHydrate") return;
     if (!React)
       React = (await import("react"));
-    let p = (await import("/__reejs/serve/" + page.split("/")[2])).default;
     React.render(React.createElement(p), $("#root"));
   }
   else {

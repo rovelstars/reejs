@@ -1,7 +1,7 @@
-import path from "path";
+import runtime from "@reejs/imports/env.js";
+import { NativeImport, URLImport } from "@reejs/imports/index.js";
 import SpecialFileImport from "@reejs/imports/specialFileImport.js";
-import URLImport
-  from "@reejs/imports/URLImport.js";
+let path = await NativeImport("node:path");
 let processCwd = globalThis?.process?.cwd?.() || Deno.cwd();
 //create __dirname
 Object.defineProperty(globalThis, "__dirname", {
@@ -51,7 +51,10 @@ export default async function (prog) {
         }
         return;
       } else {
-        let module = await SpecialFileImport(path.join(processCwd, file));
+        if(!globalThis.Deno){
+          globalThis.Deno = (await URLImport("https://esm.sh/@deno/shim-deno@0.16.0")).Deno;
+        }
+        await import(path.join(processCwd, await SpecialFileImport(path.join(processCwd, file),null, runtime)));
         if (opts.e || opts.eval) {
           eval(opts.e || opts.eval);
         }

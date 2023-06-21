@@ -132,10 +132,10 @@ export default defineConfig({
       let optionalDeps = {};
       let optionalDeps2 = {};
       if (opts.features.includes("react")) {
-        optionalDeps.react = "https://esm.sh/preact@10.13.2/compat",
+        optionalDeps.react = "https://esm.sh/preact@10.15.1/compat",
           optionalDeps["render"] =
-          "https://esm.sh/preact-render-to-string@6.0.2";
-        optionalDeps["debug"] = "https://esm.sh/preact@10.13.2/debug";
+          "https://esm.sh/preact-render-to-string@6.1.0";
+        optionalDeps["debug"] = "https://esm.sh/preact@10.15.1/debug";
         optionalDeps2.debug = optionalDeps.debug;
         optionalDeps2.react = optionalDeps.react;
       }
@@ -163,10 +163,10 @@ export default defineConfig({
       if (opts.features.includes("react") || opts.features.includes("static") || opts.features.includes("api")) {
         optionalDeps["@hono/node-server"] =
           "https://esm.sh/@hono/node-server@1.0.2?bundle";
-        optionalDeps["hono"] = "https://esm.sh/hono@3.1.8?bundle";
+        optionalDeps["hono"] = "https://esm.sh/hono@3.2.5?bundle";
         optionalDeps["@hono/serve-static"] =
           "https://esm.sh/@hono/node-server@1.0.2/serve-static?bundle";
-        optionalDeps["hono/compress"] = "https://esm.sh/hono@3.1.8/compress?bundle";
+        optionalDeps["hono/compress"] = "https://esm.sh/hono@3.2.5/compress?bundle";
       }
       fs.writeFileSync(
         path.join(process.cwd(), name, "import_map.json"),

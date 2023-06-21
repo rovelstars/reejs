@@ -1,9 +1,10 @@
-import repl, { REPLServer } from 'repl';
 import Import, { NativeImport, DynamicImport,URLImport } from "@reejs/imports/index.js";
 import dl from '@reejs/imports/URLImportInstaller.js';
 import chalk from '@reejs/utils/chalk.js';
-import doctor from "./doctor.js";
+import {doctorReport} from "./doctor.js";
 let fs = await NativeImport("node:fs");
+let repl = await NativeImport("node:repl");
+
 export default async function (prog) {
   prog
     .command("repl")
@@ -12,7 +13,7 @@ export default async function (prog) {
       if(!globalThis.Deno){
         //setup Deno namespace shim
         console.log("%c[DENO] Setting up Deno namespace shim","color:yellow;");
-        globalThis.Deno = DynamicImport(await URLImport("https://esm.sh/@deno/shim-deno@0.16.0"));
+        globalThis.Deno = (DynamicImport(await URLImport("https://esm.sh/@deno/shim-deno@0.16.0"))).Deno;
         if(!Deno.readFile){
           Deno.readFile = async function(path){
             return fs.readFileSync(path);
@@ -37,7 +38,7 @@ export default async function (prog) {
         value: URLImport
       });
       Object.defineProperty(r.context, "doctor", {
-        value: doctor
+        value: doctorReport
       });
     });
 }

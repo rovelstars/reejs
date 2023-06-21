@@ -1,61 +1,10 @@
 # Ree.js
 > A web framework that's built different. Built for speed, simplicity, and compatibility.
 
-## Installation
-```bash
-# You need to have Node.js installed v18+
-npm install -g reejs
-```
+## Read Documentation
 
-## Usage
+Documentation is available at [here](https://ree.js.org/docs)
 
-### Create a new project
-```bash
-reejs init <project-name> --features <features>
-```
-
-Example:
-```bash
-reejs init my-project --features react,tailwind,api,static # Creates a new project with React, Tailwind (TwindCSS), API, and Static File Serving features
-```
-
-### Install dependencies
-> Run `npm i` one time in your project directory to install reejs dependencies. This will be automated in the below scripts in the future.
-```bash
-reejs install && reejs sync
-```
-
-### Start the development server
-
-> Currently dev server can only spawn node processes.
-
-```bash
-reejs packit <runtime> -d
-```
-
-Runtimes available at [here](https://github.com/rovelstars/reejs/blob/d9e143d9f9713ec2c37b6d92e0be34e454acb826/src/cli/cmds/packit.bkp.js#LL53C1-L53C1)
-
-### Build for production
-```bash
-reejs packit <runtime>
-```
-
-The files are saved in `packit` directory. We decided to not start the folder name with a dot (.) because some runtimes dont allow running files from there ._. (I'm looking at you, Deno Deploy)
-
-## Features Ideology
-
-Ree.js is built to be modular. You can add or remove features as you like. You can even create your own features and share them with the community.
-
-## Packit Ideology
-
-Packit is a pluggable based transpiler. Packit's contract is that you provide working code and it provides you back with a transpiled javascript code. For `.js` files, assume it nearly doesn't change anything except URL Imports to local files on unsupported runtimes. Packit enables your code to be run on different runtimes, special thanks to [Hono](https://hono.dev) server. While people say Vite and other transpilers are so much fast, they only happen to be faster on New Desktop Computers. Try running them on a low end/old device like a 12yr old PC or on an Android device (with/on Termux), you are going to thanks for Reejs' lightweight size and the blazing fast speed for both dev and prod builds.
-
-## URL Imports Ideology
-
-URL Imports is a way to import files from the web. We consider it's a faster and simpler alternative than NPM.
-Incase you think it's a security issue, we have a solution for that. We have a `reejs sync` command that will download all the dependencies and save them locally. This way, you can be sure that your code is safe and secure. Since URL Import services will only serve wasm instead of native binaries, you don't need to worry about failing to run on other platforms.
-
-BTW, if you hate URL Imports because you be sent malicious code randomly, NPM too suffers from the same issue. For security reasons, Reejs will itself suggest you to pin down your dependencies to a specific version. This way, you can be sure that your code is safe and secure. But if suspect the hoster of the URL Import services, you should doubt NPM hosting too. Anyways, esm.sh allows easy self hosting over Deno Deploy, check them out!
 
 ## Contributing
 
@@ -65,12 +14,13 @@ We welcome all contributions. Please read our [CONTRIBUTING.md](https://github.c
 
 - [x] Reewrite Packit to be modular
 - [ ] Packit in dev mode should run hono server in dev mode, and dynamically transpile & load files on a request.
-- [ ] Fix development mode server (spawned child process not killed...)
-- [ ] Support for wasm based dependencies on URL Import
+- [x] Fix development mode server (spawned child process not killed...)
+- [x] Support for wasm based dependencies on URL Import
 - [ ] Reewrite init command to be modular
 - [ ] Add support for more runtimes
 - [ ] Reewrite `specialFileImport.js` in `@reejs/imports` to be more readable
-- [ ] Write Docs and make website look more cooler
+- [x] Write Docs and make website look more cooler
+- [ ] Add Useful/Important Components like `Head`, `Link` & `Image` (Idea from Nextjs)
 - [ ] Download browser dependencies and serve them locally (only in production mode)
 - [ ] Hit 1k stars on GitHub :D
 - [ ] Add support for more languages (vue, svelte, etc.)

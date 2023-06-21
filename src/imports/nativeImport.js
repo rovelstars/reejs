@@ -14,7 +14,7 @@ export default async function NativeImport(m, isChild = false) {
   if (env === "node" || env === "bun" || env === "deno") {
     mod = DynamicImport(await import(m));
   } else {
-    throw new Error("Unsupported runtime", env);
+    throw new Error("Unsupported runtime: "+ env);
   }
   return mod;
 }

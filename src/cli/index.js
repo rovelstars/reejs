@@ -1,11 +1,14 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S node
 globalThis.USING_REEJS_CLI = true; //a seperator for reejs cli and @reejs/imports
 import env, {dirname} from "@reejs/imports/env.js";
 import NativeImport from "@reejs/imports/nativeImport.js";
 import "@reejs/utils/log.js";
 import {Import} from "@reejs/imports/URLImport.js";
-await Promise.all(
-    [ Import("sade@1.8.1"), Import("ora@6.1.2"), Import("terser@5.16.6"), Import("sucrase@3.29.0") ]);
+
+let modulesLoadTimeout = setTimeout(() => {
+    console.log("%c[REEJS] %cStarting for the first time, downloading dependencies...", "color: #db2777", "color: #ffffff");
+}, 1000);
+
 import DynamicImport from "@reejs/imports/dynamicImport.js";
 let sade = await Import("sade@1.8.1");
 let pkgJson = (DynamicImport(await import("./version.js"))).reejs;
@@ -32,3 +35,4 @@ xCmd(prog);
 
 let processArgv = globalThis?.process?.argv || ["deno", "reejs",...globalThis?.Deno?.args];
 prog.parse(processArgv);
+clearTimeout(modulesLoadTimeout);

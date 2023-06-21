@@ -86,14 +86,14 @@ function logWithStyle(type, message, ...styles) {
   for (let i = 0; i < messageArray.length; i++) {
     // If there is a chalk object for the current index, apply it to the message
     if (chalkArray[i]) {
-      finalMessage += " " + chalkArray[i](messageArray[i]);
+      finalMessage += "" + chalkArray[i](messageArray[i]);
     } else {
       // Otherwise, just append the message
-      finalMessage += " " + messageArray[i];
+      finalMessage += "" + messageArray[i];
     }
   }
   // Log the final message
-  oc[type](finalMessage.trim());
+  oc[type](finalMessage);
 }
 if (env == "node" || env == "bun") {
   globalThis.console = {
