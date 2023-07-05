@@ -10,7 +10,7 @@ let modulesLoadTimeout = setTimeout(() => {
 }, 1000);
 
 import DynamicImport from "@reejs/imports/dynamicImport.js";
-let sade = await Import("sade@1.8.1");
+let sade = await Import("sade@1.8.1", {internalDir: true});
 let pkgJson = (DynamicImport(await import("./version.js"))).reejs;
 // recursively import all files from cmds folder
 import addCmd from "./cmds/add.js";

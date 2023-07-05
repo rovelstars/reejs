@@ -1,7 +1,7 @@
 // learn what runtime are we using based on their differences: nodejs, deno,
 // bun, or else edge
 let runtime = "browser";
-if (typeof Deno !== "undefined") {
+if (typeof Deno !== "undefined" && (globalThis?.process?.argv[0]?.includes("deno"))){
   runtime = "deno";
 } else if (typeof Bun !== "undefined") {
   runtime = "bun";

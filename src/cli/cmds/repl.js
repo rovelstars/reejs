@@ -3,13 +3,17 @@ import dl from '@reejs/imports/URLImportInstaller.js';
 import chalk from '@reejs/utils/chalk.js';
 import {doctorReport} from "./doctor.js";
 let fs = await NativeImport("node:fs");
-let repl = await NativeImport("node:repl");
 
 export default async function (prog) {
   prog
     .command("repl")
     .describe("Start a quick repl to test out reejs")
     .action(async function () {
+      if(globalThis.Deno){
+        console.error("%c[ERROR] %cReePL is not supported in Deno due to no support for %c`node:repl`%c by Deno itself.","color:#7c3aed", "color:#db2777", "color: blue", "color:#db2777");
+        Deno.exit(1);
+      }
+      let repl = await NativeImport("node:repl");
       if(!globalThis.Deno){
         //setup Deno namespace shim
         console.log("%c[DENO] Setting up Deno namespace shim","color:yellow;");

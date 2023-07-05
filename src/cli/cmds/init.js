@@ -8,12 +8,12 @@ let pkgJson3 = pkg.server;
 let pkgJson4 = pkg.react;
 
 import { Import } from "@reejs/imports/URLImport.js";
-let ora = await Import("ora@6.1.2");
 export default function (prog) {
   prog.command("init [name]")
     .describe("Initialize a new project")
     .option("-f, --features", "Features to include in the project", "")
     .action(async (name, opts) => {
+      let ora = await Import("ora@6.1.2", { internalDir: true });
       let fs = await NativeImport("node:fs");
       let path = await NativeImport("node:path");
       // mkdir name

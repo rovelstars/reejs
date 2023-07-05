@@ -10,33 +10,37 @@ if (env == "browser") {
 let fs = await NativeImport("node:fs");
 let path = await NativeImport("node:path");
 
-export default async function URLImport(url) {
+export default async function URLImport(url, internalDir = false) {
   url = new URL(url);
   if (url.protocol == "node:") {
     return await NativeImport(url.pathname);
   }
   if (url.protocol == "http:" || url.protocol == "https:") {
-    return DynamicImport(await import(await dl(url.href)));
+    let file = await dl(url.href, !internalDir);
+    if (!fs.existsSync(file)) {
+      throw new Error(`File ${file} does not exist`);
+    }
+    return DynamicImport(await import(file));
   }
-  throw new Error("Invalid URL");
+  else {
+    throw new Error("Invalid URL " + url);
+  }
 }
 
 export async function Import(name, opts = {
-  host: "esm.sh",
-  bundle: true,
+  internalDir: false
 }) {
   if (name.startsWith("node:")) {
     return await NativeImport(name);
   }
   else if (name.startsWith("http:") || name.startsWith("https:")) {
-    return await URLImport(name);
+    return await URLImport(name, opts.internalDir);
   }
   else if (name.startsWith("npm:")) {
-    return await URLImport(`https://esm.sh/${name.slice(4)}${opts.bundle ? "?bundle" : ""}`);
+    return await URLImport(`https://esm.sh/${name.slice(4)}${opts.bundle ? "?bundle" : ""}`, opts.internalDir);
   }
   else {
-    let url =
-      new URL(`https://${opts.host}/${name}${opts.bundle ? "?bundle" : ""}`);
-    return await URLImport(url);
+    let url = `https://esm.sh/${name}`;
+    return await URLImport(url, opts.internalDir);
   }
 }

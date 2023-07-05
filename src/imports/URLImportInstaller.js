@@ -6,7 +6,7 @@ if (runtime == "browser") {
   throw new Error(
     "URLImportInstaller.js is not for edge/browsers. Install them via reejs cli and use them.");
 }
-let reejsDir = dir;
+let reejsDir = dir; // make reejsDir mutable
 let fs = await NativeImport("node:fs");
 let path = await NativeImport("node:path");
 let http = await NativeImport("node:http");
@@ -16,6 +16,7 @@ let crypto = await NativeImport("node:crypto");
 import "@reejs/utils/log.js";
 import DynamicImport from "./dynamicImport.js";
 import URLImport from "./URLImport.js";
+import { save } from "./debug.js";
 let processCwd = globalThis?.process?.cwd?.() || Deno.cwd();
 
 if (!fs.existsSync(path.join(reejsDir, "cache")) &&
@@ -24,7 +25,43 @@ if (!fs.existsSync(path.join(reejsDir, "cache")) &&
   fs.writeFileSync(path.join(reejsDir, "cache", "package.json"),
     JSON.stringify({ type: "module" }));
 }
+
+//check if fetch is available or not. if not, use nativeimport https module to download the file, save it at reejsDir/failsafe/fetch.js and import it.
+if (!globalThis.fetch) {
+  if (!fs.existsSync(path.join(reejsDir, "failsafe"))) {
+    fs.mkdirSync(path.join(reejsDir, "failsafe"), { recursive: true });
+  }
+  if(!fs.existsSync(path.join(reejsDir, "failsafe", "package.json")))
+    fs.writeFileSync(path.join(reejsDir, "failsafe", "package.json"),
+      JSON.stringify({ type: "module" }));
+  if (!fs.existsSync(path.join(reejsDir, "failsafe", "fetch.js"))) {
+    console.log("%c[POLYFILL] %c`%cglobalThis.fetch%c`%c...", "color: #ef4444", "color: blue", "color: blue; font-weight: bold", "color: blue", "color: gray");
+    let https = await NativeImport("node:https");
+    function fetchUrl(url) {
+      return new Promise((resolve, reject) => {
+        https.get(url, (res) => {
+          let data = '';
+          res.on('data', (chunk) => {
+            data += chunk;
+          });
+          res.on('end', () => {
+            resolve(data);
+          });
+        }).on('error', (err) => {
+          reject(err);
+        });
+      });
+    }
+
+    let fetchFileCode = await fetchUrl("https://esm.sh/v127/node-fetch@3.3.1/node/node-fetch.bundle.mjs");
+
+    fs.writeFileSync(path.join(reejsDir, "failsafe", "fetch.js"), fetchFileCode);
+  }
+  globalThis.fetch = (await import(path.join(reejsDir, "failsafe", "fetch.js"))).default;
+}
+
 globalThis.__CACHE_SHASUM = {};
+
 let URLToFile = function (url, noFolderPath = false) {
   if (url.startsWith("node:"))
     return url;
@@ -33,7 +70,7 @@ let URLToFile = function (url, noFolderPath = false) {
   if (![".json", ".js", ".wasm"].includes(fileExt)) {
     fileExt = ".js";
   }
-  if (!url.startsWith("https://") && !url.startsWith("http://"))
+  if (!url.startsWith("https://") && !url.startsWith("http://") && !url.startsWith("npm:") && !url.startsWith("./") && !url.startsWith("../"))
     return url; // must be ?external module from esm.sh
   __CACHE_SHASUM[url] =
     crypto.createHash("sha256").update(url).digest("hex").slice(0, 6) + (isJson ? ".json" : ".js")
@@ -57,7 +94,9 @@ switch (env) {
     UA = `Node/${process.version} (reejs/${pkgJson.version})`;
     break;
   case "deno":
-    UA = `Deno/${Deno.version.deno} (reejs/${pkgJson.version})`;
+    //UA = `Deno/${Deno.version.deno} (reejs/${pkgJson.version})`;
+    //TODO: wait for esm.sh to fix using the above way
+    UA = `Deno/${Deno.version.deno}`;
     break;
   case "browser":
     UA = `Mozilla/5.0 (reejs/${pkgJson.version})`; // I got no idea why I did this. Sounds villainous. I can confirm lol~
@@ -68,6 +107,7 @@ switch (env) {
     // so we use Node's UA because we don't want nodejs polyfills.
     break;
 }
+
 let followRedirect = async function (url, forBrowser = false) {
   if (url.startsWith("node:"))
     return url;
@@ -99,22 +139,23 @@ let followRedirect = async function (url, forBrowser = false) {
   }
 };
 
-async function waitUntilArrayDoesntHaveValue(array, value, checkInterval = 200) {
-  //if the value isn't removed after 10 seconds, throw an error.
-  // let timeout = setTimeout(() => {
-  //   throw new Error("TimeoutError: The value was not removed from the array: "+value);
-  //   process.exit(1);
-  // }, 2000);
-
-  while (array.includes(value)) {
-    return await new Promise((resolve) => setTimeout(resolve, checkInterval));
-  }
+function waitUntilArrayDoesntHaveValue(element) {
+  return new Promise((resolve) => {
+    const interval = setInterval(() => {
+      if (!CURRENT_DOWNLOADING.includes(element)) {
+        clearInterval(interval);
+        resolve();
+      }
+    }, 300);
+  });
 }
 
 globalThis.CURRENT_DOWNLOADING = [];
 globalThis.NOTIFIED_UPDATE_URL = [];
 globalThis.MODULES_SENT_TO_DOWNLOAD = [];
 let lexer, parser;
+
+
 
 let dl =
   async function (url, cli = false, remove = false, forBrowser = false, ua = UA) {
@@ -188,13 +229,16 @@ let dl =
       headers: {
         "User-Agent": forBrowser ? `Mozilla/5.0 (reejs/${pkgJson.version})` : UA,
       }
-    }).catch(async() => {
+    }).catch(async () => {
       return await fetch(url, { method: "GET", headers: { "User-Agent": UA } });
     });
     let finalURL = await followRedirect(res.url, forBrowser);
-    await waitUntilArrayDoesntHaveValue(CURRENT_DOWNLOADING, finalURL);
-    if (MODULES_SENT_TO_DOWNLOAD.includes(finalURL)) {
+    await waitUntilArrayDoesntHaveValue(finalURL);
+    if (CURRENT_DOWNLOADING.includes(finalURL)) {
       //idk why this happens, but it does fix the issue regarding infinite loop of downloading modules...
+      //return URLToFile(finalURL);
+      //wait until the module is downloaded and removed from the array, then return the file.
+      await waitUntilArrayDoesntHaveValue(finalURL);
       return URLToFile(finalURL);
     }
     if (!remove && fs.existsSync(URLToFile(finalURL))) {
@@ -222,7 +266,7 @@ let dl =
       console.log("%c[TYPESCRIPT] Compiling %c" + finalURL, "color:blue",
         "color:yellow; font-weight: bold;");
       if (!parser) {
-        parser = DynamicImport(await URLImport("https://esm.sh/sucrase@3.32.0?bundle"));
+        parser = DynamicImport(await URLImport("https://esm.sh/sucrase@3.32.0?bundle", true));
       }
       code = parser
         .transform(code, {
@@ -273,7 +317,7 @@ let dl =
       }
       //if(p.endsWith(".json.js")) p = p.replace(".json.js",".json");
       //if(p.endsWith("node/package.json")) p = p.replace("node/package.json","package.json");
-      return await dl(dlUrl || p, null, remove);
+      return await dl(dlUrl || p, cli, remove);
     }));
     if (!remove) { // save file
       let dir = path.dirname(URLToFile(finalURL));
@@ -289,7 +333,7 @@ let dl =
           // e is the match, like __dirname+"./file.wasm"
           let ematch = JSON.stringify(e).replace("__dirname", "").replaceAll(" ", "").replaceAll("+", "").replaceAll(",", "").replaceAll('"', "").replaceAll("'", "").replaceAll("`", "");
           let eurl = new URL(finalURL);
-          let wasmUrl = eurl.protocol + "//" + eurl.hostname + path.join(path.dirname(eurl.pathname), ematch).replaceAll("\\","");
+          let wasmUrl = eurl.protocol + "//" + eurl.hostname + path.join(path.dirname(eurl.pathname), ematch).replaceAll("\\", "");
           wasmFiles.push(wasmUrl);
           return `new URL("${URLToFile(wasmUrl, true)}",import.meta.url).href.slice(7)`;
         });
@@ -300,7 +344,7 @@ let dl =
       let f = await (await fetch(e)).arrayBuffer();
       fs.writeFileSync(URLToFile(e), Buffer.from(f));
       if (!remove && (globalThis?.process?.env?.DEBUG || globalThis?.Deno?.env?.get("DEBUG")))
-      console.log("%c[DOWNLOAD] %c" + e, "color:blue", "color:yellow");
+        console.log("%c[DOWNLOAD] %c" + e, "color:blue", "color:yellow");
     }));
     if (remove && fs.existsSync(URLToFile(finalURL))) {
       console.log("%c[REMOVE] %c" + finalURL, "color:red", "color:blue");
@@ -312,65 +356,7 @@ let dl =
 
 export default dl;
 export { URLToFile, followRedirect };
-let save = (e) => {
-  // save cache sha256
-  if (!fs.existsSync(path.join(reejsDir, "cache"))) {
-    fs.mkdirSync(path.join(reejsDir, "cache"), { recursive: true });
-  }
-  let oldCache = {};
-  if (fs.existsSync(path.join(reejsDir, "cache", "cache.json"))) {
-    oldCache =
-      fs.readFileSync(path.join(reejsDir, "cache", "cache.json"), "utf-8");
-    oldCache = JSON.parse(oldCache);
-  }
-  let totalCache = { ...oldCache, ...__CACHE_SHASUM };
-  fs.writeFileSync(path.join(reejsDir, "cache", "cache.json"),
-    JSON.stringify(totalCache, null, 2));
-  let copyE = e;
-  if (e instanceof Error) {
-    if (globalThis?.process?.env?.DEBUG || globalThis?.Deno?.env?.get("DEBUG")){
-      console.log("%cGenerating doctor report...", "color:yellow");
-      globalThis?.REEJS_doctorReport();
-    }
-    console.log("%c[INFO] %cSaving important data...", "color:blue",
-      "color:yellow");
-    if (e.stack.includes(".ts") || e.stack.includes(".tsx") ||
-      e.stack.includes(".jsx") || e.stack.includes(".js")) {
-      if (!globalThis?.process?.env?.DEBUG && !globalThis?.Deno?.env?.get("DEBUG"))
-        console.log(
-          "%c[TIP] %cIf the error in your code is in any of the following extensions (.ts, .tsx, .jsx), kindly not focus on the line number as the line numbers depict the compiled code and not the original one. Add `DEBUG=true` to your environment variables to see the original code.",
-          "color: yellow", "color: white")
-    }
-    let arr = Object.entries(totalCache);
-    let result = arr.map(pair => {
-      let newObj = {};
-      newObj["file://" + path.join(reejsDir, "cache", pair[1])] = pair[0];
-      newObj["./" + pair[1]] = (new URL(pair[0])).pathname;
-      newObj[path.join(reejsDir, "cache", pair[1])] = pair[0];
-      return newObj;
-    });
-    result = Object.assign({}, ...result);
-    // change e stack and change the file names to the urls
-    let stack = e.stack.split("\n");
-    stack = stack.map((e) => {
-      // replace the file names with the urls
-      Object.entries(result).forEach(
-        ([key, value]) => { e = e.replaceAll(key, value); });
-      return e;
-    });
-    e.stack = stack.join("\n");
-    console.error((globalThis?.process?.env?.DEBUG || globalThis?.Deno?.env?.get("DEBUG")) ? copyE : e);
-    globalThis?.process.removeAllListeners("exit"); // dont run save again
-    globalThis?.process.removeAllListeners("beforeExit");
-    globalThis?.process.removeAllListeners("uncaughtException");
-    globalThis?.process.removeAllListeners("SIGINT");
-    globalThis?.process.removeAllListeners("SIGTERM");
-    globalThis?.process.removeAllListeners("SIGHUP");
-    globalThis?.window?.removeEventListener("unload", save);
-    globalThis?.process?.exit(1);
-    globalThis?.Deno?.exit(1);
-  }
-};
+
 
 if (globalThis?.process) {
   process.on("beforeExit", save);
@@ -381,6 +367,6 @@ if (globalThis?.process) {
   process.on("SIGHUP", save);
 } else {
   //deno
-  globalThis.window.addEventListener("unload", save);
+  globalThis?.window?.addEventListener("unload", save);
   //deno can't catch uncaught exceptions
 }

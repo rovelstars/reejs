@@ -16,6 +16,7 @@ export let sync = async (smt, dir) => {
   let deps = pkgJson.dependencies || {};
   await Promise.all(Object.keys(import_map.imports).map(async (key) => {
     let urldest = await followRedirect(import_map.imports[key]);
+    let version = urldest.split("@").pop().split("/")[0];
     import_map.imports[key] = urldest;
     let value = URLToFile(urldest, true).slice(2);
     if (!fs.existsSync(
@@ -27,7 +28,7 @@ export let sync = async (smt, dir) => {
         "package.json"),
         JSON.stringify({
           name: key,
-          version: "1.0.0",
+          version,
           main: "index.js",
           type: "module",
         },
@@ -46,7 +47,7 @@ export let sync = async (smt, dir) => {
       let numSlash = key.split("/").length - 1;
       // if numSlash is 1, numSlash = ../, if numSlash is 2, numSlash = ../../
       // etc.
-      numSlash = "../".repeat(numSlash);
+      numSlash = "../".repeat(numSlash + 1);
       fs.writeFileSync(
         path.join(dir || processCwd, ".reejs", "deps", key, "index.js"),
         `export * from "../../${numSlash}.reejs/cache/${value}";${code ? `export {default} from "../../${numSlash}.reejs/cache/${value}"`
@@ -69,7 +70,9 @@ export let sync = async (smt, dir) => {
   //emulate npm install to link the dependencies to node_modules just like npm install, with fs.symlinkSync
   let node_modules = path.join(dir || processCwd, "node_modules");
   if (!fs.existsSync(node_modules)) {
-    fs.mkdirSync(node_modules);
+    fs.mkdirSync(node_modules, {
+      recursive: true,
+    });
   }
 
   await Promise.all(fs.readdirSync(path.join(dir || processCwd, ".reejs", "deps")).map(async (key) => {
@@ -91,6 +94,8 @@ export let sync = async (smt, dir) => {
 
 
 export let syncSpecific = async (url) => {
+  let version = url.split("@").pop().split("/")[0];
+
   //name is the object key in import maps. get the url, use URLToFile to get the local file and setup symlinks and stuff
   if (!fs.existsSync(path.join(processCwd, ".reecfg.json"))) {
     console.log("%c[REEJS] %cThis is not a reejs project!", "color: red",
@@ -115,14 +120,14 @@ export let syncSpecific = async (url) => {
         "package.json"),
         JSON.stringify({
           name: key,
-          version: "1.0.0",
+          version,
           main: "index.js",
           type: "module",
         },
           null, 2));
     let code;
     try {
-      let savedAt = await dl(url,true);
+      let savedAt = await dl(url, true);
       code = fs.readFileSync(savedAt);
     } catch (e) {
       console.log("%c[SYNC] %cError: %cDependency %c`" + key + "`%c not found in cache.\nPlease run %c`reejs add`%c to first download the dependencies", "color: red", "color: yellow", "color: red", "color: blue", "color: red", "color: blue", "color: red");
@@ -134,7 +139,7 @@ export let syncSpecific = async (url) => {
     let numSlash = key.split("/").length - 1;
     // if numSlash is 1, numSlash = ../, if numSlash is 2, numSlash = ../../
     // etc.
-    numSlash = "../".repeat(numSlash);
+    numSlash = "../".repeat(numSlash + 1);
     fs.writeFileSync(
       path.join(processCwd, ".reejs", "deps", key, "index.js"),
       `export * from "../../${numSlash}.reejs/cache/${value}";${code ? `export {default} from "../../${numSlash}.reejs/cache/${value}"`
@@ -157,23 +162,25 @@ export let syncSpecific = async (url) => {
   //emulate npm install to link the dependencies to node_modules just like npm install, with fs.symlinkSync
   let node_modules = path.join(processCwd, "node_modules");
   if (!fs.existsSync(node_modules)) {
-    fs.mkdirSync(node_modules);
+    fs.mkdirSync(node_modules, {
+      recursive: true,
+    });
   }
   let dep = path.join(processCwd, ".reejs", "deps", key);
   let nodeModulesDep = path.join(processCwd, "node_modules", key);
-  if(!fs.existsSync(path.join(processCwd,".reejs","cache",value))){
-    let s = await dl(url,true);
+  if (!fs.existsSync(path.join(processCwd, ".reejs", "cache", value))) {
+    let s = await dl(url, true);
     console.log(s);
-    if(!fs.existsSync(path.join(processCwd,".reejs","cache",value))) throw new Error("Error while downloading dependency: "+key+" = "+s);
+    if (!fs.existsSync(path.join(processCwd, ".reejs", "cache", value))) throw new Error("Error while downloading dependency: " + key + " = " + s);
   }
   if (fs.existsSync(nodeModulesDep)) {
     return;
   }
   if (key.split("/").length > 2) return;
-  try{
-  fs.symlinkSync(dep, nodeModulesDep);
-  }catch(e){
-    fs.mkdirSync(path.dirname(nodeModulesDep), {recursive: true});
+  try {
+    fs.symlinkSync(dep, nodeModulesDep);
+  } catch (e) {
+    fs.mkdirSync(path.dirname(nodeModulesDep), { recursive: true });
     fs.symlinkSync(dep, nodeModulesDep);
   }
 }

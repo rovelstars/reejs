@@ -46,7 +46,17 @@ try {
   MODIFIED_FILES = [];
 }
 // I decided its better to load modified files at boot and not inside the function, while this does slows at initial boot, subsequent calls are faster.
-export default async function SpecialFileImport(file, parentFile, service) {
+/*
+ * @param {string} file - The file to import
+  * @param {string} parentFile - The file that imports the file
+  * @param {string} service - The service to transpile the file for, like `node` or `deno`
+  * @param {string} code - The code of the file, optional. useful for third party transpilers who have transpiled part of the code already.
+  * @returns {string} - The path to the file where it is saved
+  */
+
+export default async function SpecialFileImport(file, parentFile, service, code) {
+  if (!file) throw new Error("parameter `file` is required");
+  if (file.includes(".reejs/cache") || file.includes(".reejs/serve")) return file;
   if (service == "deno") service = "deno-deploy";
   file = file.replace(processCwd + "/", "");
   if (globalThis?.process?.env?.PSC_DISABLE != "true" && globalThis?.Deno?.env?.get("PSC_DISABLE") != "true") {
@@ -60,7 +70,7 @@ export default async function SpecialFileImport(file, parentFile, service) {
     };
   }
   if (!terser)
-    terser = await Import("terser@5.16.6");
+    terser = await Import("terser@5.16.6", { internalDir: true });
   if (!lexer) {
     /*
 if (env == "bun") {
@@ -91,11 +101,15 @@ lexer = {
 
   // usage: let routeData = SpecialFileImport(path.join(pagesDir, page));
   // this imports sucrase and returns the result of sucrase.transform
-  let sucrase = await Import("sucrase@3.32.0");
+  let sucrase = await Import("sucrase@3.32.0", { internalDir: true });
   let ext = file?.split(".")?.pop();
-  let code = fs.readFileSync(file).toString();
+  if (!code) {
+    code = fs.readFileSync(file).toString();
+  }
   if (ext === "md" || ext === "mdx") {
-    let compile = (await Import("@mdx-js/mdx@2.3.0")).compile;
+    let compile = (await Import("@mdx-js/mdx@2.3.0", {
+      internalDir: true,
+    })).compile;
     let rehypePlugins = [
       ...(globalThis?.mdxPlugins || []),
     ];
@@ -157,46 +171,24 @@ jsxFragmentPragma : "Fragment",*/
         return "../cache/" + path.join(URLToFile(pack.n, true));
       let savedAt = await dl(pack.n, true);
       return "../cache/" + savedAt.split("cache/")[1];
-    }
-    if (pack.n.startsWith("@reejs/react")) {
-      let ppack = pack.n;
-      let availableFilesInsideNodeModules =
-        fs.readdirSync(
-          path.join(processCwd, "node_modules", "@reejs", "react"))
-          .filter((e) => e.endsWith(".ts") || e.endsWith(".tsx") ||
-            e.endsWith(".js") || e.endsWith(".jsx") || e.endsWith(".md") || e.endsWith(".mdx"));
-      let packFileName = pack.n.split("/").pop();
-      let TheFile = availableFilesInsideNodeModules.find(
-        (e) => e.startsWith(packFileName.split(".")[0]));
-      //console.log(ppack, packFileName, TheFile)
-      ppack = ppack.replace(packFileName, TheFile);
-      // compile the react file and save in .reejs/serve
-      let reactFile =
-        /*(service == "deno-deploy")
-            ? ("../../node_modules/" + ppack)
-            :*/
-        ("./" +
-          path.join(reejsDir, "serve",
-            (await SpecialFileImport(
-              path.join(processCwd, "node_modules", ppack), file,
-              service))
-              .split("serve/")[1])
-            .split("serve/")[1]);
-      return reactFile;
+    } else if (importmap.imports[pack.n]) {
+      return (service != "deno-deploy")
+        ? `../cache/${cachemap[importmap.imports[pack.n]]}`
+        : importmap.imports[pack.n];
+    } else if (importmap.browserImports[pack.n]) {
+      return (service != "deno-deploy")
+        ? `../cache/${cachemap[importmap.browserImports[pack.n]]}`
+        : importmap.browserImports[pack.n];
     } else if (pack.n.startsWith("./") || pack.n.startsWith("../")) {
+      //return pack.n;
       let ppack = pack.n;
       let availableFilesInsideNodeModules =
         fs
           .readdirSync(path.join(
             file.split("/").slice(0, -1).join("/"),
-            (pack.n.startsWith("../")
-              ?
-              // pack.n tries to go to the parent directory.
-              // change pack.n value from "../file name" to "../"
-              pack.n.split("/").slice(0, -1).join("/")
-              : ".")))
-          .filter((e) => e.endsWith(".ts") || e.endsWith(".tsx") ||
-            e.endsWith(".js") || e.endsWith(".jsx") || e.endsWith(".md") || e.endsWith(".mdx"));
+            (pack.n.startsWith("../") ? pack.n.split("/").slice(0, -1).join("/") : ".")))
+          .filter((e) => (e.endsWith(".ts") || e.endsWith(".tsx") ||
+            e.endsWith(".js") || e.endsWith(".jsx") || e.endsWith(".md") || e.endsWith(".mdx")) && !e.endsWith(".d.ts"));
       let packFileName = pack.n.split("/").pop();
       let TheFile = availableFilesInsideNodeModules.find(
         (e) => e.startsWith(packFileName.split(".")[0]));
@@ -204,17 +196,25 @@ jsxFragmentPragma : "Fragment",*/
       if (ppack.endsWith("undefined")) {
         ppack = pack.n;
       }
+      let copypackn = pack.n.startsWith(".") ? path.resolve(path.join(path.dirname(file), ppack)) : ppack;
+      if (globalThis?.PACKIT_LOADERS?.length) {
+        for (let loader of globalThis.PACKIT_LOADERS) {
+          let outputOfLoader = await loader.load(copypackn);
+          if (outputOfLoader) {
+            //save the file to .reejs/loaders/<loader.name>/<urlToFile(pack.n)>
+            let loaderDir = path.join(".reejs","serve", "loaders", loader.name);
+            if (!fs.existsSync(loaderDir)) {
+              fs.mkdirSync(loaderDir, { recursive: true });
+            }
+            let loaderFile = path.join(loaderDir, URLToFile(pack.n, true));
+            fs.writeFileSync(loaderFile, outputOfLoader.code);
+            return `../serve/loaders/${path.join(loader.name,URLToFile(pack.n, true))}`;
+          }
+        }
+      }
       let reactFile;
       try {
-        reactFile =
-          /*  (service == "deno-deploy")
-                ? ("../../" + path.join(file.split("/").slice(0,
-             -1).join("/"), pack.n.split("/").slice(0, -1).join("/"),
-                                        TheFile)
-                                  .replace(processCwd, ""))
-                      .replace("//", "/")
-                :*/
-          "./" +
+        reactFile = "./" +
           path.join(
             reejsDir, "serve",
             (await SpecialFileImport(
@@ -224,20 +224,46 @@ jsxFragmentPragma : "Fragment",*/
             .split("serve/")[1];
       } catch (e) {
         console.log("Error while importing file: ", file, ppack);
-        console.error(e);
+        throw e;
       }
       return reactFile;
+
     } else {
-      // check if package is in the import map
-      if (importmap.imports[pack.n]) {
-        return (service != "deno-deploy")
-          ? `../cache/${cachemap[importmap.imports[pack.n]]}`
-          : importmap.imports[pack.n];
-      } else if (importmap.browserImports[pack.n]) {
-        return (service != "deno-deploy")
-          ? `../cache/${cachemap[importmap.browserImports[pack.n]]}`
-          : importmap.browserImports[pack.n];
-      } else {
+      // check if package is in the node_modules
+      try {
+        if (fs.existsSync(path.join(processCwd, "node_modules", pack.n.split("/")[0]))) {
+          let ppack = pack.n;
+          let availableFilesInsideNodeModules =
+            fs
+              .readdirSync(path.join(
+                "./node_modules",
+                path.dirname(pack.n)))
+              .filter((e) => (e.endsWith(".ts") || e.endsWith(".tsx") ||
+                e.endsWith(".js") || e.endsWith(".jsx") || e.endsWith(".md") || e.endsWith(".mdx")) && !e.endsWith(".d.ts"));
+          let packFileName = pack.n.split("/").pop();
+          let TheFile = availableFilesInsideNodeModules.find(
+            (e) => e.startsWith(packFileName.split(".")[0]));
+          ppack = ppack.replace(packFileName, TheFile);
+          if (ppack.endsWith("undefined")) {
+            return pack.n;
+          }
+          let reactFile;
+          try {
+            reactFile = "./" +
+              path.join(
+                reejsDir, "serve",
+                (await SpecialFileImport(
+                  path.join("./node_modules", ppack),
+                  null, service))
+                  .split("serve/")[1])
+                .split("serve/")[1];
+            return reactFile;
+          } catch (e) {
+            return pack.n;
+          }
+        }
+      } catch (e) {
+        // sssh... it was probably a third party package which we dont care now.
         return pack.n;
       }
     }
@@ -254,7 +280,7 @@ jsxFragmentPragma : "Fragment",*/
       `import React from "${(cachemap[react]) ? `../cache/${cachemap[react]}` : await dl(react, true)}";\n` +
       result;
   }
-  result += "\n//# sourceURL=" + file.replace(processCwd, ".");
+  result += "\n//# sourceURL=file://" + file.replace(processCwd, ".");
   // save it to reejsDir/serve/[hash].js
   let savedAt = path.join(
     ".reejs", "serve",

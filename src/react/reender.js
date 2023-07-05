@@ -117,10 +117,25 @@ export default async function reender(page, browserFn) {
   }
   if (!ISLAND_COUNT) {
     let p = (await import("/__reejs/serve/" + page.split("/")[2])).default;
-    if(p.name=="DoNotHydrate") return;
+    if (p.name == "DoNotHydrate") return;
     if (!React)
       React = (await import("react"));
-    React.render(React.createElement(p), $("#root"));
+      //get the importmap script
+    let script = document.querySelector("script[type='importmap']");
+    let importmap = JSON.parse(script.innerHTML);
+    //check if importmap includes react-router-dom
+    if (importmap.imports["react-router-dom"]) {
+    let {createBrowserRouter,RouterProvider} = await import("react-router-dom");
+    let routes = (await import("/__reejs/serve/a5e726.js")).default;
+    let Router = createBrowserRouter(routes);
+    React.render(React.createElement(
+      RouterProvider,
+      { router: Router },
+    ), $("#root"));
+    }
+    else{
+      React.render(React.createElement(p), $("#root"));
+    }
   }
   else {
     console.log(ISLAND_COUNT);
