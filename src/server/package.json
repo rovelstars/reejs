@@ -1,6 +1,6 @@
 {
     "name": "@reejs/server",
-    "version": "0.9.28",
+    "version": "0.10.31",
     "description": "",
     "type": "module",
     "main": "index.js",

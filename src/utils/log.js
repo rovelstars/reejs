@@ -2,19 +2,9 @@ import DynamicImport from "@reejs/imports/dynamicImport.js";
 import env from "@reejs/imports/env.js";
 let chalk = DynamicImport(await import("./chalk.js"));
 let oc = console;
-function logWithStyle(type, message, ...styles) {
-  //if message was an instance of Error, log the stack
-  if (message instanceof Error) {
-    oc.error(message);
-    return;
-  }
-	//if message is an object or json, return back to original console.
-	if(typeof message === "object" || typeof message === "json"){
-		return oc[type](message,...styles);
-	}
-  if (!message?.includes?.("%c") || !styles?.length) {
-    return oc[type](message, ...styles);
-  }
+
+
+export default function styleit(message, ...styles) {
   // Split the message by the placeholder %c and trim the spaces
   let messageArray = message.split("%c");
   // Remove the first empty string
@@ -92,8 +82,22 @@ function logWithStyle(type, message, ...styles) {
       finalMessage += "" + messageArray[i];
     }
   }
-  // Log the final message
-  oc[type](finalMessage);
+  // return the final message
+  return finalMessage;
+}
+function logWithStyle(type, message, ...styles) {
+  if (message instanceof Error) {
+    oc.error(message);
+    return;
+  }
+	//if message is an object or json, return back to original console.
+	if(typeof message === "object" || typeof message === "json"){
+		return oc[type](message,...styles);
+	}
+  if (!message?.includes?.("%c") || !styles?.length) {
+    return oc[type](message, ...styles);
+  }
+  oc[type](styleit(message, ...styles));
 }
 if (env == "node" || env == "bun") {
   globalThis.console = {

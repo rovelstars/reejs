@@ -10,9 +10,11 @@ export let save = (e) => {
   }
   let oldCache = {};
   if (fs.existsSync(path.join(reejsDir, "cache", "cache.json"))) {
+    try{
     oldCache =
       fs.readFileSync(path.join(reejsDir, "cache", "cache.json"), "utf-8");
     oldCache = JSON.parse(oldCache);
+  }catch(e){}
   }
   let totalCache = { ...oldCache, ...globalThis?.__CACHE_SHASUM };
   fs.writeFileSync(path.join(reejsDir, "cache", "cache.json"),
@@ -37,7 +39,9 @@ export let save = (e) => {
     let result = arr.map(pair => {
       let newObj = {};
       newObj["file://" + path.join(reejsDir, "cache", pair[1])] = pair[0];
+      try{
       newObj["./" + pair[1]] = (new URL(pair[0])).pathname;
+      }catch(e){}
       newObj[path.join(reejsDir, "cache", pair[1])] = pair[0];
       return newObj;
     });

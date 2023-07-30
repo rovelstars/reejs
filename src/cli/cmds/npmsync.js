@@ -4,7 +4,7 @@ let fs = await NativeImport("node:fs");
 let path = await NativeImport("node:path");
 let processCwd = globalThis?.process?.cwd?.() || Deno.cwd();
 export let sync = async (smt, dir) => {
-  if (!fs.existsSync(path.join(dir || processCwd, ".reecfg.json"))) {
+  if (!fs.existsSync(path.join(dir || processCwd, "reecfg.json"))) {
     console.log("%c[REEJS] %cThis is not a reejs project!", "color: red",
       "color: yellow");
     return;
@@ -21,18 +21,11 @@ export let sync = async (smt, dir) => {
     let value = URLToFile(urldest, true).slice(2);
     if (!fs.existsSync(
       path.join(dir || processCwd, ".reejs", "deps", key, "package.json"))) {
-      fs.mkdirSync(path.join(dir || processCwd, ".reejs", "deps", key), {
-        recursive: true,
-      });
-      fs.writeFileSync(path.join(dir || processCwd, ".reejs", "deps", key,
-        "package.json"),
-        JSON.stringify({
-          name: key,
-          version,
-          main: "index.js",
-          type: "module",
-        },
-          null, 2));
+      if (!fs.existsSync(path.join(dir || processCwd, ".reejs", "deps", key))) {
+        fs.mkdirSync(path.join(dir || processCwd, ".reejs", "deps", key), {
+          recursive: true,
+        });
+      }
       let code;
       try {
         code = fs.readFileSync(
@@ -52,6 +45,32 @@ export let sync = async (smt, dir) => {
         path.join(dir || processCwd, ".reejs", "deps", key, "index.js"),
         `export * from "../../${numSlash}.reejs/cache/${value}";${code ? `export {default} from "../../${numSlash}.reejs/cache/${value}"`
           : ""}`);
+
+      //read only the first line of value file
+      let firstLine = fs.readFileSync(
+        path.join(dir || processCwd, ".reejs", "cache", value), "utf-8").split(
+          "\n")[0];
+      //if the first line starts with /// <reference path=" then get the path of the d.ts file and link it to the deps folder as well
+      let isThereDts = firstLine.startsWith("/// <reference path=");
+      if (isThereDts) {
+        let dtsPath = firstLine.split("/// <reference path=")[1].split(
+          "/>")[0].replace(/"/g, "");
+        //create soft link
+        fs.symlinkSync(path.join(dir || processCwd, ".reejs", "cache", dtsPath),
+          path.join(dir || processCwd, ".reejs", "deps", key, "index.d.ts"));
+      }
+
+      fs.writeFileSync(path.join(dir || processCwd, ".reejs", "deps", key,
+        "package.json"),
+        JSON.stringify({
+          name: key,
+          version,
+          main: "index.js",
+          type: "module",
+          //ifThereDts is true, add types: index.d.ts to package.json
+          ...(isThereDts ? { types: "index.d.ts" } : {}),
+        },
+          null, 2));
     }
     // depKey is the key of the dependency in package.json. if the depKey
     // startsWith @, allow only one "/" and the next word after that "/".
@@ -74,7 +93,12 @@ export let sync = async (smt, dir) => {
       recursive: true,
     });
   }
-
+  //create folder if not exists: .reejs/deps
+  if (!fs.existsSync(path.join(dir || processCwd, ".reejs", "deps"))) {
+    fs.mkdirSync(path.join(dir || processCwd, ".reejs", "deps"), {
+      recursive: true,
+    });
+  }
   await Promise.all(fs.readdirSync(path.join(dir || processCwd, ".reejs", "deps")).map(async (key) => {
     let dep = path.join(dir || processCwd, ".reejs", "deps", key);
     let nodeModulesDep = path.join(dir || processCwd, "node_modules", key);
@@ -82,12 +106,16 @@ export let sync = async (smt, dir) => {
     if (fs.existsSync(nodeModulesDep)) {
       fs.rmSync(nodeModulesDep, { recursive: true });
     }
+    if (fs.existsSync(nodeModulesDep)) {
+      return;
+    }
     fs.symlinkSync(dep, nodeModulesDep, "dir");
   }));
 
   console.log(
     "%c[SYNC] %cSynced dependencies with package.json",
     "color: #805ad5", "color: green", "color: blue", "color: green");
+  process.exit(0);
 };
 
 
@@ -97,7 +125,7 @@ export let syncSpecific = async (url) => {
   let version = url.split("@").pop().split("/")[0];
 
   //name is the object key in import maps. get the url, use URLToFile to get the local file and setup symlinks and stuff
-  if (!fs.existsSync(path.join(processCwd, ".reecfg.json"))) {
+  if (!fs.existsSync(path.join(processCwd, "reecfg.json"))) {
     console.log("%c[REEJS] %cThis is not a reejs project!", "color: red",
       "color: yellow");
     return;
@@ -111,20 +139,12 @@ export let syncSpecific = async (url) => {
   if (!key) key = Object.keys(import_map.browserImports).find(e => import_map.browserImports[e] === url);
   let urldest = await followRedirect(url);
   let value = URLToFile(urldest, true).slice(2);
-  if (!fs.existsSync(path.join(processCwd, ".reejs", "deps", key))) {
-    fs.mkdirSync(path.join(processCwd, ".reejs", "deps", key), {
-      recursive: true,
-    });
-    if (!fs.existsSync(path.join(processCwd, ".reejs", "deps", key, "package.json")))
-      fs.writeFileSync(path.join(processCwd, ".reejs", "deps", key,
-        "package.json"),
-        JSON.stringify({
-          name: key,
-          version,
-          main: "index.js",
-          type: "module",
-        },
-          null, 2));
+  if (!fs.existsSync(path.join(processCwd, ".reejs", "deps", key, "package.json"))) {
+    if (!fs.existsSync(path.join(processCwd, ".reejs", "deps", key))) {
+      fs.mkdirSync(path.join(processCwd, ".reejs", "deps", key), {
+        recursive: true,
+      });
+    }
     let code;
     try {
       let savedAt = await dl(url, true);
@@ -144,7 +164,30 @@ export let syncSpecific = async (url) => {
       path.join(processCwd, ".reejs", "deps", key, "index.js"),
       `export * from "../../${numSlash}.reejs/cache/${value}";${code ? `export {default} from "../../${numSlash}.reejs/cache/${value}"`
         : ""}`);
-
+    //read only the first line of value file
+    let firstLine = fs.readFileSync(
+      path.join(dir || processCwd, ".reejs", "cache", value), "utf-8").split(
+        "\n")[0];
+    //if the first line starts with /// <reference path=" then get the path of the d.ts file and link it to the deps folder as well
+    let isThereDts = firstLine.startsWith("/// <reference path=");
+    if (isThereDts) {
+      let dtsPath = firstLine.split("/// <reference path=")[1].split(
+        "/>")[0].replace(/"/g, "");
+      //create soft link
+      fs.symlinkSync(path.join(dir || processCwd, ".reejs", "cache", dtsPath),
+        path.join(dir || processCwd, ".reejs", "deps", key, "index.d.ts"));
+    }
+    fs.writeFileSync(path.join(dir || processCwd, ".reejs", "deps", key,
+      "package.json"),
+      JSON.stringify({
+        name: key,
+        version,
+        main: "index.js",
+        type: "module",
+        //ifThereDts is true, add types: index.d.ts to package.json
+        ...(isThereDts ? { types: "index.d.ts" } : {}),
+      },
+        null, 2));
   }
   // depKey is the key of the dependency in package.json. if the depKey
   // startsWith @, allow only one "/" and the next word after that "/".

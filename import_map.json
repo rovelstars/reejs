@@ -1,0 +1,5 @@
+{
+  "imports":{
+    "@reejs/": "./node_modules/@reejs/"
+  }
+}

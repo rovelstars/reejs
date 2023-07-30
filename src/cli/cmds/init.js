@@ -13,7 +13,7 @@ export default function (prog) {
     .describe("Initialize a new project")
     .option("-f, --features", "Features to include in the project", "")
     .action(async (name, opts) => {
-      let ora = await Import("ora@6.1.2", { internalDir: true });
+      let ora = await Import("ora@6.1.2?bundle", { internalDir: true });
       let fs = await NativeImport("node:fs");
       let path = await NativeImport("node:path");
       // mkdir name
@@ -33,7 +33,7 @@ export default function (prog) {
       }
       let spinner = ora("Initializing project...").start();
       fs.mkdirSync(path.join(process.cwd(), name));
-      fs.writeFileSync(path.join(process.cwd(), name, ".reecfg.json"),
+      fs.writeFileSync(path.join(process.cwd(), name, "reecfg.json"),
         JSON.stringify({
           name: name,
           version: "0.0.1",

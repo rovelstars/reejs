@@ -7,6 +7,7 @@ import dl, { URLToFile } from "@reejs/imports/URLImportInstaller.js";
 import copyFolder from "@reejs/utils/copyFolder.js";
 import versions from "../version.js";
 import { sync, syncSpecific } from "./npmsync.js";
+import merge from "./utils/merge.js";
 import { readers, transpilers, writers, copyToPackit, defaultTranspiler } from "./utils/Packit.js";
 let fs = await NativeImport("node:fs");
 let fsp = await NativeImport("node:fs/promises");
@@ -51,7 +52,10 @@ let getPackage = async (pkg) => {
 let MODIFIED_FILES;
 
 if (!fs.existsSync(path.join(".reejs", "files.cache"))) {
-  if (fs.existsSync(".reecfg.json")) {
+  if (fs.existsSync("reecfg.json")) {
+    if (!fs.existsSync(".reejs")) {
+      fs.mkdirSync(".reejs");
+    }
     fs.writeFileSync(path.join(".reejs", "files.cache"), "[]");
   }
 }
@@ -75,23 +79,11 @@ export let packit = async (service, isDevMode, runOneTime) => {
   if (globalThis?.Deno) globalThis.Deno.env.set("PACKIT_RUNNING", "true");
   if (globalThis?.process?.env?.DEBUG || globalThis?.Deno?.env?.get("DEBUG"))
     console.log("%c[PACKIT] %cDon't use debug for benchmarking! Run debug in order to see what takes the longest time...", "color: #db2777", "color: yellow");
-  let configFile = await SpecialFileImport("packit.config.js");
+  let configFile = await SpecialFileImport("packit.config.js", null, service);
   let config = DynamicImport(await import(path.join(processCwd, configFile)));
   if (!fs.existsSync(path.join(processCwd, "packit"))) {
     fs.mkdirSync(path.join(processCwd, "packit"));
   }
-
-  let merge = (obj1, obj2) => {
-    return obj1.concat(obj2).reduce((acc, cur) => {
-      const found = acc.find(e => e?.name === cur?.name);
-      if (found) {
-        Object.assign(found, cur);
-      } else if (cur) {
-        acc.push(cur);
-      }
-      return acc;
-    }, []);
-  };
 
   let Readers = merge(readers, config.readers);
   let Transpilers = merge(transpilers, config.transpilers);
@@ -155,10 +147,9 @@ export let packit = async (service, isDevMode, runOneTime) => {
   let savedFiles = [];
   let reader_then = Date.now();
   await Promise.all(Readers.map(async (reader) => {
-    let files = reader.run ? await reader.run() : [];
+    let { glob } = await Import("glob@10.2.7?bundle", { internalDir: true });
+    let files = reader.run ? await reader.run(glob) : [];
     if (!reader.run) {
-      let { glob } = await Import("glob@10.2.7", { internalDir: true });
-      if(!globalThis.import.meta.glob) globalThis.import.meta.glob = glob;
       files = await glob(reader.pattern, { ignore: reader?.exclude || [] });
     }
     if (!Array.isArray(files)) throw new Error(`Reader \`${reader}\` must return an array of files.`);
@@ -166,6 +157,7 @@ export let packit = async (service, isDevMode, runOneTime) => {
   }));
   if (globalThis?.process?.env?.DEBUG || globalThis?.Deno?.env?.get("DEBUG"))
     console.log("%c[PACKIT] %cReaders finished in %c" + (Date.now() - reader_then) + "ms", "color: #db2777", "color: #ffffff", "color: #10b981");
+    
   //get all files from savedFiles ending with extension passed to function
   async function getFilesFromSavedFiles(extension) {
     let files = [];
@@ -187,6 +179,7 @@ export let packit = async (service, isDevMode, runOneTime) => {
   // writers must not run in parallel, as they are writing to the same file. mainFile is the code for index.js
   let mainFile = "";
   async function TranspileFile(fileURL, service) {
+    if(!service) throw new Error("parameter `service` is required");
     if (!fileURL) return;
     let ext = path.extname(fileURL).slice(1);
     let tts = Transpilers
@@ -212,8 +205,9 @@ export let packit = async (service, isDevMode, runOneTime) => {
   let DATA; // allow writers to pass data to other writers
   for (let writer in Writers) {
     try {
+      let { glob } = await Import("glob@10.2.7?bundle", { internalDir: true });
       let helpers = {
-        getPackage, mainFile, savedFiles, TranspileFile, terser, fs, path, processCwd, importmap, cachemap, isDevMode, DATA
+        getPackage, mainFile, savedFiles, TranspileFile, terser, fs, path, processCwd, importmap, cachemap, isDevMode, DATA, glob
       };
       let data = await Writers[writer].run(helpers, service);
       if (globalThis?.process?.env?.DEBUG || globalThis?.Deno?.env?.get("DEBUG"))
@@ -289,7 +283,7 @@ export let packit = async (service, isDevMode, runOneTime) => {
       childProcess = spawn("bun", ["run", path.join(processCwd, "packit.build.js")], { detached: true, stdio: "inherit", env: { ...process.env } });
     }
   }
-  if (fs.existsSync(".reecfg.json")) {
+  if (fs.existsSync("reecfg.json")) {
     await fs.writeFile(
       path.join(".reejs", "files.cache"),
       JSON.stringify(MODIFIED_FILES), () => { });
@@ -368,7 +362,7 @@ export default function Packit(prog) {
       } else {
         //setup PSC_DISABLE env variable
         if (globalThis?.process?.env?.TERSER != "false") {
-          if (!terser) terser = await Import("terser@5.16.6", { internalDir: true });
+          if (!terser) terser = await Import("terser@5.16.6?bundle", { internalDir: true });
           if (globalThis?.process?.env) globalThis.process.env.PSC_DISABLE = "true";
           if (globalThis?.Deno?.env) globalThis.Deno.env.set("PSC_DISABLE", "true");
           if (globalThis?.process?.env) process.env.NODE_ENV = "production";

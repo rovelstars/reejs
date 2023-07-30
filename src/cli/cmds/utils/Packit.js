@@ -3,29 +3,29 @@ import { Import } from "@reejs/imports/URLImport.js";
 let fs = await NativeImport("node:fs");
 let path = await NativeImport("node:path");
 import SpecialFileImport from "@reejs/imports/specialFileImport.js";
-import URLImport from "@reejs/imports/URLImport.js";
 
 export let readers = [
   {
     "name": "pages",
-    run: async () => {
-      return await import.meta.glob("src/pages/**/*.{js,jsx,ts,tsx,md,mdx}", { ignore: ["src/pages/api/**/*.{js,ts}"] });
+    run: async (glob) => {
+      return await glob("src/pages/**/*.{js,jsx,ts,tsx,md,mdx}", { ignore: ["src/pages/api/**/*.{js,ts}"] });
     }
   },
   {
     "name": "components",
-    "run": async () => {
-      return await import.meta.glob("src/components/**/*.{js,jsx,ts,tsx,md,mdx}");
+    "run": async (glob) => {
+      return await glob("src/components/**/*.{js,jsx,ts,tsx,md,mdx}");
     }
   },
   {
     "name": "apis",
-    "run": async () => {
-      return await import.meta.glob("src/pages/api/**/*.{js,ts}");
+    "run": async (glob) => {
+      return await glob("src/pages/api/**/*.{js,ts}");
     },
   }];
 
 export let defaultTranspiler = async (fileURL, service) => {
+  if (!service) throw new Error("parameter `service` is required");
   return await SpecialFileImport(fileURL, null, service);
 }
 
@@ -70,7 +70,7 @@ export let writers = [
           //"@reejs/": "./node_modules/@reejs/",
           //});
           { ...importmap.imports, ...{ "@reejs/": "./node_modules/@reejs/" } };
-        fs.writeFile(path.join("packit", "deno.json"), JSON.stringify({ imports: denoimports }, null, 2), () => { });
+        fs.writeFileSync(path.join("packit", "deno.json"), JSON.stringify({ imports: denoimports }, null, 2));
         //delete packit/package.json if it exists
         if (fs.existsSync(path.join("packit", "package.json"))) {
           fs.unlinkSync(path.join("packit", "package.json"));
@@ -88,21 +88,20 @@ export let writers = [
         ...convertedBrowserImports,
         ...importmap.browserImports,
       };
-      let reenderFile = (await SpecialFileImport(path.join(
-        processCwd, "node_modules", "@reejs", "react", "reender.js")));
+      let reenderFile = (await SpecialFileImport(path.join(processCwd, "node_modules", "@reejs", "react", "reender.js"), null, service));
       let reender = "/__reejs" + reenderFile.split(".reejs")[1];
       let browserFn = pages.filter((page) => page.startsWith("src/pages/_browser"));
-      let twindFn = await TranspileFile(pages.filter((page) => page.startsWith("src/pages/_twind"))[0]);
-      let appFile = await TranspileFile(pages.find((page) => page.startsWith("src/pages/_app")));
+      let twindFn = await TranspileFile(pages.filter((page) => page.startsWith("src/pages/_twind"))[0], service);
+      let appFile = await TranspileFile(pages.find((page) => page.startsWith("src/pages/_app")), service);
       mainFile = `${(isDevMode && service != "deno-deploy") ? "import './node_modules/@reejs/utils/log.js';" : ""}
       import "${await getPackage("debug")}";
+      ${isDevMode ? `import { save } from "./node_modules/@reejs/imports/debug.js";` : ""}
       ${(twindFn?.length > 0)
           ? `import inline from "${await getPackage("@twind/with-react/inline")}";
       import tw from "./.reejs/${twindFn.split(".reejs/")[1]}";`
           : ""}
       ${service == "node" ? `import fs from "node:fs";` : ""}
       import ReeServer from "./node_modules/@reejs/server/index.js";
-      ${isDevMode?`import { save } from "./node_modules/@reejs/imports/debug.js";`:""}
       ${service == "deno-deploy"
           ? "import { serve } from 'https://deno.land/std/http/server.ts'"
           : ""}
@@ -116,9 +115,8 @@ export let writers = [
       import React from "${await getPackage("react")}";
       import App from "./.reejs${appFile.split(".reejs")[1]}";
       const server = new ReeServer(Hono, {${service === "node" ? "serve," : ""}});
-      server.app.onError(${
-        isDevMode?"save":"console.log"
-      })
+      server.app.onError(${isDevMode ? "save" : "console.log"
+        })
       const headMethod = ({ app }) => {
         return async (c, next) => {
           if (c.req.method === 'HEAD') {
@@ -183,8 +181,10 @@ export let writers = [
         });
         compiledRoute = compiledRoute.join("/");
         //console.log(`[reejs] ${route} => ${compiledRoute}`);
-        let savedAt = await TranspileFile(page);
-        return { route: compiledRoute, page: page.trim(), savedAt };
+        let savedAt = await TranspileFile(page, service);
+        let sha_name = savedAt.split("serve/")[1].split(
+          ".")[0];
+        return { route: compiledRoute, page: page.trim(), savedAt, sha_name };
       }));
       pages = pages.filter(
         // remove undefined
@@ -208,21 +208,76 @@ export let writers = [
             if (a.route.length < b.route.length) return 1;
           }
           return 0;
-        })
-        .map(({ route, page, savedAt }) => {
-          if (route.endsWith("/")) route = route.slice(0, -1);
-          let sha_name = savedAt.split("serve/")[1].split(
-            ".")[0];
-          mainFile += `\nimport file_${sha_name} from "./.reejs/${savedAt.split(".reejs/")[1]}";server.app.get("/${route == "" ? "" : route}",(c)=>{ let h = "<!DOCTYPE html>"+render(React.createElement(App,null,React.createElement(file_${savedAt.split("serve/")[1].split(".")
-          [0]},{c}))).replace('<script id="__reejs"></script>','<reejs page="${savedAt.split("serve/")[1]}"></reejs><script type="importmap">{"imports":${JSON.stringify(
-            importmap
-              .browserImports)}}</script><script type="module">${isDevMode
-                ? 'await import("https://esm.sh/preact@10.13.2/debug");'
-                : ''}let i=(await import("${reender}")).default;i("./${savedAt.split(".reejs/")[1]}",${browserFn.length > 0 ? `"${browserFn[0][1].replace('.reejs', '/__reejs')}"`
-                  : 'null'});</script>');return ${twindFn?.length > 0 ? "c.html(inline(h,tw).replaceAll('{background-clip:text}','{-webkit-background-clip:text;background-clip:text}').replaceAll('backdrop-filter:','-webkit-backdrop-filter:'))"
-                    //TODO: wait for twind to add vendor prefix for `background-clip:text`, then remove the replaceAll.
-                    : "c.html(h)"}});`;
         });
+
+
+      //generate routes file
+      let routeData =
+        `export default [${pages.map(({ route, page, savedAt }) => {
+          if (route.endsWith("/")) route = route.slice(0, -1);
+          return `{path: "/${route}", lazy: async() => {let h=await import("./${savedAt.split(".reejs/serve/")[1]}");return {Component:h.default,whole:h}}}`;
+        }).join()
+        }]`;
+      //save file
+      fs.writeFileSync(path.join(".reejs", "serve", "__routes.js"), routeData);
+
+      //gs = generateScript; f = variable name for file like savedAt.split(".reejs/serve/")[1]
+      mainFile += `\nconst gs=(f)=>'<reejs page="'+f+'"></reejs><script type="importmap">{"imports":${JSON.stringify(
+        importmap
+          .browserImports)}}</script><script type="module">${isDevMode
+            ? 'await import("https://esm.sh/preact@10.16.0/debug");'
+            : ''}${twindFn?.length > 0 ?
+              `(await import("https://esm.sh/@twind/core")).observe((await import("/__reejs/serve/1d9e2d.js")).default);` : ""
+        }let i=(await import("${reender}")).default;i("./serve/'+f+'",${browserFn.length > 0 ? `"${browserFn[0][1].replace('.reejs', '/__reejs')}"`
+          : 'null'});</script>';`;
+
+      //init writing ./.reejs/utils/react-router and use it via defaultTranspiler if react-router is installed
+      let rrPath;
+      if (true) {
+        //write react-router.jsx
+        let code = `import { createStaticRouter, StaticRouterProvider} from "${importmap.imports["react-router-dom/server"]}";
+import { matchRoutes } from "${importmap.imports["react-router-dom"]}";
+import _r from "../serve/__routes.js";
+let routes = _r; //make it mutable
+
+routes = await Promise.all(routes.map(async (r)=>{
+  if(!r.lazy) return r;
+  let {Component} = await r.lazy();
+  delete r.lazy;
+  return {...r, Component};
+}));
+
+export default function Body(props) {
+  let router = createStaticRouter(routes, {
+    basename: "/",
+    location: new URL(props.children.props.c.req.url).pathname,
+    matches: []
+  });
+  if(!props.App) throw new Error("\`App\` component is required for React Router.\\nThis usually means Packit is not generating correct code. Please report this issue on Github.");
+  let App = props.App;
+  delete props.App;
+  return <App {...props}>
+    <StaticRouterProvider router={router} context={props.children.props.c.req} />
+    </App>;
+}`;
+        //create folder if not exists
+        if (!fs.existsSync(path.join(".reejs", "utils"))) {
+          fs.mkdirSync(path.join(".reejs", "utils"), { recursive: true });
+        }
+        if(!fs.existsSync(path.join(".reejs", "utils", "react-router.jsx"))){
+        fs.writeFileSync(path.join(".reejs", "utils", "react-router.jsx"), code);
+        }
+        rrPath = await defaultTranspiler(path.join(".reejs", "utils", "react-router.jsx"), service);
+        mainFile += `\nimport RR_ from "./${rrPath}";`;
+      }
+      pages = pages.map(({ route, page, savedAt, sha_name }) => {
+        if (route.endsWith("/")) route = route.slice(0, -1);
+
+        mainFile += `\nimport * as file_${sha_name} from "./.reejs/${savedAt.split(".reejs/")[1]}";server.app.get("/${route == "" ? "" : route}",(c)=>{ let h = "<!DOCTYPE html>"+render(React.createElement(${rrPath?"RR_":"App"},{${rrPath?"App, ":""}metadata: file_${savedAt.split("serve/")[1].split(".")[0]}.metadata || ((file_${savedAt.split("serve/")[1].split(".")[0]}?.generateMetadata)?file_${savedAt.split("serve/")[1].split(".")[0]}?.generateMetadata(c):{})},React.createElement(file_${savedAt.split("serve/")[1].split(".")[0]}.default,{c})))
+          .replace('<script id="__reejs"></script>',gs("${savedAt.split("serve/")[1]}"));return ${twindFn?.length > 0 ? "c.html(inline(h,tw).replaceAll('{background-clip:text}','{-webkit-background-clip:text;background-clip:text}'))"
+            //TODO: wait for twind to add vendor prefix for `background-clip:text`, then remove the replaceAll.
+            : "c.html(h)"}});`;
+      });
       return { mainFile, DATA };
     }
   },
@@ -241,7 +296,7 @@ export let writers = [
         if (route.startsWith("_")) return;
         if (route.endsWith("/")) route = route.slice(0, -1);
 
-        let savedAt = await helpers.TranspileFile(api);
+        let savedAt = await helpers.TranspileFile(api, service);
         let sha_name = savedAt.split("serve/")[1].split(
           ".")[0];
         mainFile += `\nimport file_${sha_name} from "./.reejs/${savedAt.split(".reejs/")[1]}";server.app.get("/api${route}",file_${sha_name});`;
@@ -253,24 +308,25 @@ export let writers = [
     name: "static",
     index: -1,
     run: async (helpers, service) => {
-      let { DATA, mainFile } = helpers;
-      let { contentType } = await Import("mime-types@2.1.35", {internalDir: true});
-      let reejsSavedFilesCache = fs.readdirSync(path.join(".reejs", "cache"));
-      let reejsSavedFilesServe = fs.readdirSync(path.join(".reejs", "serve"));
-      let publicSavedFiles = await import.meta.glob("public/**/*");
+      let { DATA, mainFile, glob } = helpers;
+      let { contentType } = await Import("mime-types@2.1.35");
+      let reejsSavedFilesCache = await glob(".reejs/cache/**/*");
+      let reejsSavedFilesServe = await glob(".reejs/serve/**/*");
+      let publicSavedFiles = await glob("public/**/*");
       let reejsSavedFilesString = "";
       if (service == "deno-deploy" || service == "node") {
         reejsSavedFilesString =
           reejsSavedFilesCache
             .map((file) => {
-              return `let cache_${file.replace(".", "")} = ${service == "node" ? "fs.readFileSync" : "await Deno.readFile"}("./.reejs/cache/${file}");server.app.get("/__reejs/cache/${file}", (c)=>{c.header('Content-type','${contentType(file.replaceAll("/", ""))
-                }');return c.body(cache_${file.replace(".", "")})});`;
+              return `let cache_${file.replace(".reejs/cache/", "").replaceAll(".", "").replaceAll("/", "")} = ${service == "node" ? "fs.readFileSync" : "await Deno.readFile"}("${file}");server.app.get("/__reejs/cache/${file.replace(".reejs/cache/", "")}", (c)=>{c.header('Content-type','${contentType(file.replaceAll("/", ""))
+                }');return c.body(cache_${file.replace(".reejs/cache/", "").replaceAll(".", "").replaceAll("/", "")})});`;
             })
             .join("\n") +
           reejsSavedFilesServe
             .map((file) => {
-              return `let serve_${file.replace(".", "")} = ${service == "node" ? "fs.readFileSync" : "await Deno.readFile"}("./.reejs/serve/${file}");server.app.get("/__reejs/serve/${file}", (c)=>{c.header('Content-type','${contentType(file.replaceAll("/", ""))
-                }');return c.body(serve_${file.replace(".", "")})});`;
+              if (!file.replace(".reejs/serve/", "").replace("loaders/", "").includes(".")) return "";
+              return `let serve_${file.replace(".reejs/serve/", "").replace("loaders/", "").replaceAll(".", "").replaceAll("/", "")} = ${service == "node" ? "fs.readFileSync" : "await Deno.readFile"}("${file}");server.app.get("/__reejs/serve/${file.replace(".reejs/serve/", "")}", (c)=>{c.header('Content-type','${contentType(file.replaceAll("/", ""))
+                }');return c.body(serve_${file.replace(".reejs/serve/", "").replace("loaders/", "").replaceAll(".", "").replaceAll("/", "")})});`;
             })
             .join("\n") +
           publicSavedFiles.map((file) => {
@@ -278,8 +334,8 @@ export let writers = [
               }');return c.body(public_${file.replaceAll("/", "__").replaceAll(".", "")})});`;
           }).join("\n");
       }
-      mainFile += (service == "node") //todo: make a custom serveStatic myself.
-        ? "server.app.get('/__reejs/*',serveStatic({root:'./.reejs/', index: '', rewriteRequestPath:(p)=>p.replace('/__reejs','')}));server.app.get('/*',serveStatic({root:'./public', index: '', defaultDocument:'', rewriteRequestPath:(p)=>p.replace('/public','')}));"
+      mainFile += (service !== "node") //todo: make a custom serveStatic myself.
+        ? "server.app.get('/__reejs/**',serveStatic({root:'./__reejs/',rewriteRequestPath:(p)=>p.replace('/__reejs','')}));server.app.get('/**',serveStatic({root:'./public',rewriteRequestPath:(p)=>p.replace('/public','')}));"
         : (((service == "deno-deploy") || (service == "node")) ? reejsSavedFilesString : "");
       mainFile += "\nserver.app.get('/__reejs/*',(c)=>{return c.notFound()});"
       return { mainFile, DATA };
@@ -306,7 +362,7 @@ export let copyToPackit = [
   async (service) => {
     let folders = ["public", ".reejs", "node_modules"];
     //use glob to get all files in folders
-    let files = folders.map(folder => import.meta.glob.sync(`${folder}/**/*`, { nodir: true })).flat();
+    let files = folders.map(folder => glob.sync(`${folder}/**/*`, { nodir: true })).flat();
     files = [...files, ...(service == "deno-deploy" ? [] : ["package.json", "import_map.json", ".reecfg.json", "tailwind.config.js", "twind.config.js"])];
     return { files, folders: [] };
   }

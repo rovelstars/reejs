@@ -9,7 +9,7 @@ export let install =
     // we would show time taken to install the package
     let start = Date.now();
     let isBrowser = opts?.browser || opts?.b ? "browserImports" : "imports";
-    if (!fs.existsSync(path.join(process.cwd(), ".reecfg.json"))) {
+    if (!fs.existsSync(path.join(process.cwd(), "reecfg.json"))) {
       console.log("%c[REEJS] %cThis is not a reejs project!", "color: red",
         "color: yellow");
       return;
@@ -44,9 +44,14 @@ export let install =
               "color: red", "color: white", "color: blue;", "color:white");
             return;
           } else {
-            console.log("Generating default URL...");
-            url = `https://esm.sh/${name}?bundle`;
-            console.log(url);
+            if (!name.startsWith("https://") && !name.startsWith("http://")){
+              console.log("Generating default URL...");
+              url = `https://esm.sh/${name}?bundle`;
+              console.log(url);
+            }
+            else{
+              url = name;
+            }
           }
         }
         await dl(url, true, null, null, ua);

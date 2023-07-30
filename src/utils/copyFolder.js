@@ -5,7 +5,7 @@ let path = await NativeImport("node:path");
 let MODIFIED_FILES = [];
 //check if .reejs/serve.cache exists
 if (!fs.existsSync(path.join(".reejs", "copy.cache"))) {
-  if (fs.existsSync(".reecfg.json")) {
+  if (fs.existsSync("reecfg.json")) {
     if(!fs.existsSync(".reejs")) fs.mkdirSync(".reejs");
     fs.writeFileSync(path.join(".reejs", "copy.cache"), "[]");
   }
@@ -36,7 +36,7 @@ async function copyFolder(source, target) {
       MODIFIED_FILES.push({ f: filePath, at: stat.mtimeMs });
       //run fs async save MODIFIED_FILES as it should not block the main thread
       fs.copyFileSync(filePath, targetPath);
-      if (fs.existsSync(".reecfg.json")) {
+      if (fs.existsSync("reecfg.json")) {
         await fs.writeFile(
           path.join(".reejs", "copy.cache"),
           JSON.stringify(MODIFIED_FILES),

@@ -20,7 +20,7 @@ export default async function URLImport(url, internalDir = false) {
     if (!fs.existsSync(file)) {
       throw new Error(`File ${file} does not exist`);
     }
-    return DynamicImport(await import(file));
+    return DynamicImport(await import("file://"+file));
   }
   else {
     throw new Error("Invalid URL " + url);
@@ -37,10 +37,10 @@ export async function Import(name, opts = {
     return await URLImport(name, opts.internalDir);
   }
   else if (name.startsWith("npm:")) {
-    return await URLImport(`https://esm.sh/${name.slice(4)}${opts.bundle ? "?bundle" : ""}`, opts.internalDir);
+    return await URLImport(`${(process.env.ESM_SERVER || "https://esm.sh")}/${name.slice(4)}`, opts.internalDir);
   }
   else {
-    let url = `https://esm.sh/${name}`;
+    let url = `${(process.env.ESM_SERVER || "https://esm.sh")}/${name}`;
     return await URLImport(url, opts.internalDir);
   }
 }

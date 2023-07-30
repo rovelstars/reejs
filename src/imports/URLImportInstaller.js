@@ -9,83 +9,53 @@ if (runtime == "browser") {
 let reejsDir = dir; // make reejsDir mutable
 let fs = await NativeImport("node:fs");
 let path = await NativeImport("node:path");
-let http = await NativeImport("node:http");
 let https = await NativeImport("node:https");
-
+let http = await NativeImport("node:http");
 let crypto = await NativeImport("node:crypto");
-import "@reejs/utils/log.js";
+import styleit from "@reejs/utils/log.js";
 import DynamicImport from "./dynamicImport.js";
 import URLImport from "./URLImport.js";
 import { save } from "./debug.js";
+
 let processCwd = globalThis?.process?.cwd?.() || Deno.cwd();
 
 if (!fs.existsSync(path.join(reejsDir, "cache")) &&
-  fs.existsSync(path.join(processCwd, ".reecfg.json"))) {
+  fs.existsSync(path.join(processCwd, "reecfg.json"))) {
   fs.mkdirSync(path.join(reejsDir, "cache"), { recursive: true });
   fs.writeFileSync(path.join(reejsDir, "cache", "package.json"),
     JSON.stringify({ type: "module" }));
 }
-
+function fetchUrl(url) {
+  return new Promise((resolve, reject) => {
+    let chosen = url.startsWith("https:") ? https : http;
+    chosen.get(url, (res) => {
+      let data = '';
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      res.on('end', () => {
+        resolve(data);
+      });
+    }).on('error', (err) => {
+      reject(err);
+    });
+  });
+}
+if (!fs.existsSync(path.join(reejsDir, "failsafe"))) {
+  fs.mkdirSync(path.join(reejsDir, "failsafe"), { recursive: true });
+}
+if (!fs.existsSync(path.join(reejsDir, "failsafe", "package.json")))
+  fs.writeFileSync(path.join(reejsDir, "failsafe", "package.json"),
+    JSON.stringify({ type: "module" }));
 //check if fetch is available or not. if not, use nativeimport https module to download the file, save it at reejsDir/failsafe/fetch.js and import it.
 if (!globalThis.fetch) {
-  if (!fs.existsSync(path.join(reejsDir, "failsafe"))) {
-    fs.mkdirSync(path.join(reejsDir, "failsafe"), { recursive: true });
-  }
-  if(!fs.existsSync(path.join(reejsDir, "failsafe", "package.json")))
-    fs.writeFileSync(path.join(reejsDir, "failsafe", "package.json"),
-      JSON.stringify({ type: "module" }));
   if (!fs.existsSync(path.join(reejsDir, "failsafe", "fetch.js"))) {
-    console.log("%c[POLYFILL] %c`%cglobalThis.fetch%c`%c...", "color: #ef4444", "color: blue", "color: blue; font-weight: bold", "color: blue", "color: gray");
-    let https = await NativeImport("node:https");
-    function fetchUrl(url) {
-      return new Promise((resolve, reject) => {
-        https.get(url, (res) => {
-          let data = '';
-          res.on('data', (chunk) => {
-            data += chunk;
-          });
-          res.on('end', () => {
-            resolve(data);
-          });
-        }).on('error', (err) => {
-          reject(err);
-        });
-      });
-    }
-
-    let fetchFileCode = await fetchUrl("https://esm.sh/v127/node-fetch@3.3.1/node/node-fetch.bundle.mjs");
-
+    let fetchFileCode = await fetchUrl(`${(process.env.ESM_SERVER || "https://esm.sh")}/v128/node-fetch@3.3.1/node/node-fetch.bundle.mjs`);
     fs.writeFileSync(path.join(reejsDir, "failsafe", "fetch.js"), fetchFileCode);
   }
   globalThis.fetch = (await import(path.join(reejsDir, "failsafe", "fetch.js"))).default;
 }
 
-globalThis.__CACHE_SHASUM = {};
-
-let URLToFile = function (url, noFolderPath = false) {
-  if (url.startsWith("node:"))
-    return url;
-  let isJson = false;
-  let fileExt = path.extname(url).split("?")[0];
-  if (![".json", ".js", ".wasm"].includes(fileExt)) {
-    fileExt = ".js";
-  }
-  if (!url.startsWith("https://") && !url.startsWith("http://") && !url.startsWith("npm:") && !url.startsWith("./") && !url.startsWith("../"))
-    return url; // must be ?external module from esm.sh
-  __CACHE_SHASUM[url] =
-    crypto.createHash("sha256").update(url).digest("hex").slice(0, 6) + (isJson ? ".json" : ".js")
-  let fileString = noFolderPath
-    ? "./" +
-    crypto.createHash("sha256").update(url).digest("hex").slice(
-      0, 6) +
-    fileExt
-    : path.join(
-      reejsDir, "cache",
-      crypto.createHash("sha256").update(url).digest("hex").slice(
-        0, 6) +
-      fileExt);
-  return fileString;
-};
 // user agent
 let UA;
 let pkgJson = DynamicImport(await import("./version.js")).reejs;
@@ -102,19 +72,46 @@ switch (env) {
     UA = `Mozilla/5.0 (reejs/${pkgJson.version})`; // I got no idea why I did this. Sounds villainous. I can confirm lol~
     break;
   case "bun":
-    //UA = `Bun/${Bun.version} (reejs/${pkgJson.version})`; 
-    UA = `Node/${process.version} (reejs/${pkgJson.version})`; //As of time of writing, `esm.sh` provides `esnext` build for Bun instead of its own or `node` target
-    // so we use Node's UA because we don't want nodejs polyfills.
+    UA = `Bun/${Bun.version} (reejs/${pkgJson.version})`;
+    //UA = `Node/${process.version} (reejs/${pkgJson.version})`; //As of time of writing, `esm.sh` provides `esnext` build for Bun instead of its own or `node` target
+    // // so we use Node's UA because we don't want nodejs polyfills.
     break;
 }
+
+//check if env has REEJS_UA and if it does, use it instead of the default one.
+
+if (globalThis.process?.env?.REEJS_UA || globalThis.Deno?.env?.get("REEJS_UA")) {
+  UA = globalThis.process?.env?.REEJS_UA || globalThis.Deno?.env?.get("REEJS_UA");
+  console.log(`%c[REEJS] %cUsing custom user agent: %c${UA}`, "color: #805ad5", "color: gray", "color: green");
+}
+
+globalThis.__CACHE_SHASUM = {};
+
+let URLToFile = function (url, noFolderPath = false) {
+  if (url.startsWith("node:"))
+    return url;
+  if (url.startsWith("npm:"))
+    url = url.replace("npm:", (process.env.ESM_SERVER || "https://esm.sh") + "/");
+  let isJson = false;
+  let fileExt = path.extname(url).split("?")[0];
+  if (![".json", ".js", ".wasm", ".d.ts"].includes(fileExt)) {
+    fileExt = ".js";
+  }
+  if (!url.startsWith("https://") && !url.startsWith("http://") && !url.startsWith("npm:") && !url.startsWith("./") && !url.startsWith("../"))
+    return url; // must be ?external module from esm.sh
+  __CACHE_SHASUM[url] = crypto.createHash("sha256").update(url + UA).digest("hex").slice(0, 6) + (isJson ? ".json" : ".js");
+
+  let fileString = noFolderPath ? "./" + crypto.createHash("sha256").update(url + UA).digest("hex").slice(0, 6) + fileExt
+    : path.join(reejsDir, "cache", crypto.createHash("sha256").update(url + UA).digest("hex").slice(0, 6) + fileExt);
+  return fileString;
+};
 
 let followRedirect = async function (url, forBrowser = false) {
   if (url.startsWith("node:"))
     return url;
   if (url.startsWith("npm:")) {
-    console.log(url);
     return (await fetch(
-      "https://esm.sh/" + url.replace("npm:", "") + "?bundle", {
+      (process.env.ESM_SERVER || "https://esm.sh/") + "/" + url.replace("npm:", "") + "?bundle", {
       headers: {
         "User-Agent":
           forBrowser ? `Mozilla/5.0 (reejs/${pkgJson.version})`
@@ -155,11 +152,20 @@ globalThis.NOTIFIED_UPDATE_URL = [];
 globalThis.MODULES_SENT_TO_DOWNLOAD = [];
 let lexer, parser;
 
+if (!fs.existsSync(path.join(reejsDir, "failsafe", "spinnies.js"))) {
+  let spinniesCode = await fetchUrl(`${(process.env.ESM_SERVER || "https://esm.sh")}/v128/spinnies@0.5.1/node/spinnies.bundle.mjs`);
+  fs.writeFileSync(path.join(reejsDir, "failsafe", "spinnies.js"), spinniesCode);
+}
 
+const spinners = new (DynamicImport(await import(path.join(reejsDir, "failsafe", "spinnies.js"))));
 
 let dl =
-  async function (url, cli = false, remove = false, forBrowser = false, ua = UA) {
-    url = url;
+  async function (url, cli = false, remove = false, forBrowser = false, ua = UA, isChild = false) {
+    let originalUrl = url;
+    if (process.env.ESM_SERVER && url.startsWith("https://esm.sh")) {
+      url = url.replace("https://esm.sh", process.env.ESM_SERVER);
+    }
+    let start = Date.now();
     let wasmFiles = [];
     if (ua && ua != "Set user agent to download the package") UA = ua;
     if (cli)
@@ -174,7 +180,7 @@ let dl =
     if (url.startsWith("node:"))
       return url;
     if (url.startsWith("npm:")) {
-      url = "https://esm.sh/" + url.replace("npm:", "") + "?bundle";
+      url = ((process.env.ESM_SERVER || "https://esm.sh")) + "/" + url.replace("npm:", "") + "?bundle";
     }
     if (!url.startsWith("https://") && !url.startsWith("http://") &&
       !url.startsWith("/")) {
@@ -186,23 +192,20 @@ let dl =
     if (!remove && fs.existsSync(URLToFile(url))) {
       return URLToFile(url);
     }
-    let res = await followRedirect(url, forBrowser);
+    spinners.add(originalUrl, { text: styleit(`${isChild ? "├─  " : ""}🔍 %c${url}`, "", "color: blue") });
+    let res = await followRedirect(url, forBrowser);//returns url
     if (fs.existsSync(URLToFile(res))) {
       if ((res != url) && !NOTIFIED_UPDATE_URL.includes(url)) {
-        console.log(
-          "%c[WARNING] %cURLImportInstaller.js: %cPlease use specific version for %c" +
-          url + " %cto access %c" + res +
-          " %cfaster without pinging for latest version",
-          "color: yellow", "color: red", "color: white", "color: blue",
-          "color: white", "color: blue", "color: white");
+        spinners.succeed(originalUrl, {
+          text: styleit(`${isChild ? "├─  " : ""}🪄 %c Please use specific version for %c${url} %cto access %c${res} %cfaster without pinging for latest version`, "",
+            "color: yellow", "color: blue", "color: yellow", "color: blue", "color: yellow")
+        });
         NOTIFIED_UPDATE_URL.push(url);
       }
       return URLToFile(res);
     }
     if (!lexer) {
       if (env == "bun") {
-        console.log(
-          "[BUN] Using Native Features that are faster than the polyfills!");
         let transpiler = new Bun.Transpiler();
         lexer = {
           parse: (code) => {
@@ -225,14 +228,23 @@ let dl =
         };
       }
     }
-    res = await fetch(url, {
+    let finalURL = res;
+    spinners.update(originalUrl, {
+      text: styleit(`${isChild ? "├─  " : ""}🚚 %c${finalURL}`, "", "color: blue")
+    });
+    res = await fetch(finalURL, {
       headers: {
         "User-Agent": forBrowser ? `Mozilla/5.0 (reejs/${pkgJson.version})` : UA,
       }
     }).catch(async () => {
-      return await fetch(url, { method: "GET", headers: { "User-Agent": UA } });
+      return await fetch(finalURL, { method: "GET", headers: { "User-Agent": UA } });
     });
-    let finalURL = await followRedirect(res.url, forBrowser);
+    let statusCode = res.statusCode || res.status;
+    if ([400, 404, 500, 502, 503, 504].includes(statusCode)) {
+      throw new Error(`Failed to download ${finalURL} with status code ${statusCode}\n${await res.text()}`);
+    }
+    let contentType = res.headers.get("content-type");
+    let types = res.headers.get("x-typescript-types");
     await waitUntilArrayDoesntHaveValue(finalURL);
     if (CURRENT_DOWNLOADING.includes(finalURL)) {
       //idk why this happens, but it does fix the issue regarding infinite loop of downloading modules...
@@ -247,6 +259,9 @@ let dl =
     CURRENT_DOWNLOADING.push(finalURL);
     MODULES_SENT_TO_DOWNLOAD.push(finalURL);
     let code = await res.text();
+    if (code == "Module not found") {
+      throw new Error(`Failed to download ${finalURL} with status code ${statusCode}`);
+    }
     let tries = 0;
     while (code == "" && (finalURL == url)) {
       code = await (await fetch(finalURL, {
@@ -260,13 +275,12 @@ let dl =
       await new Promise((resolve) => setTimeout(resolve, (tries) * 100));
     }
     let oldCode = code;
-    if (!remove && (globalThis?.process?.env?.DEBUG || globalThis?.Deno?.env?.get("DEBUG")))
-      console.log("%c[DOWNLOAD] %c" + url, "color:blue", "color:yellow");
-    if (finalURL.endsWith(".ts")) {
-      console.log("%c[TYPESCRIPT] Compiling %c" + finalURL, "color:blue",
-        "color:yellow; font-weight: bold;");
+    if ((finalURL.endsWith(".ts") || contentType.includes("typescript")) && !UA.startsWith("Deno")) {
+      spinners.update(originalUrl, {
+        text: styleit(`${isChild ? "├─  " : ""}🔮 %c${finalURL}`, "", "color: blue")
+      });
       if (!parser) {
-        parser = DynamicImport(await URLImport("https://esm.sh/sucrase@3.32.0?bundle", true));
+        parser = await Import("sucrase@3.32.0?bundle", { internalDir: true });
       }
       code = parser
         .transform(code, {
@@ -274,8 +288,26 @@ let dl =
           production: true,
         })
         .code;
+      if (code == "Invalid Body") throw new Error("Invalid Body in " + finalURL);
     }
-    let packs;
+
+    if (types) {
+      if (!fs.existsSync(URLToFile(types))) {
+        spinners.update(originalUrl, {
+          text: styleit(`${isChild ? "├─  " : ""}🤖 %c${finalURL}`, "", "color: blue")
+        });
+        let typecode = await (await fetch(types, {
+          headers: {
+            "User-Agent": forBrowser ? `Mozilla/5.0 (reejs/${pkgJson.version})` : UA,
+          }
+        })).text();
+        //save the types to a file
+        fs.writeFileSync(URLToFile(types).replace(".js", ".d.ts"), typecode);
+        code = `/// <reference path="${URLToFile(types, true).replace(".js", ".d.ts")}"/>\n` + code;
+      }
+    }
+
+    let packs = [];
     try {
       packs = lexer.parse(code);
     } catch (e) {
@@ -287,22 +319,28 @@ let dl =
       code = oldCode;
       packs = [];
     }
+
     // map packs , find the npm: and and run followRedirect on it and return the
     // url
+    spinners.update(originalUrl, {
+      text: styleit(`${isChild ? "├─  " : ""}👪️ %c${finalURL}`, "", "color: blue")
+    });
     let files = (await Promise.all(packs.map(async (e) => {
       //if(e.endsWith(".json.js")) e = e.replace(".json.js",".json");
       //if(e.endsWith("node/package.json")) e = e.replace("node/package.json","package.json");
       if (e.startsWith("npm:")) {
         return await followRedirect(
-          "https://esm.sh/" + e.replace("npm:", "") + "?bundle", forBrowser);
+          (process.env.ESM_SERVER || "https://esm.sh") + "/" + e.replace("npm:", "") + "?bundle", forBrowser);
       } else if (e.startsWith("/")) {
         let eurl = new URL(finalURL);
         return (eurl.origin + e);
+      } else if (e.startsWith("./") || e.startsWith("../")) {
+        let eurl = new URL(finalURL);
+        return (eurl.origin + path.join(path.dirname(eurl.pathname), e));
       }
       return e;
     })));
     files = files.map((e) => { return URLToFile(e, true); });
-
     await Promise.all(packs.map(async (p, i) => {
       code = code.replaceAll(p, files[i]);
       let dlUrl;
@@ -317,8 +355,9 @@ let dl =
       }
       //if(p.endsWith(".json.js")) p = p.replace(".json.js",".json");
       //if(p.endsWith("node/package.json")) p = p.replace("node/package.json","package.json");
-      return await dl(dlUrl || p, cli, remove);
+      return await dl(dlUrl || p, cli, remove, forBrowser, ua, true);
     }));
+
     if (!remove) { // save file
       let dir = path.dirname(URLToFile(finalURL));
       if (!fs.existsSync(dir)) {
@@ -329,6 +368,9 @@ let dl =
         return URLToFile(finalURL); // this crashes but it wont save the file, so it can be fetched next time
       }
       if (code.includes(".wasm")) {
+        spinners.update(originalUrl, {
+          text: styleit(`${isChild ? "├─  " : ""}🧩 %c${finalURL}`, "", "color: blue")
+        });
         code = code.replaceAll(/(__dirname\s*(,|\+)\s*)?(("|'|`)[^("|'|`)]+\.wasm("|'|`))/g, (e) => {
           // e is the match, like __dirname+"./file.wasm"
           let ematch = JSON.stringify(e).replace("__dirname", "").replaceAll(" ", "").replaceAll("+", "").replaceAll(",", "").replaceAll('"', "").replaceAll("'", "").replaceAll("`", "");
@@ -338,19 +380,30 @@ let dl =
           return `new URL("${URLToFile(wasmUrl, true)}",import.meta.url).href.slice(7)`;
         });
       }
+      await Promise.all(wasmFiles.map(async (e) => {
+        let f = await (await fetch(e)).arrayBuffer();
+        fs.writeFileSync(URLToFile(e), Buffer.from(f));;
+      }));
+      spinners.update(originalUrl, {
+        text: styleit(`${isChild ? "├─  " : ""}📝 %c${finalURL}`, "", "color: blue")
+      });
       fs.writeFileSync(URLToFile(finalURL), code)
     }
-    await Promise.all(wasmFiles.map(async (e) => {
-      let f = await (await fetch(e)).arrayBuffer();
-      fs.writeFileSync(URLToFile(e), Buffer.from(f));
-      if (!remove && (globalThis?.process?.env?.DEBUG || globalThis?.Deno?.env?.get("DEBUG")))
-        console.log("%c[DOWNLOAD] %c" + e, "color:blue", "color:yellow");
-    }));
+    spinners.update(originalUrl, {
+      text: styleit(`${isChild ? "├─  " : ""}💾 %c${finalURL}`, "", "color: blue")
+    });
     if (remove && fs.existsSync(URLToFile(finalURL))) {
-      console.log("%c[REMOVE] %c" + finalURL, "color:red", "color:blue");
+      spinners.update(originalUrl, {
+        text: styleit(`${isChild ? "├─  " : ""}🗑️ %c${finalURL}`, "", "color: blue")
+      });
       fs.unlinkSync(URLToFile(finalURL));
     }
     CURRENT_DOWNLOADING = CURRENT_DOWNLOADING.filter((e) => e != finalURL);
+    spinners.update(originalUrl, {
+      text: styleit(`${isChild ? "├─  " : ""}%c${finalURL} %cin %c${((Date.now() - start) / 1000)}s`, "", "color: blue", "color: gray", "color: green")
+    });
+    if (isChild) spinners.remove(originalUrl);
+    if (!isChild) spinners.succeed(originalUrl);
     return URLToFile(finalURL);
   };
 
