@@ -92,11 +92,16 @@ export let packit = async (service, isDevMode, runOneTime) => {
 
   let wantsToKnowPackitStarted = [];
   let wantsToKnowPackitEnded = [];
+  let MODIFIED_FILES_PLUGINS;
+  try {
+    MODIFIED_FILES_PLUGINS = JSON.parse(fs.readFileSync(path.join(".reejs", "plugins.cache")).toString());
+  } catch (e) {
+    MODIFIED_FILES_PLUGINS = [];
+  }
   globalThis.PACKIT_LOADERS = merge([], config.loaders);
   Unplugins.forEach((unplugin) => {
     if (unplugin.raw) unplugin = unplugin.raw();
     if (!unplugin.name) throw new Error("Unplugin's plugin must have a name property!");
-    console.log(unplugin);
     if (unplugin.load) {
       globalThis.PACKIT_LOADERS.push({
         name: unplugin.name,
@@ -115,12 +120,28 @@ export let packit = async (service, isDevMode, runOneTime) => {
         index: (unplugin.enforce == "pre") ? -1 : 1,
         transformInclude: unplugin.transformInclude,
         run: async (fileURL, service) => {
+          if (globalThis?.process?.env?.PSC_DISABLE != "true" && globalThis?.Deno?.env?.get("PSC_DISABLE") != "true") {
+            // check if the file was modified, by comparing the mtime
+            let mtime = fs.statSync(fileURL).mtimeMs;
+            // MODIFIED_FILES looks like: [{ f: file, s: savedAt, at: mtime}]
+            let modified = MODIFIED_FILES_PLUGINS.find((e) => e.f == fileURL);
+            if (modified && modified.at == mtime) {
+              // the file was not modified, so we can use the cached version. Return savedAt
+              return modified.s;
+            };
+          }
           let code = fs.readFileSync(fileURL).toString();
+          let tnow = Date.now();
           let transformed = await unplugin.transform(code, fileURL);
-          console.log(transformed?.code || transformed);
+          tnow = Date.now() - tnow;
           let savedto = path.join(".reejs", "packit", "plugins", unplugin.name, crypto.createHash("sha256").update(fileURL).digest("hex").slice(0, 6)) + "." + path.extname(fileURL).slice(1);
           fs.writeFileSync(savedto, transformed?.code || transformed);
-          console.log(`%c  ➜  Plugin %c${unplugin.name} - %cTransformed %c${fileURL} %c-> %c${savedto}`, "color: #db2777", "color: #db2777; font-weight: bold", "color: yellow", "color: yellow; font-weight: bold", "color: yellow", "color: yellow; font-weight: bold");
+          if (globalThis?.process?.env?.DEBUG || globalThis?.Deno?.env?.get("DEBUG"))
+            console.log(`%c  ➜  Plugin %c${unplugin.name} - %c✨ %c${fileURL} %c-> %c${savedto} %cin ${tnow}ms`, "color: #db2777", "color: #db2777; font-weight: bold", "color: yellow", "color: yellow; font-weight: bold", "color: yellow", "color: yellow; font-weight: bold", "color: gray");
+          //remove the old file from MODIFIED_FILES array if it exists
+          MODIFIED_FILES_PLUGINS = MODIFIED_FILES_PLUGINS.filter((e) => e.f != fileURL);
+          //add savedAt to MODIFIED_FILES array as {file: savedAt, at: mtime} where mtime is the mtime of the file
+          MODIFIED_FILES_PLUGINS.push({ f: fileURL, s: savedto, at: fs.statSync(fileURL).mtimeMs });
           return await SpecialFileImport(fileURL, null, service, transformed?.code || transformed);
         }
       });
@@ -157,7 +178,7 @@ export let packit = async (service, isDevMode, runOneTime) => {
   }));
   if (globalThis?.process?.env?.DEBUG || globalThis?.Deno?.env?.get("DEBUG"))
     console.log("%c[PACKIT] %cReaders finished in %c" + (Date.now() - reader_then) + "ms", "color: #db2777", "color: #ffffff", "color: #10b981");
-    
+
   //get all files from savedFiles ending with extension passed to function
   async function getFilesFromSavedFiles(extension) {
     let files = [];
@@ -179,7 +200,7 @@ export let packit = async (service, isDevMode, runOneTime) => {
   // writers must not run in parallel, as they are writing to the same file. mainFile is the code for index.js
   let mainFile = "";
   async function TranspileFile(fileURL, service) {
-    if(!service) throw new Error("parameter `service` is required");
+    if (!service) throw new Error("parameter `service` is required");
     if (!fileURL) return;
     let ext = path.extname(fileURL).slice(1);
     let tts = Transpilers
@@ -228,9 +249,9 @@ export let packit = async (service, isDevMode, runOneTime) => {
   if (!isDevMode) {
     //copy files & folders to packit folder
     let copy_then = Date.now();
-
+    let { glob } = await Import("glob@10.2.7?bundle", { internalDir: true });
     await Promise.all(CopyToPackit.map(async (fn) => {
-      let data = await fn(service, isDevMode);
+      let data = await fn(service, isDevMode, glob);
       await Promise.all(data.files.map(async (file) => {
         if (file == ".reejs/files.cache") return;
         if (file == ".reejs/copy.cache") return;
@@ -269,7 +290,13 @@ export let packit = async (service, isDevMode, runOneTime) => {
   }));
 
   console.log("%c  ➜  %c📦 in " + ((Date.now() - then) / 1000).toFixed(3) + "s", "color: #db2777", "color: #6b7280");
-
+  //run fs async save MODIFIED_FILES as it should not block the main thread
+  if (fs.existsSync("reecfg.json")) {
+    fs.writeFile(
+      path.join(".reejs", "plugins.cache"),
+      JSON.stringify(MODIFIED_FILES_PLUGINS),
+      () => { });
+  }
   if (globalThis?.process) globalThis.process.env.PACKIT_RUNNING = "";
   if (globalThis?.Deno) globalThis.Deno.env.set("PACKIT_RUNNING", "");
 

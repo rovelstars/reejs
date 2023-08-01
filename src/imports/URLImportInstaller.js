@@ -57,7 +57,7 @@ if (!globalThis.fetch) {
 }
 
 // user agent
-let UA;
+export let UA;
 let pkgJson = DynamicImport(await import("./version.js")).reejs;
 switch (env) {
   case "node":
@@ -232,6 +232,10 @@ let dl =
     spinners.update(originalUrl, {
       text: styleit(`${isChild ? "├─  " : ""}🚚 %c${finalURL}`, "", "color: blue")
     });
+    //set timeout for fetch for 30 secs, after which throw error
+    let timeout = setTimeout(async() => {
+      throw new Error(`Failed to download ${finalURL}\nUser Agent: ${forBrowser ? `Mozilla/5.0 (reejs/${pkgJson.version})` : UA}\n${await res.text()}`);
+    }, 30000);
     res = await fetch(finalURL, {
       headers: {
         "User-Agent": forBrowser ? `Mozilla/5.0 (reejs/${pkgJson.version})` : UA,
@@ -239,6 +243,7 @@ let dl =
     }).catch(async () => {
       return await fetch(finalURL, { method: "GET", headers: { "User-Agent": UA } });
     });
+    clearTimeout(timeout);
     let statusCode = res.statusCode || res.status;
     if ([400, 404, 500, 502, 503, 504].includes(statusCode)) {
       throw new Error(`Failed to download ${finalURL} with status code ${statusCode}\n${await res.text()}`);

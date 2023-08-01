@@ -1,5 +1,6 @@
 import { runtime, reejsDir as dir } from "@reejs/imports/env.js";
 import DynamicImport from "@reejs/imports/dynamicImport.js";
+import {UA} from "@reejs/imports/URLImportInstaller.js";
 let pkg = (DynamicImport(await import("../version.js"))).reejs;
 import fs from "node:fs";
 import path from "node:path";
@@ -29,6 +30,7 @@ export let doctorReport = async function () {
   console.log("%c[REEJS_DIR] %c" + reejsDir + " %c, %c" + path.join(processCwd, ".reejs"), "color: #7237C1", "color: green", "color: gray", "color: green");
   console.log("%c[REEJS_DIR_EXISTS] %c" + fs.existsSync(path.join(processCwd, ".reejs")), "color: #7237C1", "color: blue");
   console.log("%c[PWD] %c" + processCwd, "color: #7237C1", "color: green");
+  console.log("%c[USER_AGENT] %c" + UA, "color: #7237C1", "color: green");
 }
 
 globalThis.REEJS_doctorReport = doctorReport;

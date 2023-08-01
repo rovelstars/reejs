@@ -15,10 +15,10 @@ export let sync = async (smt, dir) => {
     path.join(dir || processCwd, "import_map.json"), "utf-8"));
   let deps = pkgJson.dependencies || {};
   await Promise.all(Object.keys(import_map.imports).map(async (key) => {
-    let urldest = await followRedirect(import_map.imports[key]);
+    let urldest = import_map.imports[key];
+    if(!urldest.startsWith("https://") && !urldest.startsWith("http://")) return;
     let version = urldest.split("@").pop().split("/")[0];
-    import_map.imports[key] = urldest;
-    let value = URLToFile(urldest, true).slice(2);
+    let value = (await dl(urldest, true)).split("/").pop();
     if (!fs.existsSync(
       path.join(dir || processCwd, ".reejs", "deps", key, "package.json"))) {
       if (!fs.existsSync(path.join(dir || processCwd, ".reejs", "deps", key))) {
@@ -59,7 +59,29 @@ export let sync = async (smt, dir) => {
         fs.symlinkSync(path.join(dir || processCwd, ".reejs", "cache", dtsPath),
           path.join(dir || processCwd, ".reejs", "deps", key, "index.d.ts"));
       }
-
+      //if the key doesnt start with @, and the key has a "/" in it, or if the key starts with @ and has 2 "/" in it
+      //then we need to add it to exports field to the package.json in the main package's deps folder package.json file
+      let Exports = {};
+      if ((!key.startsWith("@") && key.includes("/")) || (key.startsWith("@")
+        && key.split("/").length === 3)) {
+        Exports["./" + key.split("/").pop()] = `./${key.split("/").pop()}/index.js`;
+      }
+      if (Object.keys(Exports).length !== 0) {
+        console.log(Exports);
+        let parentPkgJson;
+        try {
+          parentPkgJson = JSON.parse(fs.readFileSync(path.join(dir || processCwd, ".reejs", "deps", key.split("/")[0], "package.json"), "utf-8"));
+        } catch (e) {
+          parentPkgJson = {
+            name: key.split("/")[0],
+            version: "1.0.0",
+            type: "module",
+          }
+        }
+        parentPkgJson.exports = Exports;
+        fs.writeFileSync(path.join(dir || processCwd, ".reejs", "deps", key.split("/")[0], "package.json"), JSON.stringify(parentPkgJson, null, 2));
+      }
+      console.log("+", key);
       fs.writeFileSync(path.join(dir || processCwd, ".reejs", "deps", key,
         "package.json"),
         JSON.stringify({

@@ -4,7 +4,7 @@
 import DynamicImport from "./dynamicImport.js";
 import env from "./env.js";
 import NativeImport from "./nativeImport.js";
-
+import { reejsDir as dir } from "@reejs/imports/env.js";
 let fs = await NativeImport("node:fs");
 let path = await NativeImport("node:path");
 let crypto = await NativeImport("node:crypto");
@@ -24,13 +24,17 @@ let importmap =
       assert: { type: "json" },
     }))
     : {};
-let cachemap = fs.existsSync(path.join(reejsDir, "cache", "cache.json"))
+let cachemap = fs.existsSync(path.join(dir, "cache", "cache.json"))? DynamicImport(await import(
+  `file://${dir}/cache/cache.json`, {
+  assert: { type: "json" },
+}))
+  : fs.existsSync(path.join(processCwd,".reejs", "cache", "cache.json"))
   ? DynamicImport(await import(
     `file://${processCwd}/.reejs/cache/cache.json`, {
     assert: { type: "json" },
-  }))
-  : {};
-let react = importmap.imports?.react || importmap.browserImports?.react;
+  })): {};
+
+let react = importmap.imports?.react || importmap.browserImports?.react || "https://esm.sh/react@18.2.0";
 let lexer;
 
 let MODIFIED_FILES;
@@ -196,7 +200,7 @@ jsxFragmentPragma : "Fragment",*/
       let copypackn = pack.n.startsWith(".") ? path.resolve(path.join(path.dirname(file), ppack)) : ppack;
       if (globalThis?.PACKIT_LOADERS?.length) {
         for (let loader of globalThis.PACKIT_LOADERS) {
-          let outputOfLoader = await loader.load(copypackn);
+          let outputOfLoader = await loader?.load?.(copypackn);
           if (outputOfLoader) {
             //save the file to .reejs/loaders/<loader.name>/<urlToFile(pack.n)>
             let loaderDir = path.join(".reejs", "serve", "loaders", loader.name);
@@ -285,9 +289,7 @@ jsxFragmentPragma : "Fragment",*/
 
   });
   if ((result.includes("React.createElement") || result.includes("React.Component")) &&
-  ((!result.includes("import React from")) && (!result.includes("import * as React from")) &&
-  //support syntax like import React, { useState } from"
-  (!result.includes("import React, {"))
+  ((!result.includes("import React from")) && (!result.includes("import * as React from")) && (!result.includes("import React, {")) && (!result.includes("import React,{"))
   ))
   {
     result =
