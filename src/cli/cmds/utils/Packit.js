@@ -170,6 +170,7 @@ export let writers = [
         // /pages/404.tsx => /pages/*
 
         let compiledRoute = route.trim().split("/");
+        let is404 = false;
         compiledRoute = compiledRoute.map((r) => {
           if (r.startsWith("[") && r.endsWith("]")) {
             if (r.startsWith("[[")) {
@@ -179,6 +180,9 @@ export let writers = [
             } else {
               return ":" + r.replace("[", "").replace("]", "");
             }
+          } else if (r.startsWith("404")) {
+            is404 = true;
+            return "*";
           } else {
             return r;
           }
@@ -237,7 +241,7 @@ export let writers = [
 
       //init writing ./.reejs/utils/react-router and use it via defaultTranspiler if react-router is installed
       let rrPath;
-      if (true) {
+      if (importmap.imports["react-router-dom"] && importmap.imports["react-router-dom/server"]) {
         //write react-router.jsx
         let code = `import { createStaticRouter, StaticRouterProvider} from "${importmap.imports["react-router-dom/server"]}";
 import { matchRoutes } from "${importmap.imports["react-router-dom"]}";
@@ -274,10 +278,9 @@ export default function Body(props) {
         rrPath = await defaultTranspiler(path.join(".reejs", "utils", "react-router.jsx"), service);
         mainFile += `\nimport RR_ from "./${rrPath}";`;
       }
-      pages = pages.map(({ route, page, savedAt, sha_name }) => {
+      pages = pages.map(({ route, page, savedAt, sha_name, is404 }) => {
         if (route.endsWith("/")) route = route.slice(0, -1);
-
-        mainFile += `\nimport * as file_${sha_name} from "./.reejs/${savedAt.split(".reejs/")[1]}";server.app.get("/${route == "" ? "" : route}",(c)=>{ let h = "<!DOCTYPE html>"+render(React.createElement(${rrPath ? "RR_" : "App"},{${rrPath ? "App, " : ""}metadata: file_${savedAt.split("serve/")[1].split(".")[0]}.metadata || ((file_${savedAt.split("serve/")[1].split(".")[0]}?.generateMetadata)?file_${savedAt.split("serve/")[1].split(".")[0]}?.generateMetadata(c):{})},React.createElement(file_${savedAt.split("serve/")[1].split(".")[0]}?.useClient?React.Fragment:file_${savedAt.split("serve/")[1].split(".")[0]}.default,{c})))
+        mainFile += `\nimport * as file_${sha_name} from "./.reejs/${savedAt.split(".reejs/")[1]}";server.app.get("/${route == "" ? "" : route}",(c)=>{ ${is404?`c.status(404);`:""}let h = "<!DOCTYPE html>"+render(React.createElement(${rrPath ? "RR_" : "App"},{${rrPath ? "App, " : ""}metadata: file_${savedAt.split("serve/")[1].split(".")[0]}.metadata || ((file_${savedAt.split("serve/")[1].split(".")[0]}?.generateMetadata)?file_${savedAt.split("serve/")[1].split(".")[0]}?.generateMetadata(c):{})},React.createElement(file_${savedAt.split("serve/")[1].split(".")[0]}?.useClient?React.Fragment:file_${savedAt.split("serve/")[1].split(".")[0]}.default,{c})))
           .replace('<script id="__reejs"></script>',gs("${savedAt.split("serve/")[1]}"));return ${twindFn?.length > 0 ? "c.html(inline(h,tw).replaceAll('{background-clip:text}','{-webkit-background-clip:text;background-clip:text}'))"
             //TODO: wait for twind to add vendor prefix for `background-clip:text`, then remove the replaceAll.
             : "c.html(h)"}});`;

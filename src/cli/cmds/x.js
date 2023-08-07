@@ -21,6 +21,7 @@ export default async function (prog) {
     .option("-a", "Arguments to pass to the file, adds `-` before your args.", "")
     .option("--args", "Arguments to pass to the file, adds `--` before your args.", "")
     .action(async function (file, opts) {
+      let fs = await NativeImport("node:fs");
       if (!file) {
         console.log("%c[REEJS] %cNo file/URL specified!", "color: #805ad5", "color: red");
         return;
@@ -68,7 +69,11 @@ export default async function (prog) {
           globalThis.Deno = (await Import("npm:@deno/shim-deno@0.16.0", { internalDir: true })).Deno;
         }
         try {
-          await import(path.join(processCwd, await SpecialFileImport(path.join(processCwd, file), null, runtime)));
+          let checkAbsolute = path.isAbsolute(file);
+          if(checkAbsolute) process.env.USED_BY_CLI_APP="true";
+          //await import(path.join(processCwd, await SpecialFileImport(path.join(processCwd, file), null, runtime)));
+          if(!checkAbsolute) file = path.join(processCwd, file);
+          await import(path.join(checkAbsolute?"":processCwd, await SpecialFileImport(file, null, runtime)));
           if (opts.e || opts.eval) {
             eval(opts.e || opts.eval);
           }

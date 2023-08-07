@@ -132,10 +132,10 @@ export default defineConfig({
       let optionalDeps = {};
       let optionalDeps2 = {};
       if (opts.features.includes("react")) {
-        optionalDeps.react = "https://esm.sh/preact@10.15.1/compat",
+        optionalDeps.react = "https://esm.sh/preact@10.16.0/compat",
           optionalDeps["render"] =
-          "https://esm.sh/preact-render-to-string@6.1.0";
-        optionalDeps["debug"] = "https://esm.sh/preact@10.15.1/debug";
+          "https://esm.sh/preact-render-to-string@6.2.0";
+        optionalDeps["debug"] = "https://esm.sh/preact@10.16.0/debug";
         optionalDeps2.debug = optionalDeps.debug;
         optionalDeps2.react = optionalDeps.react;
       }

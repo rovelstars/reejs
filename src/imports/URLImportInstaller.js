@@ -162,6 +162,7 @@ const spinners = new (DynamicImport(await import(path.join(reejsDir, "failsafe",
 let dl =
   async function (url, cli = false, remove = false, forBrowser = false, ua = UA, isChild = false) {
     let originalUrl = url;
+    if(globalThis?.process?.env?.USED_BY_CLI_APP) cli = false; //installs deps to reejs dir instead of current dir.
     if (process.env.ESM_SERVER && url.startsWith("https://esm.sh")) {
       url = url.replace("https://esm.sh", process.env.ESM_SERVER);
     }

@@ -18,6 +18,7 @@ export let sync = async (smt, dir) => {
     let urldest = import_map.imports[key];
     if(!urldest.startsWith("https://") && !urldest.startsWith("http://")) return;
     let version = urldest.split("@").pop().split("/")[0];
+    version = version.split("?")[0];
     let value = (await dl(urldest, true)).split("/").pop();
     if (!fs.existsSync(
       path.join(dir || processCwd, ".reejs", "deps", key, "package.json"))) {
@@ -67,7 +68,6 @@ export let sync = async (smt, dir) => {
         Exports["./" + key.split("/").pop()] = `./${key.split("/").pop()}/index.js`;
       }
       if (Object.keys(Exports).length !== 0) {
-        console.log(Exports);
         let parentPkgJson;
         try {
           parentPkgJson = JSON.parse(fs.readFileSync(path.join(dir || processCwd, ".reejs", "deps", key.split("/")[0], "package.json"), "utf-8"));

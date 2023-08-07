@@ -24,15 +24,15 @@ let importmap =
       assert: { type: "json" },
     }))
     : {};
-let cachemap = fs.existsSync(path.join(dir, "cache", "cache.json"))? DynamicImport(await import(
+let cachemap = fs.existsSync(path.join(dir, "cache", "cache.json")) ? DynamicImport(await import(
   `file://${dir}/cache/cache.json`, {
   assert: { type: "json" },
 }))
-  : fs.existsSync(path.join(processCwd,".reejs", "cache", "cache.json"))
-  ? DynamicImport(await import(
-    `file://${processCwd}/.reejs/cache/cache.json`, {
-    assert: { type: "json" },
-  })): {};
+  : fs.existsSync(path.join(processCwd, ".reejs", "cache", "cache.json"))
+    ? DynamicImport(await import(
+      `file://${processCwd}/.reejs/cache/cache.json`, {
+      assert: { type: "json" },
+    })) : {};
 
 let react = importmap.imports?.react || importmap.browserImports?.react || "https://esm.sh/react@18.2.0";
 let lexer;
@@ -57,7 +57,6 @@ try {
   * @param {string} code - The code of the file, optional. useful for third party transpilers who have transpiled part of the code already.
   * @returns {string} - The path to the file where it is saved
   */
-
 export default async function SpecialFileImport(file, parentFile, service, code) {
   if (!file) throw new Error("parameter `file` is required");
   if (file.includes(".reejs/cache") || file.includes(".reejs/serve")) return file;
@@ -107,6 +106,8 @@ lexer = {
   // this imports sucrase and returns the result of sucrase.transform
   let sucrase = await Import("sucrase@3.32.0?bundle", { internalDir: true });
   let ext = file?.split(".")?.pop();
+  if (ext == file) throw new Error(`\`${file}\` has no extension passed to packit transpiler.\nThis usually means the file doesn't exist, or Packit couldn't find the file.`);
+  //if the file has no extension, the pop() will return the file name, so we throw an error
   if (!code) {
     code = fs.readFileSync(file).toString();
   }
@@ -182,7 +183,7 @@ jsxFragmentPragma : "Fragment",*/
     } else if (pack.n.startsWith("./") || pack.n.startsWith("../")) {
       //return pack.n;
       let ppack = pack.n;
-      if(pack.n.includes("../.reejs/cache")) pack.n = pack.n.replace("../.reejs/cache", ".reejs/cache");
+      if (pack.n.includes("../.reejs/cache")) pack.n = pack.n.replace("../.reejs/cache", ".reejs/cache");
       let availableFilesInsideNodeModules =
         fs
           .readdirSync(path.join(
@@ -289,17 +290,16 @@ jsxFragmentPragma : "Fragment",*/
 
   });
   if ((result.includes("React.createElement") || result.includes("React.Component")) &&
-  ((!result.includes("import React from")) && (!result.includes("import * as React from")) && (!result.includes("import React, {")) && (!result.includes("import React,{"))
-  ))
-  {
+    ((!result.includes("import React from")) && (!result.includes("import * as React from")) && (!result.includes("import React, {")) && (!result.includes("import React,{"))
+    )) {
     result =
       `import React from "${(cachemap[react]) ? `../cache/${cachemap[react]}` : await dl(react, true)}";\n` +
       result;
   }
   result += "\n//# sourceURL=file://" + file.replace(processCwd, ".");
   // save it to reejsDir/serve/[hash].js
-  let savedAt = path.join(
-    ".reejs", "serve",
+  let savedAt = path.join(globalThis?.process?.env?.USED_BY_CLI_APP ?
+    dir : ".reejs", "serve",
     crypto.createHash("sha256").update(file).digest("hex").slice(0, 6) +
     ".js");
   //remove the old file from MODIFIED_FILES array if it exists
