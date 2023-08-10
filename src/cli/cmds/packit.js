@@ -38,9 +38,9 @@ let getPackage = async (pkg) => {
   if (!url) {
     throw new Error(`Package ${pkg} not found in import map.`);
   }
-  if (letMeKnowWhatServiceItIs == "deno-deploy") {
-    return url;
-  }
+  // if (letMeKnowWhatServiceItIs == "deno-deploy") {
+  //   return url;
+  // }
   if (!cachemap[url]) {
     //await dl(url, true);
     //await syncSpecific(url);
@@ -68,6 +68,9 @@ try {
 export let packit = async (service, isDevMode, runOneTime) => {
   if (service == "deno") {
     service = "deno-deploy";
+  }
+  if(service=="deno-deploy"){
+    process.env.USE_UA_REEJS = "Deno/1.36";
   }
   if (!fs.existsSync(path.join(processCwd, "packit.config.js"))) {
     console.log("%c[PACKIT] %cNo packit.config.js file found. Please create one in order to use packit.", "color: #db2777", "color: yellow");
@@ -368,7 +371,8 @@ export default function Packit(prog) {
             } else if (key.name == "a") {
               //disable specialFileImport cache by toggling the env variable `PSC_DISABLE`
               if (globalThis?.process?.env) globalThis.process.env.PSC_DISABLE = globalThis.process.env.PSC_DISABLE ? "" : "true";
-              if (globalThis?.Deno?.env) globalThis.Deno.env.set("PSC_DISABLE", globalThis.Deno.env.get("PSC_DISABLE") ? "" : "true");
+              if (globalThis?.Deno?.env) globalThis.Deno.env.set("PSC_DISABLE", globalThis.Deno.env.get("PSC_DISABLE") ? "true" : "");
+              //console.log("hmm",globalThis.Deno.env.get("PSC_DISABLE"),"hmm")
               console.log("%c  ➜  %cFile caching %c" + (globalThis?.process?.env?.PSC_DISABLE || globalThis?.Deno?.env?.get("PSC_DISABLE") ? "disabled" : "enabled"), "color: #db2777", "color: #6b7280", "color: #10b981");
               console.log("%c  ➜  %cRestart to apply changes", "color: #db2777", "color: #6b7280");
             } else if (key.name == "l") {

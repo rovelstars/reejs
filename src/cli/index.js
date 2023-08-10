@@ -1,4 +1,6 @@
 #!/usr/bin/env -S node
+// use deno:
+// #!/usr/bin/env -S deno run -A --importmap /home/ren/coding/reejs/src/cli/import_map.json
 globalThis.USING_REEJS_CLI = true; //a seperator for reejs cli and @reejs/imports
 
 import "@reejs/utils/log.js";

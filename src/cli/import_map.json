@@ -1,0 +1,8 @@
+{
+  "imports":{
+    "@reejs/imports/": "../imports/",
+    "@reejs/utils/": "../utils/",
+    "@reejs/react/": "../react/",
+    "@reejs/server/": "../server/"
+  }
+}

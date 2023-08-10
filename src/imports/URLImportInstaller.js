@@ -66,7 +66,7 @@ switch (env) {
   case "deno":
     //UA = `Deno/${Deno.version.deno} (reejs/${pkgJson.version})`;
     //TODO: wait for esm.sh to fix using the above way
-    UA = `Deno/${Deno.version.deno}`;
+    UA = "Node/18 (reejs/0)"//`Deno/${Deno.version.deno}`;
     break;
   case "browser":
     UA = `Mozilla/5.0 (reejs/${pkgJson.version})`; // I got no idea why I did this. Sounds villainous. I can confirm lol~
@@ -162,6 +162,9 @@ const spinners = new (DynamicImport(await import(path.join(reejsDir, "failsafe",
 let dl =
   async function (url, cli = false, remove = false, forBrowser = false, ua = UA, isChild = false) {
     let originalUrl = url;
+    // if(globalThis?.process?.env?.USE_UA_REEJS){
+    //   ua = globalThis?.process?.env?.USE_UA_REEJS;
+    // }
     if(globalThis?.process?.env?.USED_BY_CLI_APP) cli = false; //installs deps to reejs dir instead of current dir.
     if (process.env.ESM_SERVER && url.startsWith("https://esm.sh")) {
       url = url.replace("https://esm.sh", process.env.ESM_SERVER);

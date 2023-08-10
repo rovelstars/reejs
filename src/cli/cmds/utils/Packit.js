@@ -150,7 +150,7 @@ export let writers = [
     "name": "pages",
     "run": async (helpers, service) => {
       let now = Date.now();
-      let { DATA, mainFile, importmap, isDevMode } = helpers;
+      let { DATA, mainFile, importmap, isDevMode, getPackage } = helpers;
       let { pages, reender, browserFn, twindFn, appFile, TranspileFile } = DATA;
       // we generate routes for pages here.
       pages = await Promise.all(pages.map(async (page) => {
@@ -238,6 +238,14 @@ export let writers = [
               `(await import("https://esm.sh/@twind/core")).observe((await import("/__reejs/serve/1d9e2d.js")).default);` : ""
         }let i=(await import("${reender}")).default;i("./serve/'+f+'",${browserFn.length > 0 ? `"${browserFn[0][1].replace('.reejs', '/__reejs')}"`
           : 'null'});</script>';`;
+      mainFile += '\nconst lr_=(s,t)=>`<link rel="preload" href="${s}" as="script" crossorigin>`';
+
+      mainFile += `\nconst pre_=(n,f)=>n!="DoNotHydrate"?\`
+      ${isDevMode ? '${lr_("https://esm.sh/preact@10.16.0/debug")}' : ''}
+      ${twindFn?.length > 0 ? '${lr_("https://esm.sh/@twind/core")}' : ''}
+      ${(importmap.imports["react-router-dom"] && importmap.imports["react-router-dom/server"])?'${lr_("__reejs/serve/__routes.js")+lr_("'+importmap.browserImports["react-router-dom"]+'")+lr_("/__reejs/serve/17624b.js")}':''}
+      \${lr_("${reender}")}\${lr_("${(await getPackage("react")).replace(".reejs","__reejs")}")}\${lr_(\`__reejs/serve/\${f}\`)}
+      </head>\`:"</head>"`;
 
       //init writing ./.reejs/utils/react-router and use it via defaultTranspiler if react-router is installed
       let rrPath;
@@ -280,8 +288,8 @@ export default function Body(props) {
       }
       pages = pages.map(({ route, page, savedAt, sha_name, is404 }) => {
         if (route.endsWith("/")) route = route.slice(0, -1);
-        mainFile += `\nimport * as file_${sha_name} from "./.reejs/${savedAt.split(".reejs/")[1]}";server.app.get("/${route == "" ? "" : route}",(c)=>{ ${is404?`c.status(404);`:""}let h = "<!DOCTYPE html>"+render(React.createElement(${rrPath ? "RR_" : "App"},{${rrPath ? "App, " : ""}metadata: file_${savedAt.split("serve/")[1].split(".")[0]}.metadata || ((file_${savedAt.split("serve/")[1].split(".")[0]}?.generateMetadata)?file_${savedAt.split("serve/")[1].split(".")[0]}?.generateMetadata(c):{})},React.createElement(file_${savedAt.split("serve/")[1].split(".")[0]}?.useClient?React.Fragment:file_${savedAt.split("serve/")[1].split(".")[0]}.default,{c})))
-          .replace('<script id="__reejs"></script>',gs("${savedAt.split("serve/")[1]}"));return ${twindFn?.length > 0 ? "c.html(inline(h,tw).replaceAll('{background-clip:text}','{-webkit-background-clip:text;background-clip:text}'))"
+        mainFile += `\nimport * as file_${sha_name} from "./.reejs/${savedAt.split(".reejs/")[1]}";server.app.get("/${route == "" ? "" : route}",(c)=>{ ${is404 ? `c.status(404);` : ""}let h = "<!DOCTYPE html>"+render(React.createElement(${rrPath ? "RR_" : "App"},{${rrPath ? "App, " : ""}metadata: file_${savedAt.split("serve/")[1].split(".")[0]}.metadata || ((file_${savedAt.split("serve/")[1].split(".")[0]}?.generateMetadata)?file_${savedAt.split("serve/")[1].split(".")[0]}?.generateMetadata(c):{})},React.createElement(file_${savedAt.split("serve/")[1].split(".")[0]}?.useClient?React.Fragment:file_${savedAt.split("serve/")[1].split(".")[0]}.default,{c})))
+          .replace('<script id="__reejs"></script>',gs("${savedAt.split("serve/")[1]}")).replace('</head>',pre_(file_${sha_name}.default.name,"${savedAt.split("serve/")[1]}"));return ${twindFn?.length > 0 ? "c.html(inline(h,tw).replaceAll('{background-clip:text}','{-webkit-background-clip:text;background-clip:text}'))"
             //TODO: wait for twind to add vendor prefix for `background-clip:text`, then remove the replaceAll.
             : "c.html(h)"}});`;
       });
