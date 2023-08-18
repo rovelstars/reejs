@@ -27,7 +27,7 @@ export let install =
       let time = (end - start) / 1000;
       console.log("%c[DOWNLOAD] %cInstalled all packages in " + time + "s",
         "color: green", "color: blue");
-      return;
+      return process.exit(0);
     }
     if (!url) {
       if (fs.existsSync(path.join(process.cwd(), "import_map.json"))) {

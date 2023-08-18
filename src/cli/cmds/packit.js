@@ -6,7 +6,6 @@ import SpecialFileImport from "@reejs/imports/specialFileImport.js";
 import dl, { URLToFile } from "@reejs/imports/URLImportInstaller.js";
 import copyFolder from "@reejs/utils/copyFolder.js";
 import versions from "../version.js";
-import { sync, syncSpecific } from "./npmsync.js";
 import merge from "./utils/merge.js";
 import { readers, transpilers, writers, copyToPackit, defaultTranspiler } from "./utils/Packit.js";
 let fs = await NativeImport("node:fs");

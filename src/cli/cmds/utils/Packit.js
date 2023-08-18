@@ -92,7 +92,8 @@ export let writers = [
       let reender = "/__reejs" + reenderFile.split(".reejs")[1];
       let browserFn = pages.filter((page) => page.startsWith("src/pages/_browser"));
       let twindFn = await TranspileFile(pages.filter((page) => page.startsWith("src/pages/_twind"))[0], service);
-      let appFile = await TranspileFile(pages.find((page) => page.startsWith("src/pages/_app")), service);
+      let appFile = await TranspileFile(pages.find((page) => page.startsWith("src/pages/_app")) || 
+      path.join("node_modules","@reejs","react","app.jsx"), service);
       let debugFile;
       try {
         debugFile = await getPackage("debug");
@@ -243,8 +244,8 @@ export let writers = [
       mainFile += `\nconst pre_=(n,f)=>n!="DoNotHydrate"?\`
       ${isDevMode ? '${lr_("https://esm.sh/preact@10.16.0/debug")}' : ''}
       ${twindFn?.length > 0 ? '${lr_("https://esm.sh/@twind/core")}' : ''}
-      ${(importmap.imports["react-router-dom"] && importmap.imports["react-router-dom/server"])?'${lr_("__reejs/serve/__routes.js")+lr_("'+importmap.browserImports["react-router-dom"]+'")+lr_("/__reejs/serve/17624b.js")}':''}
-      \${lr_("${reender}")}\${lr_("${(await getPackage("react")).replace(".reejs","__reejs")}")}\${lr_(\`__reejs/serve/\${f}\`)}
+      ${(importmap.imports["react-router-dom"] && importmap.imports["react-router-dom/server"]) ? '${lr_("__reejs/serve/__routes.js")+lr_("' + importmap.browserImports["react-router-dom"] + '")+lr_("/__reejs/serve/17624b.js")}' : ''}
+      \${lr_("${reender}")}\${lr_("${(await getPackage("react")).replace(".reejs", "__reejs")}")}\${lr_(\`__reejs/serve/\${f}\`)}
       </head>\`:"</head>"`;
 
       //init writing ./.reejs/utils/react-router and use it via defaultTranspiler if react-router is installed
@@ -273,7 +274,7 @@ export default function Body(props) {
   let App = props.App;
   delete props.App;
   return <App {...props}>
-    <StaticRouterProvider router={router} context={props.children.props.c.req} />
+    <StaticRouterProvider router={router} context={props.children.props.c.req} c={props.children.props.c} />
     </App>;
 }`;
         //create folder if not exists
@@ -325,9 +326,9 @@ export default function Body(props) {
     run: async (helpers, service) => {
       let { DATA, mainFile, glob } = helpers;
       let { contentType } = await Import("mime-types@2.1.35");
-      let reejsSavedFilesCache = await glob(".reejs/cache/**/*");
-      let reejsSavedFilesServe = await glob(".reejs/serve/**/*");
-      let publicSavedFiles = await glob("public/**/*");
+      let reejsSavedFilesCache = await glob(".reejs/cache/**/*", { nodir: true });
+      let reejsSavedFilesServe = await glob(".reejs/serve/**/*", { nodir: true });
+      let publicSavedFiles = await glob("public/**/*", { nodir: true });
       let reejsSavedFilesString = "";
       if (service == "deno-deploy" || service == "node") {
         reejsSavedFilesString =
@@ -340,13 +341,13 @@ export default function Body(props) {
           reejsSavedFilesServe
             .map((file) => {
               if (!file.replace(".reejs/serve/", "").replace("loaders/", "").includes(".")) return "";
-              return `let serve_${file.replace(".reejs/serve/", "").replace("loaders/", "").replaceAll(".", "").replaceAll("/", "")} = ${service == "node" ? "fs.readFileSync" : "await Deno.readFile"}("${file}");server.app.get("/__reejs/serve/${file.replace(".reejs/serve/", "")}", (c)=>{c.header('Content-type','${contentType(file.replaceAll("/", ""))
+              return `let serve_${file.replace(".reejs/serve/", "").replace("loaders/", "").replaceAll(".", "").replaceAll("/", "").replaceAll("-", "_")} = ${service == "node" ? "fs.readFileSync" : "await Deno.readFile"}("${file}");server.app.get("/__reejs/serve/${file.replace(".reejs/serve/", "")}", (c)=>{c.header('Content-type','${contentType(file.replaceAll("/", ""))
                 }');return c.body(serve_${file.replace(".reejs/serve/", "").replace("loaders/", "").replaceAll(".", "").replaceAll("/", "")})});`;
             })
             .join("\n") +
           publicSavedFiles.map((file) => {
-            return `let public_${file.replaceAll("/", "__").replaceAll(".", "")} = ${service == "node" ? "fs.readFileSync" : "await Deno.readFile"}("${file}");server.app.get("${file.slice(file.indexOf("/", 2))}",(c)=>{c.header('Content-type','${contentType(file.replaceAll("/", ""))
-              }');return c.body(public_${file.replaceAll("/", "__").replaceAll(".", "")})});`;
+            return `let ${file.replaceAll("/", "__").replaceAll(".", "").replaceAll("-", "_")} = ${service == "node" ? "fs.readFileSync" : "await Deno.readFile"}("${file}");server.app.get("${file.slice(file.indexOf("/", 2))}",(c)=>{c.header('Content-type','${contentType(file.replaceAll("/", ""))
+              }');return c.body(${file.replaceAll("/", "__").replaceAll(".", "").replaceAll("-", "_")})});`;
           }).join("\n");
       }
       mainFile += (service !== "node") //todo: make a custom serveStatic myself.
