@@ -62,7 +62,7 @@ export default function (prog) {
           license: "MIT",
         },
           null, 2));
-          fs.writeFileSync(path.join(process.cwd(),name,"packit.config.js"),"");
+      fs.writeFileSync(path.join(process.cwd(), name, "packit.config.js"), "");
       if (opts.features.includes("api")) {
         fs.mkdirSync(path.join(process.cwd(), name, "src", "pages", "api"), {
           recursive: true,
@@ -110,7 +110,7 @@ export default defineConfig({
   presets: [presetAutoprefix, presetTailwind],
   darkMode: "class",
 });`);
-        fs.writeFileSync(path.join(process.cwd(),name,"tailwind.config.js"),"");
+        fs.writeFileSync(path.join(process.cwd(), name, "tailwind.config.js"), "");
       }
       if (opts.features.includes("css")) {
         fs.mkdirSync(path.join(process.cwd(), name, "src", "styles"), {
@@ -133,10 +133,10 @@ export default defineConfig({
       let optionalDeps2 = {};
       if (opts.features.includes("react")) {
         optionalDeps.react = "https://esm.sh/preact@10.16.0/compat",
-          optionalDeps["render"] =
+          optionalDeps["preact-render-to-string"] =
           "https://esm.sh/preact-render-to-string@6.2.0";
-        optionalDeps["debug"] = "https://esm.sh/preact@10.16.0/debug";
-        optionalDeps2.debug = optionalDeps.debug;
+        optionalDeps["react/debug"] = "https://esm.sh/preact@10.16.0/debug";
+        optionalDeps2["react/debug"] = optionalDeps["react/debug"];
         optionalDeps2.react = optionalDeps.react;
       }
       if (opts.features.includes("tailwind")) {
@@ -162,11 +162,16 @@ export default defineConfig({
       }
       if (opts.features.includes("react") || opts.features.includes("static") || opts.features.includes("api")) {
         optionalDeps["@hono/node-server"] =
-          "https://esm.sh/@hono/node-server@1.0.2?bundle";
-        optionalDeps["hono"] = "https://esm.sh/hono@3.2.5?bundle";
-        optionalDeps["@hono/serve-static"] =
-          "https://esm.sh/@hono/node-server@1.0.2/serve-static?bundle";
-        optionalDeps["hono/compress"] = "https://esm.sh/hono@3.2.5/compress?bundle";
+          "https://esm.sh/@hono/node-server@1.1.1";
+        optionalDeps["hono"] = "https://esm.sh/hono@3.4.3";
+        if (opts.features.includes("cloudflare"))
+          optionalDeps["hono/cloudflare"] = "https://esm.sh/hono@3.4.3/cloudflare";
+        if (opts.features.includes("hono"))
+          optionalDeps["hono/bun"] = "https://esm.sh/hono@3.4.3/bun";
+        optionalDeps["@hono/node-server/serve-static"] =
+          "https://esm.sh/@hono/node-server@1.1.1/serve-static";
+        if (!opts.features.includes("cloudflare"))
+          optionalDeps["hono/compress"] = "https://esm.sh/hono@3.4.3/compress";
       }
       fs.writeFileSync(
         path.join(process.cwd(), name, "import_map.json"),

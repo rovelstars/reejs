@@ -59,7 +59,7 @@ try {
   */
 export default async function SpecialFileImport(file, parentFile, service, code) {
   if (!file) throw new Error("parameter `file` is required");
-  if (file.includes(".reejs/cache") || file.includes(".reejs/serve")) return file;
+  if ((file.includes(".reejs/cache") || file.includes(".reejs/serve")) && !code) return file;
   if (service == "deno") service = "deno-deploy";
   file = file.replace(processCwd + "/", "");
   if (globalThis?.process?.env?.PSC_DISABLE != "true" && globalThis?.Deno?.env?.get("PSC_DISABLE") != "true") {

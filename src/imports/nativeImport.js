@@ -12,6 +12,7 @@ import DynamicImport from "./dynamicImport.js";
 export default async function NativeImport(m, isChild = false) {
   let mod;
   if (env === "node" || env === "bun" || env === "deno") {
+    if(m=="node:path" || m=="path") return DynamicImport(await import("pathe"));
     mod = DynamicImport(await import(m));
   } else {
     throw new Error("Unsupported runtime: "+ env);

@@ -92,15 +92,15 @@ export let writers = [
       let reender = "/__reejs" + reenderFile.split(".reejs")[1];
       let browserFn = pages.filter((page) => page.startsWith("src/pages/_browser"));
       let twindFn = await TranspileFile(pages.filter((page) => page.startsWith("src/pages/_twind"))[0], service);
-      let appFile = await TranspileFile(pages.find((page) => page.startsWith("src/pages/_app")) || 
-      path.join("node_modules","@reejs","react","app.jsx"), service);
+      let appFile = await TranspileFile(pages.find((page) => page.startsWith("src/pages/_app")) ||
+        path.join("node_modules", "@reejs", "react", "app.jsx"), service);
       let debugFile;
       try {
-        debugFile = await getPackage("debug");
+        debugFile = await getPackage("react/debug");
       } catch (e) { };
-      mainFile = `${(isDevMode && service != "deno-deploy") ? "import './node_modules/@reejs/utils/log.js';" : ""}
+      mainFile = `${(isDevMode && (service != "deno-deploy" && service !== "workers")) ? "import './node_modules/@reejs/utils/log.js';" : ""}
       ${(debugFile && isDevMode) ? `import "${debugFile}";` : ""}
-      ${isDevMode ? `import { save } from "./node_modules/@reejs/imports/debug.js";` : ""}
+      ${(((globalThis?.process?.env?.DEBUG || globalThis?.Deno?.env?.("DEBUG"))) && (service !== "workers")) ? `import { save } from "./node_modules/@reejs/imports/debug.js";` : ""}
       ${(twindFn?.length > 0)
           ? `import inline from "${await getPackage("@twind/with-react/inline")}";
       import tw from "./.reejs/${twindFn.split(".reejs/")[1]}";`
@@ -111,16 +111,17 @@ export let writers = [
           ? "import { serve } from 'https://deno.land/std/http/server.ts'"
           : ""}
       import { Hono } from "${await getPackage("hono")}";
-      import { compress } from "${await getPackage("hono/compress")}";
+      ${service=="workers"?`import { serveStatic } from "${await getPackage("hono/cloudflare-workers")}"`:""}
       ${service === "node" ? `
+      import { compress } from "${await getPackage("hono/compress")}";
       import { serve } from "${await getPackage("@hono/node-server")}";
-      import { serveStatic } from "${await getPackage("@hono/serve-static")}"`
-          : `import { serveStatic } from "https://deno.land/x/hono/middleware.ts";`}
-      import render from "${await getPackage("render")}";
+      import { serveStatic } from "${await getPackage("@hono/node-server/serve-static")}"`
+          : (service === "deno-deploy") ? `import { serveStatic } from "https://deno.land/x/hono/middleware.ts";` : ""}
+      import render from "${await getPackage("preact-render-to-string")}";
       import React from "${await getPackage("react")}";
       import App from "./.reejs${appFile.split(".reejs")[1]}";
       const server = new ReeServer(Hono, {${service === "node" ? "serve," : ""}});
-      server.app.onError(${isDevMode ? "save" : "console.log"
+      server.app.onError(${((((globalThis?.process?.env?.DEBUG || globalThis?.Deno?.env?.("DEBUG"))) && (service !== "workers")) && (service !== "workers")) ? "save" : "console.log"
         })
       const headMethod = ({ app }) => {
         return async (c, next) => {
@@ -137,7 +138,7 @@ export let writers = [
         }
       }
       server.app.use('*',headMethod({ app: server.app }));
-      server.app.use('*',compress());`;
+      ${service === "node" ? `server.app.use('*',compress());`:""}`;
 
       return {
         DATA: {
@@ -350,9 +351,9 @@ export default function Body(props) {
               }');return c.body(${file.replaceAll("/", "__").replaceAll(".", "").replaceAll("-", "_")})});`;
           }).join("\n");
       }
-      mainFile += (service !== "node") //todo: make a custom serveStatic myself.
+      mainFile += (service !== "node" && service!=="workers") //todo: make a custom serveStatic myself.
         ? "server.app.get('/__reejs/**',serveStatic({root:'./__reejs/',rewriteRequestPath:(p)=>p.replace('/__reejs','')}));server.app.get('/**',serveStatic({root:'./public',rewriteRequestPath:(p)=>p.replace('/public','')}));"
-        : (((service == "deno-deploy") || (service == "node")) ? reejsSavedFilesString : "");
+        : (((service == "deno-deploy") || (service == "node") || (service == "workers")) ? reejsSavedFilesString : "");
       mainFile += "\nserver.app.get('/__reejs/*',(c)=>{return c.notFound()});"
       return { mainFile, DATA };
     }

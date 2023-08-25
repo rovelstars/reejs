@@ -1,6 +1,6 @@
 {
     "name": "reejs",
-    "version": "0.10.38",
+    "version": "0.10.39",
     "description": "",
     "type": "module",
     "main": "src/cli/index.js",
