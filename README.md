@@ -20,7 +20,7 @@ We welcome all contributions. Please read our [CONTRIBUTING.md](https://github.c
 - [ ] Add support for more runtimes
 - [ ] Reewrite `specialFileImport.js` in `@reejs/imports` to be more readable
 - [x] Write Docs and make website look more cooler
-- [ ] Add Useful/Important Components like `Head`, `Link` & `Image` (Idea from Nextjs)
+- [x] Add Useful/Important Components like `Head`, `Link` & `Image` (Idea from Nextjs)
 - [ ] Download browser dependencies and serve them locally (only in production mode)
 - [ ] Hit 1k stars on GitHub :D
 - [ ] Add support for more languages (vue, svelte, etc.)
