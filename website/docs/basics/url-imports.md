@@ -1,7 +1,5 @@
 # URL Imports
 
-{/* give a basic info on what url imports is and how to use them in reejs */}
-
 URL Imports are a way to import a file from a url. This is useful for importing dependencies from a CDN or from a remote server.
 
 ```js
