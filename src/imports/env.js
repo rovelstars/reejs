@@ -7,8 +7,6 @@ if (typeof Deno !== "undefined"){
     let process = (await import("node:process")).default;
     globalThis.process = process;
     globalThis.global = globalThis;
-    let { DOMParser } = await import("https://deno.land/x/deno_dom/deno-dom-wasm.ts");
-    window.document = new DOMParser().parseFromString("<!DOCTYPE html><html><head></head><body></body></html>", "text/html");
   }
 } else if (typeof Bun !== "undefined") {
   runtime = "bun";

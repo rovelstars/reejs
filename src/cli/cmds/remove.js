@@ -1,6 +1,6 @@
 import dl from "@reejs/imports/URLImportInstaller.js";
 import fs from "node:fs";
-import path from "node:path";
+import path from "pathe";
 export default function add(prog) {
   prog
     .command("remove [name]")

@@ -53,7 +53,7 @@ if (!globalThis.fetch) {
     let fetchFileCode = await fetchUrl(`${(process.env.ESM_SERVER || "https://esm.sh")}/v128/node-fetch@3.3.1/node/node-fetch.bundle.mjs`);
     fs.writeFileSync(path.join(reejsDir, "failsafe", "fetch.js"), fetchFileCode);
   }
-  globalThis.fetch = (await import(path.join(reejsDir, "failsafe", "fetch.js"))).default;
+  globalThis.fetch = (await import("file://" + path.join(reejsDir, "failsafe", "fetch.js"))).default;
 }
 
 // user agent
@@ -138,12 +138,15 @@ let followRedirect = async function (url, forBrowser = false) {
 
 function waitUntilArrayDoesntHaveValue(element) {
   return new Promise((resolve) => {
-    const interval = setInterval(() => {
+    let interval;
+    let fn = () => {
       if (!CURRENT_DOWNLOADING.includes(element)) {
         clearInterval(interval);
         resolve();
       }
-    }, 300);
+    };
+    fn();
+    interval = setInterval(fn, 100);
   });
 }
 
@@ -157,7 +160,7 @@ if (!fs.existsSync(path.join(reejsDir, "failsafe", "spinnies.js"))) {
   fs.writeFileSync(path.join(reejsDir, "failsafe", "spinnies.js"), spinniesCode);
 }
 
-const spinners = new (DynamicImport(await import(path.join(reejsDir, "failsafe", "spinnies.js"))));
+const spinners = new (DynamicImport(await import("file://" + path.join(reejsDir, "failsafe", "spinnies.js"))));
 
 let dl =
   async function (url, cli = false, remove = false, forBrowser = false, ua = UA, isChild = false) {
@@ -165,7 +168,7 @@ let dl =
     // if(globalThis?.process?.env?.USE_UA_REEJS){
     //   ua = globalThis?.process?.env?.USE_UA_REEJS;
     // }
-    if(globalThis?.process?.env?.USED_BY_CLI_APP) cli = false; //installs deps to reejs dir instead of current dir.
+    if (globalThis?.process?.env?.USED_BY_CLI_APP) cli = false; //installs deps to reejs dir instead of current dir.
     if (process.env.ESM_SERVER && url.startsWith("https://esm.sh")) {
       url = url.replace("https://esm.sh", process.env.ESM_SERVER);
     }
@@ -196,7 +199,8 @@ let dl =
     if (!remove && fs.existsSync(URLToFile(url))) {
       return URLToFile(url);
     }
-    spinners.add(originalUrl, { text: styleit(`${isChild ? "├─  " : ""}🔍 %c${url}`, "", "color: blue") });
+    if ((isChild && process.env.DEBUG) || (!isChild))
+      spinners.add(originalUrl, { text: styleit(`${isChild ? "├─  " : ""}🔍 %c${url}`, "", "color: blue") });
     let res = await followRedirect(url, forBrowser);//returns url
     if (fs.existsSync(URLToFile(res))) {
       if ((res != url) && !NOTIFIED_UPDATE_URL.includes(url)) {
@@ -233,11 +237,12 @@ let dl =
       }
     }
     let finalURL = res;
-    spinners.update(originalUrl, {
-      text: styleit(`${isChild ? "├─  " : ""}🚚 %c${finalURL}`, "", "color: blue")
-    });
+    if ((isChild && process.env.DEBUG) || (!isChild))
+      spinners.update(originalUrl, {
+        text: styleit(`${isChild ? "├─  " : ""}🚚 %c${finalURL}`, "", "color: blue")
+      });
     //set timeout for fetch for 30 secs, after which throw error
-    let timeout = setTimeout(async() => {
+    let timeout = setTimeout(async () => {
       throw new Error(`Failed to download ${finalURL}\nUser Agent: ${forBrowser ? `Mozilla/5.0 (reejs/${pkgJson.version})` : UA}\n${await res.text()}`);
     }, 30000);
     res = await fetch(finalURL, {
@@ -331,6 +336,7 @@ let dl =
 
     // map packs , find the npm: and and run followRedirect on it and return the
     // url
+    if ((isChild && process.env.DEBUG) || (!isChild))
     spinners.update(originalUrl, {
       text: styleit(`${isChild ? "├─  " : ""}👪️ %c${finalURL}`, "", "color: blue")
     });
@@ -393,25 +399,28 @@ let dl =
         let f = await (await fetch(e)).arrayBuffer();
         fs.writeFileSync(URLToFile(e), Buffer.from(f));;
       }));
+      if ((isChild && process.env.DEBUG) || (!isChild))
       spinners.update(originalUrl, {
         text: styleit(`${isChild ? "├─  " : ""}📝 %c${finalURL}`, "", "color: blue")
       });
       fs.writeFileSync(URLToFile(finalURL), code)
     }
+    if ((isChild && process.env.DEBUG) || (!isChild))
     spinners.update(originalUrl, {
       text: styleit(`${isChild ? "├─  " : ""}💾 %c${finalURL}`, "", "color: blue")
     });
     if (remove && fs.existsSync(URLToFile(finalURL))) {
+      if ((isChild && process.env.DEBUG) || (!isChild))
       spinners.update(originalUrl, {
         text: styleit(`${isChild ? "├─  " : ""}🗑️ %c${finalURL}`, "", "color: blue")
       });
       fs.unlinkSync(URLToFile(finalURL));
     }
     CURRENT_DOWNLOADING = CURRENT_DOWNLOADING.filter((e) => e != finalURL);
+    if ((isChild && process.env.DEBUG) || (!isChild))
     spinners.update(originalUrl, {
       text: styleit(`${isChild ? "├─  " : ""}%c${finalURL} %cin %c${((Date.now() - start) / 1000)}s`, "", "color: blue", "color: gray", "color: green")
     });
-    if (isChild) spinners.remove(originalUrl);
     if (!isChild) spinners.succeed(originalUrl);
     return URLToFile(finalURL);
   };

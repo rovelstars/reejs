@@ -1,7 +1,9 @@
 import NativeImport from "./nativeImport.js";
 import { reejsDir } from "./env.js";
+import version from "@reejs/imports/version.js";
 let fs = await NativeImport("node:fs");
 let path = await NativeImport("node:path");
+
 export let save = (e) => {
   //e is Error object
   // save cache sha256
@@ -10,11 +12,11 @@ export let save = (e) => {
   }
   let oldCache = {};
   if (fs.existsSync(path.join(reejsDir, "cache", "cache.json"))) {
-    try{
-    oldCache =
-      fs.readFileSync(path.join(reejsDir, "cache", "cache.json"), "utf-8");
-    oldCache = JSON.parse(oldCache);
-  }catch(e){}
+    try {
+      oldCache =
+        fs.readFileSync(path.join(reejsDir, "cache", "cache.json"), "utf-8");
+      oldCache = JSON.parse(oldCache);
+    } catch (e) { }
   }
   let totalCache = { ...oldCache, ...globalThis?.__CACHE_SHASUM };
   fs.writeFileSync(path.join(reejsDir, "cache", "cache.json"),
@@ -26,22 +28,22 @@ export let save = (e) => {
       if (globalThis?.REEJS_doctorReport)
         globalThis.REEJS_doctorReport();
     }
-    console.log("%c[INFO] %cSaving important data...", "color:blue",
+    console.log("%c INFO %c %cSaving important data...", "background-color:blue","",
       "color:yellow");
     if (e.stack.includes(".ts") || e.stack.includes(".tsx") ||
       e.stack.includes(".jsx") || e.stack.includes(".js")) {
       if (!globalThis?.process?.env?.DEBUG && !globalThis?.Deno?.env?.get("DEBUG"))
         console.log(
-          "%c[TIP] %cIf the error in your code is in any of the following extensions (.ts, .tsx, .jsx), kindly not focus on the line number as the line numbers depict the compiled code and not the original one. Add `DEBUG=true` to your environment variables to see the original code.",
-          "color: yellow", "color: white")
+          "%c TIP %c %cIf the error in your code is in any of the following extensions (.ts, .tsx, .jsx), kindly not focus on the line number as the line numbers depict the compiled code and not the original one. Add `DEBUG=true` to your environment variables to see the original code.",
+          "background-color: yellow","", "color: white")
     }
     let arr = Object.entries(totalCache);
     let result = arr.map(pair => {
       let newObj = {};
       newObj["file://" + path.join(reejsDir, "cache", pair[1])] = pair[0];
-      try{
-      newObj["./" + pair[1]] = (new URL(pair[0])).pathname;
-      }catch(e){}
+      try {
+        newObj["./" + pair[1]] = (new URL(pair[0])).pathname;
+      } catch (e) { }
       newObj[path.join(reejsDir, "cache", pair[1])] = pair[0];
       return newObj;
     });

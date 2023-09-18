@@ -1,7 +1,7 @@
 import fs from "node:fs";
-import path from "node:path";
-
+import path from "pathe";
 import dl from "@reejs/imports/URLImportInstaller.js";
+import { sync } from "./npmsync.js";
 
 export let install =
   async (name, url, opts) => {
@@ -24,6 +24,7 @@ export let install =
         await dl(import_map.imports[key], true, null, null, ua);
       }));
       let end = Date.now();
+      await sync();
       let time = (end - start) / 1000;
       console.log("%c[DOWNLOAD] %cInstalled all packages in " + time + "s",
         "color: green", "color: blue");
@@ -72,6 +73,7 @@ export let install =
     }
     let end = Date.now();
     let time = (end - start) / 1000;
+    await sync();
     console.log("%c[DOWNLOAD] %cInstalled " + name + " in " + time + "s",
       "color:green", "color:blue;font-weight:bold;");
   }

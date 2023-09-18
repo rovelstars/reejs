@@ -8,6 +8,7 @@ let pkgJson3 = pkg.server;
 let pkgJson4 = pkg.react;
 
 import { Import } from "@reejs/imports/URLImport.js";
+
 export default function (prog) {
   prog.command("init [name]")
     .describe("Initialize a new project")
@@ -132,12 +133,15 @@ export default defineConfig({
       let optionalDeps = {};
       let optionalDeps2 = {};
       if (opts.features.includes("react")) {
-        optionalDeps.react = "https://esm.sh/preact@10.16.0/compat",
-          optionalDeps["preact-render-to-string"] =
-          "https://esm.sh/preact-render-to-string@6.2.0";
-        optionalDeps["react/debug"] = "https://esm.sh/preact@10.16.0/debug";
+        optionalDeps.react = "https://esm.sh/preact@10.17.1/compat";
+        optionalDeps["react-dom"] = optionalDeps.react;
+        optionalDeps.preact = optionalDeps.react.replace("/compat", "");
+        optionalDeps["preact-render-to-string"] =
+          "https://esm.sh/preact-render-to-string@6.2.1?external=preact";
+        optionalDeps["react/debug"] = "https://esm.sh/preact@10.17.1/debug";
         optionalDeps2["react/debug"] = optionalDeps["react/debug"];
         optionalDeps2.react = optionalDeps.react;
+        optionalDeps2["react-dom"] = optionalDeps.react;
       }
       if (opts.features.includes("tailwind")) {
         optionalDeps["@twind/core"] =

@@ -59,8 +59,18 @@ export default function styleit(message, ...styles) {
           }
           break;
         case "background-color":
-          chalkObject =
-            chalkObject[`bg${value[0].toUpperCase()}${value.slice(1)}`];
+          if (value.startsWith("#")) {
+            chalkObject = chalkObject.bgHex(value);
+          } else if (value.startsWith("rgb(")) {
+            let [r, g, b] = value
+              .replace("rgb(", "")
+              .replace(")", "")
+              .split(",")
+              .map((e) => parseInt(e.trim()));
+            chalkObject = chalkObject.bgRgb(r, g, b);
+          } else {
+            chalkObject = chalkObject[`bg${value[0].toUpperCase()}${value.slice(1)}`]
+          }
           break;
         default:
           // Ignore other properties

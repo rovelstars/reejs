@@ -46,7 +46,7 @@ export default async function (prog) {
         }
         if (file.startsWith("npm:")) {
           if (!globalThis.Deno) {//we need to polyfill because esm.sh sometimes import deno, like for esm.sh/server
-            globalThis.Deno = (await Import("npm:@deno/shim-deno@0.16.0", { internalDir: true })).Deno;
+            globalThis.Deno = (await Import("npm:@deno/shim-deno@0.16.0?bundle", { internalDir: true })).Deno;
           }
           file = file.replace("npm:", "https://esm.sh/");
           let pkgjson = await fetch(file + "/package.json");

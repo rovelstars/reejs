@@ -5,3 +5,5 @@ package-lock.json
 **/version.js
 **/bun.lockb
 bun.lockb
+website/.vitepress/dist
+website/.vitepress/cache

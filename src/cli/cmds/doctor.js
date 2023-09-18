@@ -3,7 +3,7 @@ import DynamicImport from "@reejs/imports/dynamicImport.js";
 import {UA} from "@reejs/imports/URLImportInstaller.js";
 let pkg = (DynamicImport(await import("../version.js"))).reejs;
 import fs from "node:fs";
-import path from "node:path";
+import path from "pathe";
 let projectCacheJson = {};
 let processCwd = globalThis?.process?.cwd?.() || Deno.cwd();
 if (fs.existsSync(path.join(processCwd, ".reejs", "cache", "cache.json"))) {

@@ -1,0 +1,16 @@
+{
+  "name": "hmm",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "dev": "reejs packit node -d",
+    "build": "reejs packit node",
+    "start": "node packit/index.js"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "tailwindcss": "3.3.3"
+  },
+  "packageManager": "npm"
+}
