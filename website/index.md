@@ -8,11 +8,11 @@ hero:
   tagline: "Finally the best of both worlds: Fast build times and a great developer experience"
   actions:
     - theme: brand
+      text: Get Started
+      link: /docs/getting-started/introduction
+    - theme: alt
       text: Install
       link: /docs/getting-started/installation
-    - theme: alt
-      text: Why Reejs?
-      link: /docs/why-reejs
 
 features:
   - icon: ⚡️
