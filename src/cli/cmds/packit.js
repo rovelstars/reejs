@@ -363,11 +363,11 @@ export let packit = async (service, isDevMode, runOneTime) => {
       if (!childProcess?.exitCode) childProcess?.kill?.();
     } catch (e) { }
     if (service == "node") {
-      childProcess = spawn("node", [path.join(processCwd, "packit.build.js")], { detached: false, stdio: "pipe", env: { ...process.env } });
+      childProcess = spawn("node", [path.join(processCwd, "packit.build.js")], { detached: false, stdio: ["ignore","inherit","inherit"], env: { ...process.env } });
     } else if (service == "deno-deploy") {
-      childProcess = spawn("deno", ["run", "-A", path.join(processCwd, "packit.build.js")], { detached: false, stdio: "pipe", env: { ...process.env } });
+      childProcess = spawn("deno", ["run", "-A", path.join(processCwd, "packit.build.js")], { detached: false, stdio: ["ignore","inherit","inherit"], env: { ...process.env } });
     } else if (service == "bun") {
-      childProcess = spawn("bun", ["run", path.join(processCwd, "packit.build.js")], { detached: false, stdio: "pipe", env: { ...process.env } });
+      childProcess = spawn("bun", ["run", path.join(processCwd, "packit.build.js")], { detached: false, stdio: ["ignore","inherit","inherit"], env: { ...process.env } });
     }
   }
   if (fs.existsSync("reecfg.json")) {
@@ -392,6 +392,11 @@ export default function Packit(prog) {
       let onetime = opts.onetime || opts.o;
       configFile = await SpecialFileImport("packit.config.js", null, service);
       config = DynamicImport(await import(path.join(processCwd, configFile)));
+      if(fs.existsSync(path.join(processCwd, "reecfg.json"))){
+        let reecfg = await import(path.join(processCwd, "reecfg.json"), { assert: { type: "json" } });
+        console.log(reecfg);
+        config.disablePreactCompat = reecfg.default.features.includes("react");
+      }
       config.mode = devMode ? "development" : "production";
       if (config.clearScreen != false)
         console.clear();
@@ -442,13 +447,13 @@ export default function Packit(prog) {
               if (globalThis?.Deno?.env) globalThis.Deno.env.set("DEBUG", globalThis.Deno.env.get("DEBUG") ? "" : "true");
               console.log("%c  ➜  %cDebug mode %c" + (globalThis?.process?.env?.DEBUG || globalThis?.Deno?.env?.get("DEBUG") ? "enabled" : "disabled"), "color: #db2777", "color: #6b7280", "color: #10b981");
               console.log("%c  ➜  %cRestart to apply changes", `color: ${config.fakeVite ? "green" : "#db2777"}`, "color: #6b7280");
-            } else if (key.name == 'q' || key.ctrl && key.name == 'c') {
+            } else if (key.name == 'q' || (key.ctrl && key.name == 'c')) {
               if (childProcess) {
                 console.log("%c  ➜  %cstopping server", `color: ${config.fakeVite ? "green" : "#db2777"}`,
                   "color: #6b7280");
-                try {
-                  if (!childProcess?.exitCode) process.kill(-childProcess.pid);
-                } catch (e) { }
+                  try {
+                    if (!childProcess?.exitCode) childProcess?.kill?.();
+                  } catch (e) { }
               }
               process.exit()
             } else if (key.name == "a") {

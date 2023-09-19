@@ -64,7 +64,6 @@ export let writers = [
       let pages = helpers.savedFiles.find(e => e.pages).pages;
       let components = helpers.savedFiles.find(e => e.components).components;
       let { TranspileFile, mainFile, processCwd, importmap, isDevMode, getPackage, config } = helpers;
-      if (config.disablePreactCompat) console.log("%c[INFO] %c Using official React instead of Preact compat...", "color: blue");
       if (service == "deno-deploy") {
         //deno now uses deno.json instead of import_maps.json bruh
         let denoimports = //Object.assign({}, importmap.imports, {

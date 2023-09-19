@@ -6,7 +6,7 @@ To create a new Reejs project, run the following command:
 reejs init <project-name> [options]
 ```
 
-::: warn
+::: warning
 After creating the project, you must run `reejs i && reejs sync && npm i` only for the first time. This installs some necessary reejs dependencies. This process will be removed soon in the future.
 :::
 

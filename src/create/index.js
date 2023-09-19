@@ -4,13 +4,42 @@ import pc from "npm:v132/picocolors@1.0.0?bundle";
 import boxen from "npm:v132/boxen@7.1.1?bundle";
 import gradient from "npm:v132/gradient-string@2.0.2?bundle";
 import path from "npm:v132/pathe@1.1.1?bundle";
-import {
-  detectPackageManager,
-  installDependencies
-} from "npm:v132/nypm@0.3.3?bundle";
+import { execa, $ } from "npm:v132/execa@8.0.1?bundle";
 import fs from "node:fs";
-import GetPackage from "./data.js";
 let g = gradient(['#7c3aed', '#db2777']);
+
+const dependencies = {
+  "react": "18.2.0",
+  "react-dom": "18.2.0",
+  "preact": "10.17.1",
+  "preact-render-to-string": "6.2.1"
+};
+
+function GetPackage(name, opts) {
+
+  const { bundle = false, isReactPackage = false, extDeps = [] } = opts || {};
+  //a name would be like "react" or "react-dom/client"
+  //replace the name with the version, prefix with "https://esm.sh/", suffix with "@<version>"
+
+  //if it is a react package, then append ?external=react,react-dom
+  //use url search params to append the query.
+  //if bundle is true, add bundle query
+  const pkgName = name.split("/")[0];
+  let scope = name.replace(pkgName, "");
+  scope = scope.split("?")[0];
+  let url = `https://esm.sh/${pkgName}${dependencies[pkgName] ? `@${dependencies[pkgName]}` : ""}${scope}`;
+  url = new URL(url);
+  if (isReactPackage) {
+    url.searchParams.append("external", "react,react-dom");
+  }
+  if (extDeps.length) {
+    url.searchParams.append("external", extDeps.join(","));
+  }
+  if (bundle) {
+    url.searchParams.append("bundle", "");
+  }
+  return url.toString();
+}
 
 console.log("");
 console.log(g.multiline(boxen("Welcome to Reejs Framework", { padding: 1, borderStyle: "round", })));
@@ -93,9 +122,39 @@ async function getLatestVersion(packageName) {
 let dir = path.join(process.cwd(), projectName);
 
 fs.mkdirSync(path.join(dir, "src"), { recursive: true });
+if (features.includes("api")) {
+  fs.mkdirSync(path.join(dir, "src", "pages", "api"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "src", "pages", "api", "index.js"),
+    `export default function (c) {\n  return c.json({ hello: "world" })\n}`, "utf-8");
+}
+if (features.includes("static")) {
+  fs.mkdirSync(path.join(dir, "public"));
+}
+if (features.includes("react") || features.includes("preact")) {
+  fs.mkdirSync(path.join(dir, "src", "pages"), { recursive: true });
+  fs.mkdirSync(path.join(dir, "src", "components"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "src", "pages", "index.jsx"),
+    `export default function(){\n  return <h1 ${(features.includes("tailwind") || features.includes("twind")) ? 'className="text-3xl font-bold text-violet-600"' : ''}>Hello from Reejs!</h1>\n}`, "utf-8");
+  fs.writeFileSync(path.join(dir, "reecfg.json"), JSON.stringify({
+  }, null, 2), "utf-8");
+  fs.writeFileSync(
+    path.join(dir, "src", "pages", "_app.jsx"),
+    `import App from "@reejs/react/app";
+export default ${features.includes("tailwind")
+      ? "App"
+      : "function({ children }){return <App children={children} className=\"!block\" style={{display: 'none'}} />}"};`);
+  fs.mkdirSync(path.join(dir, "src", "components"), {
+    recursive: true,
+  });
+}
 
-fs.writeFileSync(path.join(dir, "reecfg.json"), JSON.stringify({
-}, null, 2), "utf-8");
+fs.writeFileSync(path.join(dir, "packit.config.js"), "");
+fs.writeFileSync(path.join(dir, ".gitignore"), [
+  "node_modules",
+  "packit",
+  ".reejs",
+  "packit.build.js"
+].join("\n"), "utf-8");
 
 let pkg = {
   name: path.basename(projectName),
@@ -112,8 +171,6 @@ let pkg = {
   packageManager
 };
 fs.writeFileSync(path.join(dir, "package.json"), JSON.stringify(pkg, null, 2), "utf-8");
-
-packageManager = await detectPackageManager(path.join(dir));
 //setup import maps URLs
 let importmap = {}, browserimportmap = {};
 if (features.includes("react")) {
@@ -156,6 +213,21 @@ if (features.includes("twind")) {
     "https://cdn.jsdelivr.net/npm/@twind/with-react/inline/+esm";
   browserimportmap["@twind/with-react/inline"] =
     importmap["@twind/with-react/inline"];
+  fs.writeFileSync(
+    path.join(dir, "src", "pages", "_twind.js"),
+    `import install from "@twind/with-react";
+import config from "../../twind.config.js";
+export default install(config);`);
+  fs.writeFileSync(path.join(dir, "twind.config.js"),
+    `import { defineConfig } from "@twind/core";
+import presetAutoprefix from "@twind/preset-autoprefix";
+import presetTailwind from "@twind/preset-tailwind";
+
+export default defineConfig({
+presets: [presetAutoprefix, presetTailwind],
+darkMode: "class",
+});`);
+  fs.writeFileSync(path.join(dir, "tailwind.config.js"), "");
 }
 if (features.includes("tailwind")) {
   //tailwind doesn't work from url imports. use it from npm directly
@@ -176,14 +248,67 @@ if (features.includes("million")) {
   //fetch latest version of million.js from npm api
   pkg.dependencies["million"] = await getLatestVersion("million");
   browserimportmap["million/react"] = GetPackage("million/react", { bundle: true, isReactPackage: true });
+  fs.writeFileSync(path.join(dir, "packit.config.js"),
+    `import million from 'million/compiler';\nexport default {\n  plugins: [\n    million.vite({auto: true}),\n  ]\n}`, "utf-8");
 }
+// TODO: work on below string to function.
+importmap["hono"] = "https://esm.sh/v132/hono@3.6.3";
+importmap["hono/compress"] = "https://esm.sh/v132/hono@3.6.3/compress";
+importmap["@hono/node-server"] = "https://esm.sh/v132/@hono/node-server@1.1.1";
+importmap["@hono/node-server/serve-static"] = "https://esm.sh/v132/@hono/node-server@1.1.1/serve-static";
+pkg.dependencies["@reejs/utils"] = await getLatestVersion("@reejs/utils");
+pkg.dependencies["@reejs/imports"] = await getLatestVersion("@reejs/imports");
+pkg.dependencies["@reejs/server"] = await getLatestVersion("@reejs/server");
+pkg.dependencies["@reejs/react"] = await getLatestVersion("@reejs/react");
+pkg.devDependencies["reejs"] = await getLatestVersion("reejs");
 
 fs.writeFileSync(path.join(dir, "package.json"), JSON.stringify(pkg, null, 2), "utf-8");
+fs.writeFileSync(path.join(dir, "reecfg.json"), JSON.stringify({
+  features,
+}, null, 2), "utf-8");
+fs.writeFileSync(path.join(dir, "import_map.json"), JSON.stringify({
+  imports: importmap,
+  browserImports: browserimportmap
+}, null, 2), "utf-8");
 
 if (shouldInstall) {
   const s = await clack.spinner();
   s.start(g("Installing dependencies"));
-  await installDependencies({ cwd: dir, packageManager, silent: true });
+  // check whether reejs is available globally
+  let isAvailable = false;
+  try {
+    isAvailable = await $(`reejs --version`);
+    if (isAvailable) isAvailable = 1;
+  }
+  catch (e) {
+    isAvailable = false;
+  }
+  if (!isAvailable) {
+    //check whether reejs is available at <file dir>/node_modules/.bin/reejs
+    try {
+      //use import.meta.url to get the current file's url
+      //use path.dirname to get the directory of the file
+      //use path.join to join the directory with node_modules/.bin/reejs
+      isAvailable = await $`node ${path.join(path.dirname(import.meta.url), "node_modules", ".bin", "reejs")} --version`;
+      if (isAvailable) isAvailable = 2;
+    }
+    catch (e) {
+      isAvailable = false;
+    }
+  }
+  if (isAvailable == 1) {
+    //reejs is available globally. use it
+    await $({ cwd: dir })`reejs install`;
+  }
+  else if (isAvailable == 2) {
+    //reejs is available locally. use it
+    await $({ cwd: dir })`node ${path.join(path.dirname(import.meta.url), "node_modules", ".bin", "reejs")} install`;
+  }
+  else {
+    //reejs is not available. notifiy the user
+    clack.log.warn(g("Reejs is not available globally or locally. Please install it manually"));
+    clack.note(`cd into ${pc.green(projectName)} and run \`${g("reejs install")}\``);
+  }
   s.stop();
 }
 else {

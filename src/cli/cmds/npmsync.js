@@ -4,7 +4,6 @@ import { Import } from "@reejs/imports/URLImport.js";
 import extractInfoFromUrl from "./utils/extractInfoFromUrl.js";
 let fs = await NativeImport("node:fs");
 let path = await NativeImport("node:path");
-let {detectPackageManager,installDependencies} = await Import("npm:v132/nypm@0.3.3?bundle");
 let processCwd = globalThis?.process?.cwd?.() || Deno.cwd();
 function getPackageInfo(name, url, cacheFile, forNodeModules) {
   let info = extractInfoFromUrl(url);
@@ -38,7 +37,6 @@ async function setupPackage(name, url, cacheFile, forNodeModules,fixVersion,blac
     pkgJson.exports["./" + info.file.substring(0, info.file.lastIndexOf('.'))] = "./" + info.file;
     fs.writeFileSync(path.join(info.at, "package.json"), JSON.stringify(pkgJson, null, 2));
   }
-
   if (!fs.existsSync(path.join(info.at, info.file))) {
     let code;
     try {
@@ -81,8 +79,9 @@ export let sync = async (smt, dir) => {
   }));
   // write to package.json
   pkgJson.dependencies = deps;
-  if(pkgJson.packageManager) pkgJson.packageManager = "npm";
+  if(!pkgJson.packageManager) pkgJson.packageManager = "npm";
   fs.writeFileSync("package.json", JSON.stringify(pkgJson, null, 2));
+  let {detectPackageManager,installDependencies} = await Import("npm:v132/nypm@0.3.3?bundle");
   let packageManager = await detectPackageManager(processCwd);
   await installDependencies({ cwd: dir, packageManager, silent: true });
 };
