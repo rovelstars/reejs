@@ -17,7 +17,8 @@ export default defineConfig({
     ['meta', { name: 'theme-color', content: '#5f67ee' }],
     ['meta', { name: 'og:type', content: 'website' }],
     ['meta', { name: 'og:locale', content: 'en' }],
-    ['meta', { name: 'og:site_name', content: 'Reejs' }]
+    ['meta', { name: 'og:site_name', content: 'Reejs' }],
+    ['script', { async: true, src: 'https://arc.io/widget.min.js#yxxqCYDf' }]
   ],
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
