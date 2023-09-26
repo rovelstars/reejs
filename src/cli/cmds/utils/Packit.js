@@ -57,10 +57,10 @@ export let transpilers = [
 ]
 export let writers = [
   {
-    "name": "init",
-    "index": -100,
-    "describe": "Writes the necessary lines that initializes the Hono server",
-    "run": async (helpers, service) => {
+    name: "init",
+    index: -100,
+    describe: "Writes the necessary lines that initializes the Hono server",
+    run: async (helpers, service) => {
       let pages = helpers.savedFiles.find(e => e.pages).pages;
       let components = helpers.savedFiles.find(e => e.components).components;
       let { TranspileFile, mainFile, processCwd, importmap, isDevMode, getPackage, config } = helpers;
@@ -70,10 +70,10 @@ export let writers = [
           //"@reejs/": "./node_modules/@reejs/",
           //});
           { ...importmap.imports, ...{ "@reejs/": "./node_modules/@reejs/" } };
-        fs.writeFileSync(path.join("packit", "deno.json"), JSON.stringify({ imports: denoimports }, null, 2));
+        fs.writeFileSync(path.join("dist", "deno.json"), JSON.stringify({ imports: denoimports }, null, 2));
         //delete packit/package.json if it exists
-        if (fs.existsSync(path.join("packit", "package.json"))) {
-          fs.unlinkSync(path.join("packit", "package.json"));
+        if (fs.existsSync(path.join("dist", "package.json"))) {
+          fs.unlinkSync(path.join("dist", "package.json"));
         }
       }
       //convert importmap.browserImports from {"react":"https://cdn.skypack.dev/react"} to {"../cache/<hash>":"https://cdn.skypack.dev/react"}
@@ -97,7 +97,8 @@ export let writers = [
       try {
         debugFile = await getPackage("react/debug");
       } catch (e) { };
-      mainFile = `${(isDevMode && (service != "deno-deploy" && service !== "workers")) ? "import './node_modules/@reejs/utils/log.js';" : ""}
+      mainFile = `${process.versions.webcontainer ? `import { installGlobals } from "@remix-run/node";installGlobals();` : ""}
+      ${(isDevMode && (service != "deno-deploy" && service !== "workers")) ? "import './node_modules/@reejs/utils/log.js';" : ""}
       ${(debugFile && isDevMode && !config.disablePreactCompat) ? `import "${debugFile}";` : ""}
       ${(((globalThis?.process?.env?.DEBUG || globalThis?.Deno?.env?.("DEBUG"))) && (service !== "workers")) ? `import { save } from "./node_modules/@reejs/imports/debug.js";` : ""}
       ${(twindFn?.length > 0)
@@ -144,13 +145,14 @@ export let writers = [
         DATA: {
           pages, browserFn, twindFn, appFile, TranspileFile
         },
-        mainFile
+        chunk: mainFile
       }
     }
   },
   {
-    "name": "pages",
-    "run": async (helpers, service) => {
+    name: "pages",
+    index: 1,
+    run: async (helpers, service) => {
       let { DATA, mainFile, importmap, isDevMode, getPackage, config } = helpers;
       let { pages, browserFn, twindFn, appFile, TranspileFile } = DATA;
       // we generate routes for pages here.
@@ -331,8 +333,8 @@ export default async function reender(page, browserFn) {
   `: `
     ${config.disablePreactCompat ? 'hydrateRoot($("#root"), React.createElement(p));' :
           'React.hydrate(React.createElement(p), $("#root"));'}
-  `}
-}`;
+}`}
+`;
 
       fs.writeFileSync(path.join(".reejs", "serve", "__reender.js"), reenderCode);
 
@@ -343,7 +345,7 @@ export default async function reender(page, browserFn) {
             //TODO: wait for twind to add vendor prefix for `background-clip:text`, then remove the replaceAll.
             : "c.html(h)"}});`;
       });
-      return { mainFile, DATA };
+      return { chunk: mainFile, DATA };
     }
   },
   {
@@ -366,15 +368,16 @@ export default async function reender(page, browserFn) {
           ".")[0];
         mainFile += `\nimport file_${sha_name} from "./.reejs/${savedAt.split(".reejs/")[1]}";server.app.get("/api${route}",file_${sha_name});`;
       }));
-      return { mainFile, DATA };
+      return { chunk: mainFile, DATA };
     }
   },
   {
     name: "static",
-    index: -1,
+    index: 2,
+    writeIndex: -1, //write before api & pages, but run after api & pages.
     run: async (helpers, service) => {
       let { DATA, mainFile, glob } = helpers;
-      let { contentType } = await Import("mime-types@2.1.35");
+      let { contentType } = await Import("v132/mime-types@2.1.35", { internalDir: true });
       let reejsSavedFilesCache = await glob(".reejs/cache/**/*", { nodir: true });
       let reejsSavedFilesServe = await glob(".reejs/serve/**/*", { nodir: true });
       let publicSavedFiles = await glob("public/**/*", { nodir: true });
@@ -403,11 +406,12 @@ export default async function reender(page, browserFn) {
         ? "server.app.get('/__reejs/**',serveStatic({root:'./__reejs/',rewriteRequestPath:(p)=>p.replace('/__reejs','')}));server.app.get('/**',serveStatic({root:'./public',rewriteRequestPath:(p)=>p.replace('/public','')}));"
         : (((service == "deno-deploy") || (service == "node") || (service == "workers")) ? reejsSavedFilesString : "");
       mainFile += "\nserver.app.get('/__reejs/*',(c)=>{return c.notFound()});"
-      return { mainFile, DATA };
+      return { chunk: mainFile, DATA };
     }
   },
   {
     name: "finish",
+    writeIndex: 100,
     describe: "Writes the necessary lines that starts the Hono server, based on what service you asked",
     run: async (helpers, service) => {
       let { mainFile, DATA } = helpers;
@@ -417,7 +421,7 @@ export default async function reender(page, browserFn) {
 ${service == "workers" ? "export default server.app;" : ""}
 ${service == "deno-deploy" ? "serve(server.app.fetch,{port:Deno.env.get('PORT') || 3000, onListen: ({port,hostname}) => {console.log(`%c  ➜  %c 🚆 : %chttp://localhost:${port}`,\"color: #db2777\",\"color: #6b7280\",\"color: blue; font-weight: bold;\")}})" : ""}
 `;
-      return { mainFile, DATA };
+      return { chunk: mainFile, DATA };
     }
   }
 ]

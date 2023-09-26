@@ -1,6 +1,6 @@
 {
     "name": "@reejs/react",
-    "version": "0.13.1",
+    "version": "0.13.4",
     "description": "",
     "type": "module",
     "main": "index.js",

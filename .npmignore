@@ -1,3 +1,4 @@
+src/create
 src/imports
 src/react
 src/server
@@ -8,3 +9,8 @@ node_modules
 scripts/*
 **/bun.lockb
 bun.lockb
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+package-lock.json
+.gitpod.yml
+.vscode

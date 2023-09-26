@@ -85,8 +85,8 @@ export let packit = async (service, isDevMode, runOneTime) => {
   if ((globalThis?.process?.env?.DEBUG || globalThis?.Deno?.env?.get("DEBUG")) && isDevMode)
     console.log("%c[PACKIT] %cDon't use debug for benchmarking! Run debug in order to see what takes the longest time...", "color: #db2777", "color: yellow");
 
-  if (!fs.existsSync(path.join(processCwd, "packit"))) {
-    fs.mkdirSync(path.join(processCwd, "packit"));
+  if (!fs.existsSync(path.join(processCwd, "dist"))) {
+    fs.mkdirSync(path.join(processCwd, "dist"));
   }
 
   let Readers = merge(config.disableDefaults ? [] : readers, config.readers);
@@ -219,7 +219,7 @@ export let packit = async (service, isDevMode, runOneTime) => {
   let savedFiles = [];
   let reader_then = Date.now();
   await Promise.all(Readers.map(async (reader) => {
-    let { glob } = await Import("glob@10.2.7?bundle", { internalDir: true });
+    let { glob } = await Import("v132/glob@10.2.7?bundle", { internalDir: true });
     let files = (typeof reader.run == "function") ? await reader.run(glob) : [];
     if (!reader.run && (typeof reader.pattern == "string")) {
       files = await glob(reader.pattern, { ignore: reader?.exclude || [] });
@@ -252,7 +252,7 @@ export let packit = async (service, isDevMode, runOneTime) => {
   allExtensions = [...new Set(allExtensions)];
 
   // writers must not run in parallel, as they are writing to the same file. mainFile is the code for index.js
-  let mainFile = "";
+  let mainFile = [];
   async function TranspileFile(fileURL, service) {
     if (!service) throw new Error("parameter `service` is required");
     if (!fileURL) return;
@@ -279,22 +279,36 @@ export let packit = async (service, isDevMode, runOneTime) => {
   let DATA; // allow writers to pass data to other writers
   for (let writer in Writers) {
     try {
-      let { glob } = await Import("glob@10.2.7?bundle", { internalDir: true });
+      let { glob } = await Import("v132/glob@10.2.7?bundle", { internalDir: true });
       let helpers = {
-        getPackage, mainFile, savedFiles, TranspileFile, terser, fs, path, processCwd, importmap, cachemap, isDevMode, DATA, glob, config
+        getPackage, mainFile: "", savedFiles, TranspileFile, terser, fs, path, processCwd, importmap, cachemap, isDevMode, DATA, glob, config
       };
       let data = await Writers[writer].run(helpers, service);
       if ((globalThis?.process?.env?.DEBUG || globalThis?.Deno?.env?.get("DEBUG")) && config.logLevel != "silent")
         console.log("%c[PACKIT] %cWriter %c" + Writers[writer].name + "%c finished in %c" + (Date.now() - writer_then) + "ms", "color: #db2777", "color: #ffffff", "color: #10b981", "color: #ffffff", "color: #10b981");
       //if writer returns code & data, save it, otherwise keep the old mainFile code and data
-      mainFile = data?.mainFile || mainFile;
+      if (data.mainFile) console.log(`%c[PACKIT] %cWriter %c${Writers[writer].name}%c returned "mainFile". This is deprecated. Please use "chunk" instead.`, "color: #db2777", "color: red", "color: gray", "color: red");
+      if (!data.chunk) {
+        // mainFile = data?.mainFile || mainFile;
+        // we don't want to overwrite mainFile, so we push the code to mainFile
+        mainFile.push({
+          at: Writers[writer].writeIndex || Writers[writer].index || 0,
+          chunk: data?.mainFile || "",
+        });
+      }
+      if (data.chunk) {
+        mainFile.push({
+          at: Writers[writer].writeIndex || Writers[writer].index || 0,
+          chunk: data.chunk,
+        });
+      }
       DATA = data?.DATA || DATA;
     } catch (e) {
       console.log(`%c[ERROR] %cWriter %c${Writers[writer].name}%c failed to execute.`, "color: #db2777", "color: red", "color: gray", "color: red");
-      //log error and crash
-      console.error(e);
+      throw e;
     }
   }
+  mainFile = mainFile.sort((a, b) => a.at - b.at).map(e => e.chunk).join("\n");
   //after all writers have run, written code to mainFile and transpiled needed files, Packit starts saving all stuff to PWD/packit folder
   if ((globalThis?.process?.env?.DEBUG || globalThis?.Deno?.env?.get("DEBUG")) && Writers.length && config.logLevel != "silent")
     console.log("%c[PACKIT] %cWriters finished in %c" + (Date.now() - writer_then) + "ms", "color: #db2777", "color: #ffffff", "color: #10b981");
@@ -302,7 +316,7 @@ export let packit = async (service, isDevMode, runOneTime) => {
   if (!isDevMode) {
     //copy files & folders to packit folder
     let copy_then = Date.now();
-    let { glob } = await Import("glob@10.2.7?bundle", { internalDir: true });
+    let { glob } = await Import("v132/glob@10.2.7?bundle", { internalDir: true });
     await Promise.all(CopyToPackit.map(async (fn) => {
       let data = await fn(service, isDevMode, glob);
       await Promise.all(data.files.map(async (file) => {
@@ -322,13 +336,13 @@ export let packit = async (service, isDevMode, runOneTime) => {
           MODIFIED_FILES = MODIFIED_FILES.filter((e) => e.f != file.replace(processCwd + "/", ""));
           MODIFIED_FILES.push({ f: file.replace(processCwd + "/", ""), at: stat.mtimeMs });
           if (stat.isDirectory()) return; // don't copy folders. plugin should have passed folders array for that.
-          await fsp.mkdir(path.dirname(path.join(processCwd, "packit", file)), { recursive: true });
-          await fsp.copyFile(path.join(processCwd, file), path.join(processCwd, "packit", file));
+          await fsp.mkdir(path.dirname(path.join(processCwd, "dist", file)), { recursive: true });
+          await fsp.copyFile(path.join(processCwd, file), path.join(processCwd, "dist", file));
         }
       }));
       await Promise.all(data.folders.map(async (folder) => {
         if (fs.existsSync(path.join(processCwd, folder))) {
-          await copyFolder(path.join(processCwd, folder), path.join(processCwd, "packit", folder));
+          await copyFolder(path.join(processCwd, folder), path.join(processCwd, "dist", folder));
         }
       }));
     }));
@@ -336,7 +350,7 @@ export let packit = async (service, isDevMode, runOneTime) => {
     if ((globalThis?.process?.env?.DEBUG || globalThis?.Deno?.env?.get("DEBUG")) && CopyToPackit.length && config.logLevel != "silent")
       console.log("%c[PACKIT] %cCopyToPackit finished in %c" + (Date.now() - copy_then) + "ms", "color: #db2777", "color: #ffffff", "color: #10b981");
   }
-  fs.writeFileSync(isDevMode ? path.join(processCwd, "packit.build.js") : path.join(processCwd, "packit", "index.js"), mainFile);
+  fs.writeFileSync(isDevMode ? path.join(processCwd, "packit.build.js") : path.join(processCwd, "dist", "index.js"), mainFile);
 
   await Promise.all(wantsToKnowPackitEnded.map(async (fn) => {
     if (fn.type == 0)
@@ -363,11 +377,11 @@ export let packit = async (service, isDevMode, runOneTime) => {
       if (!childProcess?.exitCode) childProcess?.kill?.();
     } catch (e) { }
     if (service == "node") {
-      childProcess = spawn("node", [path.join(processCwd, "packit.build.js")], { detached: false, stdio: ["ignore","inherit","inherit"], env: { ...process.env } });
+      childProcess = spawn("node", [path.join(processCwd, "packit.build.js")], { detached: false, stdio: ["ignore", "inherit", "inherit"], env: { ...process.env } });
     } else if (service == "deno-deploy") {
-      childProcess = spawn("deno", ["run", "-A", path.join(processCwd, "packit.build.js")], { detached: false, stdio: ["ignore","inherit","inherit"], env: { ...process.env } });
+      childProcess = spawn("deno", ["run", "-A", path.join(processCwd, "packit.build.js")], { detached: false, stdio: ["ignore", "inherit", "inherit"], env: { ...process.env } });
     } else if (service == "bun") {
-      childProcess = spawn("bun", ["run", path.join(processCwd, "packit.build.js")], { detached: false, stdio: ["ignore","inherit","inherit"], env: { ...process.env } });
+      childProcess = spawn("bun", ["run", path.join(processCwd, "packit.build.js")], { detached: false, stdio: ["ignore", "inherit", "inherit"], env: { ...process.env } });
     }
   }
   if (fs.existsSync("reecfg.json")) {
@@ -388,13 +402,23 @@ export default function Packit(prog) {
         console.log("%c[PACKIT] %cNo packit.config.js file found. Please create one in order to use packit.", "color: #db2777", "color: yellow");
         return process.exit(1);
       }
+      if (!fs.existsSync(path.join(processCwd, "packit.build.js"))) {
+        await Promise.all([
+          "https://esm.sh/v132/mime-types@2.1.35",
+          "https://esm.sh/v132/chokidar@3.5.2?bundle",
+          "https://esm.sh/v132/glob@10.2.7?bundle",
+          "https://esm.sh/v132/terser@5.16.6?bundle",
+          "https://esm.sh/v132/sucrase@3.32.0?bundle",
+        ].map(async (e) => {
+          await dl(e, false);
+        }));
+      }
       let devMode = opts.dev || opts.d;
       let onetime = opts.onetime || opts.o;
       configFile = await SpecialFileImport("packit.config.js", null, service);
       config = DynamicImport(await import(path.join(processCwd, configFile)));
-      if(fs.existsSync(path.join(processCwd, "reecfg.json"))){
+      if (fs.existsSync(path.join(processCwd, "reecfg.json"))) {
         let reecfg = await import(path.join(processCwd, "reecfg.json"), { assert: { type: "json" } });
-        console.log(reecfg);
         config.disablePreactCompat = reecfg.default.features.includes("react");
       }
       config.mode = devMode ? "development" : "production";
@@ -412,7 +436,7 @@ export default function Packit(prog) {
         if (globalThis?.Deno?.env) Deno.env.set("NODE_ENV", "development");
         //Listen for file changes with chokidar
         let chokidar;
-        if (!onetime) chokidar = await Import("chokidar@3.5.2?bundle", { internalDir: true });
+        if (!onetime) chokidar = await Import("v132/chokidar@3.5.2?bundle", { internalDir: true });
         await packit(service, true, onetime);
         if (runPackitTwice) {
           console.log("%c  ➜  %c🚀 Preparing to go %call-out ✨✨", "color: #db2777", "color: gray", "color: #10b981; font-weight: bold");
@@ -451,9 +475,9 @@ export default function Packit(prog) {
               if (childProcess) {
                 console.log("%c  ➜  %cstopping server", `color: ${config.fakeVite ? "green" : "#db2777"}`,
                   "color: #6b7280");
-                  try {
-                    if (!childProcess?.exitCode) childProcess?.kill?.();
-                  } catch (e) { }
+                try {
+                  if (!childProcess?.exitCode) childProcess?.kill?.();
+                } catch (e) { }
               }
               process.exit()
             } else if (key.name == "a") {

@@ -144,7 +144,7 @@ lexer = {
 
   // usage: let routeData = SpecialFileImport(path.join(pagesDir, page));
   // this imports sucrase and returns the result of sucrase.transform
-  let sucrase = await Import("sucrase@3.32.0?bundle", { internalDir: true });
+  let sucrase = await Import("npm:v132/sucrase@3.32.0?bundle", { internalDir: true });
   let ext = file?.split(".")?.pop();
   if (ext == file) throw new Error(`\`${file}\` has no extension passed to packit transpiler.\nThis usually means the file doesn't exist, or Packit couldn't find the file.`);
   //if the file has no extension, the pop() will return the file name, so we throw an error
@@ -154,7 +154,7 @@ lexer = {
     code = fs.readFileSync(file).toString();
   }
   if (ext === "md" || ext === "mdx") {
-    let compile = (await Import("@mdx-js/mdx@2.3.0?bundle", {
+    let compile = (await Import("npm:v132/@mdx-js/mdx@2.3.0?bundle", {
       internalDir: true,
     })).compile;
     let rehypePlugins = [

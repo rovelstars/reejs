@@ -151,7 +151,7 @@ export default ${features.includes("tailwind")
 fs.writeFileSync(path.join(dir, "packit.config.js"), "");
 fs.writeFileSync(path.join(dir, ".gitignore"), [
   "node_modules",
-  "packit",
+  "dist",
   ".reejs",
   "packit.build.js"
 ].join("\n"), "utf-8");

@@ -157,7 +157,7 @@ Although you can consume the `isDevMode` argument in your function, copiers are 
 ```js
 (service, isDevMode, glob)=>{
     // isDevMode will always be false as copiers are only ran during build mode
-    // glob is the package exported from `npm:glob@10.2.7`
+    // glob is the package exported from `npm:v132/glob@10.2.7` (corresponds to https://esm.sh/v132/glob@10.2.7). We strongly suggest to use this package if possible (same url) because it is already available.
     // you must return back an array of files and folders to copy to the `packit` directory
     let files = glob.sync("example/**/*");
     let folders = glob.sync("more_codes/**/*", { onlyDirectories: true });

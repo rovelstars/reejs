@@ -2,11 +2,12 @@
 import env, { dirname } from "./env.js";
 import { reejsDir as dir, runtime } from "./env.js";
 import NativeImport from "./nativeImport.js";
+import { Import } from "./URLImport.js";
 if (runtime == "browser") {
   throw new Error(
     "URLImportInstaller.js is not for edge/browsers. Install them via reejs cli and use them.");
 }
-let reejsDir = dir; // make reejsDir mutable
+let _reejsDir = dir; // make reejsDir mutable
 let fs = await NativeImport("node:fs");
 let path = await NativeImport("node:path");
 let https = await NativeImport("node:https");
@@ -19,10 +20,10 @@ import { save } from "./debug.js";
 
 let processCwd = globalThis?.process?.cwd?.() || Deno.cwd();
 
-if (!fs.existsSync(path.join(reejsDir, "cache")) &&
+if (!fs.existsSync(path.join(_reejsDir, "cache")) &&
   fs.existsSync(path.join(processCwd, "reecfg.json"))) {
-  fs.mkdirSync(path.join(reejsDir, "cache"), { recursive: true });
-  fs.writeFileSync(path.join(reejsDir, "cache", "package.json"),
+  fs.mkdirSync(path.join(_reejsDir, "cache"), { recursive: true });
+  fs.writeFileSync(path.join(_reejsDir, "cache", "package.json"),
     JSON.stringify({ type: "module" }));
 }
 function fetchUrl(url) {
@@ -41,19 +42,19 @@ function fetchUrl(url) {
     });
   });
 }
-if (!fs.existsSync(path.join(reejsDir, "failsafe"))) {
-  fs.mkdirSync(path.join(reejsDir, "failsafe"), { recursive: true });
+if (!fs.existsSync(path.join(_reejsDir, "failsafe"))) {
+  fs.mkdirSync(path.join(_reejsDir, "failsafe"), { recursive: true });
 }
-if (!fs.existsSync(path.join(reejsDir, "failsafe", "package.json")))
-  fs.writeFileSync(path.join(reejsDir, "failsafe", "package.json"),
+if (!fs.existsSync(path.join(_reejsDir, "failsafe", "package.json")))
+  fs.writeFileSync(path.join(_reejsDir, "failsafe", "package.json"),
     JSON.stringify({ type: "module" }));
 //check if fetch is available or not. if not, use nativeimport https module to download the file, save it at reejsDir/failsafe/fetch.js and import it.
 if (!globalThis.fetch) {
-  if (!fs.existsSync(path.join(reejsDir, "failsafe", "fetch.js"))) {
+  if (!fs.existsSync(path.join(_reejsDir, "failsafe", "fetch.js"))) {
     let fetchFileCode = await fetchUrl(`${(process.env.ESM_SERVER || "https://esm.sh")}/v128/node-fetch@3.3.1/node/node-fetch.bundle.mjs`);
-    fs.writeFileSync(path.join(reejsDir, "failsafe", "fetch.js"), fetchFileCode);
+    fs.writeFileSync(path.join(_reejsDir, "failsafe", "fetch.js"), fetchFileCode);
   }
-  globalThis.fetch = (await import("file://" + path.join(reejsDir, "failsafe", "fetch.js"))).default;
+  globalThis.fetch = (await import("file://" + path.join(_reejsDir, "failsafe", "fetch.js"))).default;
 }
 
 // user agent
@@ -87,7 +88,7 @@ if (globalThis.process?.env?.REEJS_UA || globalThis.Deno?.env?.get("REEJS_UA")) 
 
 globalThis.__CACHE_SHASUM = {};
 
-let URLToFile = function (url, noFolderPath = false) {
+let URLToFile = function (url, noFolderPath = false, reejsDir) {
   if (url.startsWith("node:"))
     return url;
   if (url.startsWith("npm:"))
@@ -99,10 +100,15 @@ let URLToFile = function (url, noFolderPath = false) {
   }
   if (!url.startsWith("https://") && !url.startsWith("http://") && !url.startsWith("npm:") && !url.startsWith("./") && !url.startsWith("../"))
     return url; // must be ?external module from esm.sh
+  //support for stackblitz web containers
+  if (process.versions.webcontainer && !url.includes("target=node")) {
+    //webcontainers emulate nodejs on browser, however u cannot modify the user agent. so we use ?target=node to let esm.sh know that we are using nodejs.
+    url = url + (url.includes("?") ? "&" : "?") + "target=node";
+  }
   __CACHE_SHASUM[url] = crypto.createHash("sha256").update(url + UA).digest("hex").slice(0, 6) + (isJson ? ".json" : ".js");
 
   let fileString = noFolderPath ? "./" + crypto.createHash("sha256").update(url + UA).digest("hex").slice(0, 6) + fileExt
-    : path.join(reejsDir, "cache", crypto.createHash("sha256").update(url + UA).digest("hex").slice(0, 6) + fileExt);
+    : path.join(reejsDir == true ? path.join(processCwd, ".reejs") : _reejsDir, "cache", crypto.createHash("sha256").update(url + UA).digest("hex").slice(0, 6) + fileExt);
   return fileString;
 };
 
@@ -155,12 +161,12 @@ globalThis.NOTIFIED_UPDATE_URL = [];
 globalThis.MODULES_SENT_TO_DOWNLOAD = [];
 let lexer, parser;
 
-if (!fs.existsSync(path.join(reejsDir, "failsafe", "spinnies.js"))) {
+if (!fs.existsSync(path.join(_reejsDir, "failsafe", "spinnies.js"))) {
   let spinniesCode = await fetchUrl(`${(process.env.ESM_SERVER || "https://esm.sh")}/v128/spinnies@0.5.1/node/spinnies.bundle.mjs`);
-  fs.writeFileSync(path.join(reejsDir, "failsafe", "spinnies.js"), spinniesCode);
+  fs.writeFileSync(path.join(_reejsDir, "failsafe", "spinnies.js"), spinniesCode);
 }
 
-const spinners = new (DynamicImport(await import("file://" + path.join(reejsDir, "failsafe", "spinnies.js"))));
+const spinners = new (DynamicImport(await import("file://" + path.join(_reejsDir, "failsafe", "spinnies.js"))));
 
 let dl =
   async function (url, cli = false, remove = false, forBrowser = false, ua = UA, isChild = false) {
@@ -175,6 +181,8 @@ let dl =
     let start = Date.now();
     let wasmFiles = [];
     if (ua && ua != "Set user agent to download the package") UA = ua;
+    //do not mutate the original reejsDir, as it might effect other modules.
+    let reejsDir = _reejsDir;
     if (cli)
       reejsDir = path.join(processCwd, ".reejs");
 
@@ -196,13 +204,18 @@ let dl =
     if (url.startsWith("/")) {
       throw new Error("Absolute paths are not supported.");
     }
-    if (!remove && fs.existsSync(URLToFile(url))) {
-      return URLToFile(url);
+    //support for stackblitz web containers
+    if (process.versions.webcontainer) {
+      //webcontainers emulate nodejs on browser, however u cannot modify the user agent. so we use ?target=node to let esm.sh know that we are using nodejs.
+      url = url + (url.includes("?") ? "&" : "?") + "target=node";
+    }
+    if (!remove && fs.existsSync(URLToFile(url, null, cli))) {
+      return URLToFile(url, null, cli);
     }
     if ((isChild && process.env.DEBUG) || (!isChild))
       spinners.add(originalUrl, { text: styleit(`${isChild ? "├─  " : ""}🔍 %c${url}`, "", "color: blue") });
     let res = await followRedirect(url, forBrowser);//returns url
-    if (fs.existsSync(URLToFile(res))) {
+    if (fs.existsSync(URLToFile(res, null, cli))) {
       if ((res != url) && !NOTIFIED_UPDATE_URL.includes(url)) {
         spinners.succeed(originalUrl, {
           text: styleit(`${isChild ? "├─  " : ""}🪄 %c Please use specific version for %c${url} %cto access %c${res} %cfaster without pinging for latest version`, "",
@@ -210,7 +223,7 @@ let dl =
         });
         NOTIFIED_UPDATE_URL.push(url);
       }
-      return URLToFile(res);
+      return URLToFile(res, null, cli);
     }
     if (!lexer) {
       if (env == "bun") {
@@ -265,10 +278,10 @@ let dl =
       //return URLToFile(finalURL);
       //wait until the module is downloaded and removed from the array, then return the file.
       await waitUntilArrayDoesntHaveValue(finalURL);
-      return URLToFile(finalURL);
+      return URLToFile(finalURL, null, cli);
     }
     if (!remove && fs.existsSync(URLToFile(finalURL))) {
-      return URLToFile(finalURL);
+      return URLToFile(finalURL, null, cli);
     }
     CURRENT_DOWNLOADING.push(finalURL);
     MODULES_SENT_TO_DOWNLOAD.push(finalURL);
@@ -290,11 +303,12 @@ let dl =
     }
     let oldCode = code;
     if ((finalURL.endsWith(".ts") || contentType.includes("typescript")) && !UA.startsWith("Deno")) {
-      spinners.update(originalUrl, {
-        text: styleit(`${isChild ? "├─  " : ""}🔮 %c${finalURL}`, "", "color: blue")
-      });
+      if ((isChild && process.env.DEBUG) || (!isChild))
+        spinners.update(originalUrl, {
+          text: styleit(`${isChild ? "├─  " : ""}🔮 %c${finalURL}`, "", "color: blue")
+        });
       if (!parser) {
-        parser = await Import("sucrase@3.32.0?bundle", { internalDir: true });
+        parser = await Import("npm:v132/sucrase@3.32.0?bundle", { internalDir: true });
       }
       code = parser
         .transform(code, {
@@ -306,17 +320,18 @@ let dl =
     }
 
     if (types) {
-      if (!fs.existsSync(URLToFile(types))) {
-        spinners.update(originalUrl, {
-          text: styleit(`${isChild ? "├─  " : ""}🤖 %c${finalURL}`, "", "color: blue")
-        });
+      if (!fs.existsSync(URLToFile(types, null, cli))) {
+        if ((isChild && process.env.DEBUG) || (!isChild))
+          spinners.update(originalUrl, {
+            text: styleit(`${isChild ? "├─  " : ""}🤖 %c${finalURL}`, "", "color: blue")
+          });
         let typecode = await (await fetch(types, {
           headers: {
             "User-Agent": forBrowser ? `Mozilla/5.0 (reejs/${pkgJson.version})` : UA,
           }
         })).text();
         //save the types to a file
-        fs.writeFileSync(URLToFile(types).replace(".js", ".d.ts"), typecode);
+        fs.writeFileSync(URLToFile(types, null, cli).replace(".js", ".d.ts"), typecode);
         code = `/// <reference path="${URLToFile(types, true).replace(".js", ".d.ts")}"/>\n` + code;
       }
     }
@@ -337,9 +352,9 @@ let dl =
     // map packs , find the npm: and and run followRedirect on it and return the
     // url
     if ((isChild && process.env.DEBUG) || (!isChild))
-    spinners.update(originalUrl, {
-      text: styleit(`${isChild ? "├─  " : ""}👪️ %c${finalURL}`, "", "color: blue")
-    });
+      spinners.update(originalUrl, {
+        text: styleit(`${isChild ? "├─  " : ""}👪️ %c${finalURL}`, "", "color: blue")
+      });
     let files = (await Promise.all(packs.map(async (e) => {
       //if(e.endsWith(".json.js")) e = e.replace(".json.js",".json");
       //if(e.endsWith("node/package.json")) e = e.replace("node/package.json","package.json");
@@ -374,15 +389,16 @@ let dl =
     }));
 
     if (!remove) { // save file
-      let dir = path.dirname(URLToFile(finalURL));
+      let dir = path.dirname(URLToFile(finalURL, null, cli));
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
       if (code == "") {
         console.log("%c[WARN] %cSkipping %c" + finalURL + "%c because of %cEmpty Code", "color:red", "color:blue", "color:yellow", "color:blue", "color:red");
-        return URLToFile(finalURL); // this crashes but it wont save the file, so it can be fetched next time
+        return URLToFile(finalURL, null, cli); // this crashes but it wont save the file, so it can be fetched next time
       }
       if (code.includes(".wasm")) {
+        if ((isChild && process.env.DEBUG) || (!isChild))
         spinners.update(originalUrl, {
           text: styleit(`${isChild ? "├─  " : ""}🧩 %c${finalURL}`, "", "color: blue")
         });
@@ -397,32 +413,32 @@ let dl =
       }
       await Promise.all(wasmFiles.map(async (e) => {
         let f = await (await fetch(e)).arrayBuffer();
-        fs.writeFileSync(URLToFile(e), Buffer.from(f));;
+        fs.writeFileSync(URLToFile(e, null, cli), Buffer.from(f));;
       }));
       if ((isChild && process.env.DEBUG) || (!isChild))
-      spinners.update(originalUrl, {
-        text: styleit(`${isChild ? "├─  " : ""}📝 %c${finalURL}`, "", "color: blue")
-      });
-      fs.writeFileSync(URLToFile(finalURL), code)
+        spinners.update(originalUrl, {
+          text: styleit(`${isChild ? "├─  " : ""}📝 %c${finalURL}`, "", "color: blue")
+        });
+      fs.writeFileSync(URLToFile(finalURL, null, cli), code)
     }
     if ((isChild && process.env.DEBUG) || (!isChild))
-    spinners.update(originalUrl, {
-      text: styleit(`${isChild ? "├─  " : ""}💾 %c${finalURL}`, "", "color: blue")
-    });
-    if (remove && fs.existsSync(URLToFile(finalURL))) {
-      if ((isChild && process.env.DEBUG) || (!isChild))
       spinners.update(originalUrl, {
-        text: styleit(`${isChild ? "├─  " : ""}🗑️ %c${finalURL}`, "", "color: blue")
+        text: styleit(`${isChild ? "├─  " : ""}💾 %c${finalURL}`, "", "color: blue")
       });
-      fs.unlinkSync(URLToFile(finalURL));
+    if (remove && fs.existsSync(URLToFile(finalURL, null, cli))) {
+      if ((isChild && process.env.DEBUG) || (!isChild))
+        spinners.update(originalUrl, {
+          text: styleit(`${isChild ? "├─  " : ""}🗑️ %c${finalURL}`, "", "color: blue")
+        });
+      fs.unlinkSync(URLToFile(finalURL, null, cli));
     }
     CURRENT_DOWNLOADING = CURRENT_DOWNLOADING.filter((e) => e != finalURL);
     if ((isChild && process.env.DEBUG) || (!isChild))
-    spinners.update(originalUrl, {
-      text: styleit(`${isChild ? "├─  " : ""}%c${finalURL} %cin %c${((Date.now() - start) / 1000)}s`, "", "color: blue", "color: gray", "color: green")
-    });
+      spinners.update(originalUrl, {
+        text: styleit(`${isChild ? "├─  " : ""}%c${finalURL} %cin %c${((Date.now() - start) / 1000)}s`, "", "color: blue", "color: gray", "color: green")
+      });
     if (!isChild) spinners.succeed(originalUrl);
-    return URLToFile(finalURL);
+    return URLToFile(finalURL, null, cli);
   };
 
 export default dl;

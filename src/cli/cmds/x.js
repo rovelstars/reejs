@@ -31,8 +31,8 @@ export default async function (prog) {
       globalThis.URLImport = URLImport;
       globalThis.DynamicImport = DynamicImport;
       globalThis.__REEJS_DIR__ = reejsDir;
-      if(file.startsWith("http:/") && !file.startsWith("http://")) file = file.replace("http:/", "http://");
-      if(file.startsWith("https:/") && !file.startsWith("https://")) file = file.replace("https:/", "https://");
+      if (file.startsWith("http:/") && !file.startsWith("http://")) file = file.replace("http:/", "http://");
+      if (file.startsWith("https:/") && !file.startsWith("https://")) file = file.replace("https:/", "https://");
       if (file.startsWith("npm:") || file.startsWith("http://") || file.startsWith("https://")) {
         if (opts.args != "" && opts.a != "") {
           if (opts.args != "") opts.args = opts.args.split(",").map((x) => "--" + x);
@@ -45,8 +45,14 @@ export default async function (prog) {
           process.argv = ["node", file, ...opts.args, ...opts.a];
         }
         if (file.startsWith("npm:")) {
-          if (!globalThis.Deno) {//we need to polyfill because esm.sh sometimes import deno, like for esm.sh/server
+          if (!globalThis.Deno && !globalThis.Bun) {
+            let modulesLoadTimeout = setTimeout(() => {
+              //man talk about a hack
+              console.log("%c[DENO] Setting up Deno namespace shim", "color:yellow;");
+            }, 1000);
+            //we need to polyfill because esm.sh sometimes import deno, like for esm.sh/server
             globalThis.Deno = (await Import("npm:@deno/shim-deno@0.16.0?bundle", { internalDir: true })).Deno;
+            clearTimeout(modulesLoadTimeout);
           }
           file = file.replace("npm:", "https://esm.sh/");
           let pkgjson = await fetch(file + "/package.json");
@@ -56,8 +62,13 @@ export default async function (prog) {
             file = path.join(file, bin).replace("https:/", "https://");
           }
         }
-        if (!globalThis.Deno) {
+        if (!globalThis.Deno && !globalThis.Bun) {
+          let modulesLoadTimeout = setTimeout(() => {
+            //man talk about a hack
+            console.log("%c[DENO] Setting up Deno namespace shim", "color:yellow;");
+          }, 1000);
           globalThis.Deno = (await Import("npm:@deno/shim-deno@0.16.0", { internalDir: true })).Deno;
+          clearTimeout(modulesLoadTimeout);
         }
         let module = await URLImport(file);
         if (opts.e || opts.eval) {
@@ -65,15 +76,20 @@ export default async function (prog) {
         }
         return;
       } else {
-        if (!globalThis.Deno) {
+        if (!globalThis.Deno && !globalThis.Bun) {
+          let modulesLoadTimeout = setTimeout(() => {
+            //man talk about a hack
+            console.log("%c[DENO] Setting up Deno namespace shim", "color:yellow;");
+          }, 1000);
           globalThis.Deno = (await Import("npm:@deno/shim-deno@0.16.0", { internalDir: true })).Deno;
+          clearTimeout(modulesLoadTimeout);
         }
         try {
           let checkAbsolute = path.isAbsolute(file);
-          if(checkAbsolute) process.env.USED_BY_CLI_APP="true";
+          if (checkAbsolute) process.env.USED_BY_CLI_APP = "true";
           //await import(path.join(processCwd, await SpecialFileImport(path.join(processCwd, file), null, runtime)));
-          if(!checkAbsolute) file = path.join(processCwd, file);
-          await import(path.join(checkAbsolute?"":processCwd, await SpecialFileImport(file, null, runtime)));
+          if (!checkAbsolute) file = path.join(processCwd, file);
+          await import(path.join(checkAbsolute ? "" : processCwd, await SpecialFileImport(file, null, runtime)));
           if (opts.e || opts.eval) {
             eval(opts.e || opts.eval);
           }

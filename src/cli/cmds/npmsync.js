@@ -19,9 +19,9 @@ function getPackageInfo(name, url, cacheFile, forNodeModules) {
 }
 
 // import and re-export file from .reejs/cache/* to .reejs/deps/<package name>
-async function setupPackage(name, url, cacheFile, forNodeModules,fixVersion,blacklistNPM) {
+async function setupPackage(name, url, cacheFile, forNodeModules, fixVersion, blacklistNPM) {
   let info = getPackageInfo(name, url, cacheFile, forNodeModules);
-  if(blacklistNPM?.includes(info.name)) return;
+  if (blacklistNPM?.includes(info.name)) return;
   if (!fs.existsSync(info.at)) fs.mkdirSync(info.at, { recursive: true });
   if (!fs.existsSync(path.join(info.at, "package.json"))) fs.writeFileSync(path.join(info.at, "package.json"),
     JSON.stringify({
@@ -72,18 +72,22 @@ export let sync = async (smt, dir) => {
     if (!urldest.startsWith("https://") && !urldest.startsWith("http://")) return;
     let value = (await dl(urldest, true)).split("/").pop();
     let savedAt = await setupPackage(key, urldest, value, false, import_map.fixVersion, import_map.blacklistNPM);
+    await setupPackage(key, urldest, value, true, import_map.fixVersion, import_map.blacklistNPM);
     //add it to package.json
     if (savedAt && !deps[savedAt.name]) {
-      deps[savedAt.name] = "file:" + savedAt.at;
+      deps[savedAt.name] = "*";
+      //"file:" + savedAt.at;
     }
   }));
   // write to package.json
   pkgJson.dependencies = deps;
-  if(!pkgJson.packageManager) pkgJson.packageManager = "npm";
+  if (!pkgJson.packageManager) pkgJson.packageManager = "npm";
   fs.writeFileSync("package.json", JSON.stringify(pkgJson, null, 2));
-  let {detectPackageManager,installDependencies} = await Import("npm:v132/nypm@0.3.3?bundle");
+  let { detectPackageManager, installDependencies } = await Import("npm:v132/nypm@0.3.3?bundle", { internalDir: true });
   let packageManager = await detectPackageManager(processCwd);
+  let then = Date.now();
   await installDependencies({ cwd: dir, packageManager, silent: true });
+  console.log(`%c[SYNC] %c${packageManager.command} synced dependencies in ${Date.now() - then}ms`, "color: green", "color: blue");
 };
 
 export default function add(prog) {

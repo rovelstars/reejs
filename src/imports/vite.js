@@ -11,8 +11,8 @@ export function defineConfig(config) {
     index: -100,
     describe: "Starts vite writer for packit",
     run: async (helpers, service) => {
-      let {importmap,getPackage} = helpers;
-      if(!helpers.fs.existsSync(helpers.path.join(helpers.processCwd,"index.html"))){
+      let { importmap, getPackage } = helpers;
+      if (!helpers.fs.existsSync(helpers.path.join(helpers.processCwd, "index.html"))) {
         console.log("%c  ➜  %cNo index.html found. Please create one at the root directory to continue.", "color: green", "color: red");
         return;
       }
@@ -24,7 +24,7 @@ export function defineConfig(config) {
       for (const script of scripts) {
         const path = helpers.path.join(helpers.processCwd, script);
         const savedAt = await helpers.TranspileFile(path, service);
-        $(`script[src="${script}"]`).attr("src", "/__reejs"+savedAt.split(".reejs")[1]);
+        $(`script[src="${script}"]`).attr("src", "/__reejs" + savedAt.split(".reejs")[1]);
       }
       //convert importmap.browserImports from {"react":"https://cdn.skypack.dev/react"} to {"../cache/<hash>":"https://cdn.skypack.dev/react"}
       let convertedBrowserImports = {};
@@ -43,27 +43,27 @@ export function defineConfig(config) {
       helpers.fs.writeFileSync(helpers.path.join(helpers.cwd, ".reejs", "serve", "index.html"), $.html());
     },
   },
-     {
-    name: "vite-serve",
-    index: -99,
-    describe: "Starts vite server for packit",
-    run: async (helpers, service) => {
-      let { getPackage } = helpers;
-      return {
-        mainFile: `import {Hono} from "${await getPackage("hono")}";
+    {
+      name: "vite-serve",
+      index: -99,
+      describe: "Starts vite server for packit",
+      run: async (helpers, service) => {
+        let { getPackage } = helpers;
+        return {
+          mainFile: `import {Hono} from "${await getPackage("hono")}";
         import { serve } from "${await getPackage("@hono/node-server")}";
         const app = new Hono({ strict: false });
         import { serveStatic } from "${await getPackage("@hono/node-server/serve-static")}";
         import fs from "node:fs";
 `
+        }
       }
-    }
-  },{
+    }, {
     name: "static",
     index: -98,
     run: async (helpers, service) => {
       let { DATA, mainFile, glob } = helpers;
-      let { contentType } = await Import("mime-types@2.1.35");
+      let { contentType } = await Import("v132/mime-types@2.1.35", { internalDir: true });
       let reejsSavedFilesCache = await glob(".reejs/cache/**/*", { nodir: true });
       let reejsSavedFilesServe = await glob(".reejs/serve/**/*", { nodir: true });
       let publicSavedFiles = await glob("public/**/*", { nodir: true });
@@ -92,22 +92,22 @@ export function defineConfig(config) {
         ? "app.get('/__reejs/**',serveStatic({root:'./__reejs/',rewriteRequestPath:(p)=>p.replace('/__reejs','')}));app.get('/**',serveStatic({root:'./public',rewriteRequestPath:(p)=>p.replace('/public','')}));"
         : (((service == "deno-deploy") || (service == "node") || (service == "workers")) ? reejsSavedFilesString : "");
       mainFile += "\napp.get('/__reejs/*',(c)=>{return c.notFound()});";
-      mainFile+="app.get('/',(c)=>{c.header('Content-type','text/html');return c.body(fs.readFileSync('./.reejs/serve/index.html'))});"
+      mainFile += "app.get('/',(c)=>{c.header('Content-type','text/html');return c.body(fs.readFileSync('./.reejs/serve/index.html'))});"
       return { mainFile, DATA };
     }
-  },{
+  }, {
     name: "end",
     index: 0,
     describe: "burh",
     run: async (helpers, service) => {
       return {
-        mainFile: helpers.mainFile+`serve({
+        mainFile: helpers.mainFile + `serve({
           fetch: app.fetch,
           port: process.env.PORT || 3000,
         });`
       }
-  }
-});
+    }
+  });
   if (process.argv.includes("-d") || process.argv.includes("--dev")) {
     console.clear();
     console.log("");

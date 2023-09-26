@@ -21,7 +21,7 @@ if (!processCwd.startsWith("/data/data/com.termux/files/home")) {
 
 export let doctorReport = async function () {
   console.log("%c[reejs] %cDoctor", "color: blue", "color: yellow");
-  console.log("%c[RUNTIME] %c" + runtime, "color: #7237C1", "color: green");
+  console.log("%c[RUNTIME] %c" + runtime+(process.versions.webcontainer?` | webcontainer (${process.versions.webcontainer})`:""), "color: #7237C1", "color: green");
   console.log("%c[VERSION] %c" + pkg.version, "color: #7237C1", "color: green");
   if (globalThis?.process?.versions?.node) console.log("%c[NODE_VER] %c" + globalThis?.process?.versions?.node, "color: #7237C1", "color: green");
   if (globalThis?.Deno?.version?.deno) console.log("%c[DENO_VER] %c" + globalThis?.Deno?.version?.deno, "color: #7237C1", "color: green");

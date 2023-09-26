@@ -27,5 +27,4 @@ fs.writeFileSync(path.dirname(new URL(import.meta.url).pathname) + "/../src/util
 fs.writeFileSync(path.dirname(new URL(import.meta.url).pathname) + "/../src/react/version.js", f);
 fs.writeFileSync(path.dirname(new URL(import.meta.url).pathname) + "/../src/server/version.js", f);
 
-console.log("Version files updated");
-console.log(version);
+console.log("Version files updated!");

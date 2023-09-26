@@ -9,7 +9,7 @@ export let install =
     // we would show time taken to install the package
     let start = Date.now();
     let isBrowser = opts?.browser || opts?.b ? "browserImports" : "imports";
-    if (!fs.existsSync(path.join(process.cwd(), "reecfg.json"))) {
+    if (!fs.existsSync(path.join(process.cwd(), "reecfg.json")) && opts["force"] !== true && opts["f"] !== true) {
       console.log("%c[REEJS] %cThis is not a reejs project!", "color: red",
         "color: yellow");
       return;
