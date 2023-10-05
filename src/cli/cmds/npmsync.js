@@ -38,11 +38,13 @@ async function setupPackage(name, url, cacheFile, forNodeModules, fixVersion, bl
     fs.writeFileSync(path.join(info.at, "package.json"), JSON.stringify(pkgJson, null, 2));
   }
   if (!fs.existsSync(path.join(info.at, info.file))) {
+    if (!fs.existsSync(path.join(".reejs", "cache"))) fs.mkdirSync(path.join(".reejs", "cache"), { recursive: true });
     let code;
     try {
       code = fs.readFileSync(
         path.join(".reejs", "cache", cacheFile), "utf-8");
     } catch (e) {
+      console.log(e);
       console.log("%c[SYNC] %cError: %cDependency %c`" + info.name + "`%c not found in cache.\nPlease run %c`reejs add`%c to first download the dependencies", "color: red", "color: yellow", "color: red", "color: blue", "color: red", "color: blue", "color: red");
       process.exit(0);
     }

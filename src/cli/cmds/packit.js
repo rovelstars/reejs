@@ -283,7 +283,18 @@ export let packit = async (service, isDevMode, runOneTime) => {
       let helpers = {
         getPackage, mainFile: "", savedFiles, TranspileFile, terser, fs, path, processCwd, importmap, cachemap, isDevMode, DATA, glob, config
       };
-      let data = await Writers[writer].run(helpers, service);
+      let data;
+      try {
+        data = await Writers[writer].run(helpers, service);
+      } catch (e) {
+        console.log(`%c[ERROR] %cWriter %c${Writers[writer].name}%c failed to execute.`, "color: #db2777", "color: red", "color: gray", "color: red");
+        console.error(e);
+        //TODO: cancel current packit running and continue with the old server code
+        data = {
+          chunk: "",
+          DATA
+        };
+      }
       if ((globalThis?.process?.env?.DEBUG || globalThis?.Deno?.env?.get("DEBUG")) && config.logLevel != "silent")
         console.log("%c[PACKIT] %cWriter %c" + Writers[writer].name + "%c finished in %c" + (Date.now() - writer_then) + "ms", "color: #db2777", "color: #ffffff", "color: #10b981", "color: #ffffff", "color: #10b981");
       //if writer returns code & data, save it, otherwise keep the old mainFile code and data

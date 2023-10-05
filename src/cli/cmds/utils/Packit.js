@@ -366,7 +366,7 @@ export default async function reender(page, browserFn) {
         let savedAt = await helpers.TranspileFile(api, service);
         let sha_name = savedAt.split("serve/")[1].split(
           ".")[0];
-        mainFile += `\nimport file_${sha_name} from "./.reejs/${savedAt.split(".reejs/")[1]}";server.app.get("/api${route}",file_${sha_name});`;
+        mainFile += `\nimport * as file_${sha_name} from "./.reejs/${savedAt.split(".reejs/")[1]}";server.app.on((file_${sha_name}.method || "get"),"/api/${route}",file_${sha_name}.default);`;
       }));
       return { chunk: mainFile, DATA };
     }
