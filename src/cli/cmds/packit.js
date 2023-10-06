@@ -253,7 +253,7 @@ export let packit = async (service, isDevMode, runOneTime) => {
 
   // writers must not run in parallel, as they are writing to the same file. mainFile is the code for index.js
   let mainFile = [];
-  async function TranspileFile(fileURL, service) {
+  async function TranspileFile(fileURL, service, code) {
     if (!service) throw new Error("parameter `service` is required");
     if (!fileURL) return;
     let ext = path.extname(fileURL).slice(1);
@@ -268,10 +268,10 @@ export let packit = async (service, isDevMode, runOneTime) => {
     let savedto = fileURL;
     for (const tt of tts) {
       //plugins are wrapped in a function that takes the code and transpiles, and saves the code to savedto and returns the path to the file
-      savedto = await tt.run(savedto, service);
+      savedto = await tt.run(savedto, service, code);
     }
     //we ask packit to copy the file to its own data.
-    savedto = await defaultTranspiler(savedto, service);
+    savedto = await defaultTranspiler(savedto, service, code);
     return savedto;
   };
   let writer_then = Date.now();

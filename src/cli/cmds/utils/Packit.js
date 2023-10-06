@@ -24,9 +24,9 @@ export let readers = [
     },
   }];
 
-export let defaultTranspiler = async (fileURL, service) => {
+export let defaultTranspiler = async (fileURL, service, code) => {
   if (!service) throw new Error("parameter `service` is required");
-  return await SpecialFileImport(fileURL, null, service);
+  return await SpecialFileImport(fileURL, null, service, code);
 }
 
 export let transpilers = [
@@ -192,36 +192,37 @@ export let writers = [
         });
         compiledRoute = compiledRoute.join("/");
         //console.log(`[reejs] ${route} => ${compiledRoute}`);
+        let code = fs.readFileSync(page, "utf-8");
+        //use performant way to read the first line of a file
+        let firstLine = code.split("\n")[0];
+        let useClientDirective = firstLine.includes("'use client'") || firstLine.includes('"use client"');
         let savedAt = await TranspileFile(page, service);
         let sha_name = savedAt.split("serve/")[1].split(
           ".")[0];
-        return { route: compiledRoute, page: page.trim(), savedAt, sha_name };
+        return { route: compiledRoute, page: page.trim(), savedAt, sha_name, useClientDirective };
       }));
       pages = pages.filter(
         // remove undefined
         (page) => page !== undefined
       ).map((p) => {
         return p;
-      })
-        .sort((a, b) => {
-          // if a url ends with "*", it must be after the url that does not end with "*"
-          // if both urls do not end with "*", the longer url must be after the shorter url
-          //the longer route must be before the shorter route if both end with "*"
-          // if both urls end with "*", the longer url must be before the shorter url
-          if (a.route.endsWith("*") && !b.route.endsWith("*")) return 1;
-          if (!a.route.endsWith("*") && b.route.endsWith("*")) return -1;
+      }).sort((a, b) => {
+        // if a url ends with "*", it must be after the url that does not end with "*"
+        // if both urls do not end with "*", the longer url must be after the shorter url
+        //the longer route must be before the shorter route if both end with "*"
+        // if both urls end with "*", the longer url must be before the shorter url
+        if (a.route.endsWith("*") && !b.route.endsWith("*")) return 1;
+        if (!a.route.endsWith("*") && b.route.endsWith("*")) return -1;
 
+        if (a.route.length > b.route.length) return -1;
+        if (a.route.length < b.route.length) return 1;
+
+        if (a.route.endsWith("*") && b.route.endsWith("*")) {
           if (a.route.length > b.route.length) return -1;
           if (a.route.length < b.route.length) return 1;
-
-          if (a.route.endsWith("*") && b.route.endsWith("*")) {
-            if (a.route.length > b.route.length) return -1;
-            if (a.route.length < b.route.length) return 1;
-          }
-          return 0;
-        });
-
-
+        }
+        return 0;
+      });
       //generate routes file
       let routeData =
         `export default [${pages.map(({ route, page, savedAt }) => {
@@ -232,17 +233,15 @@ export let writers = [
       //save file
       fs.writeFileSync(path.join(".reejs", "serve", "__routes.js"), routeData);
 
-      //gs = generateScript; f = variable name for file like savedAt.split(".reejs/serve/")[1]
-      mainFile += `\nconst gs=(f)=>'<reejs page="'+f+'"></reejs><script type="importmap">{"imports":${JSON.stringify(
+      //gs = generateScript; f = variable name for file like savedAt.split(".reejs/serve/")[1], c = use client directive
+      mainFile += `\nconst gs=(f,c)=>'<reejs page="'+f+'"></reejs><script type="importmap">{"imports":${JSON.stringify(
         importmap
           .browserImports)}}</script><script type="module">${isDevMode && !config.disablePreactCompat
             ? 'await import("https://esm.sh/preact@10.16.0/debug");'
             : ''}${twindFn?.length > 0 ?
               `(await import("https://esm.sh/@twind/core")).observe((await import("/__reejs/serve/1d9e2d.js")).default);` : ""
-        }let i=(await import("/__reejs/serve/__reender.js")).default;await i("./serve/'+f+'",${browserFn.length > 0 ? `"${browserFn[0][1].replace('.reejs', '/__reejs')}"`
-          : 'null'});</script>';`;
+        }let i=(await import("/__reejs/serve/__reender.js")).default;await i("./serve/'+f+'",'+c+');</script>';`;
       mainFile += '\nconst lr_=(s,t)=>`<link rel="preload" href="${s}" as="script" crossorigin>`';
-
       mainFile += `\nconst pre_=(n,f)=>n!="DoNotHydrate"?\`
       ${(isDevMode && !config.disablePreactCompat) ? '${lr_("https://esm.sh/preact@10.16.0/debug")}' : ''}
       ${twindFn?.length > 0 ? '${lr_("https://esm.sh/@twind/core")}' : ''}
@@ -293,10 +292,7 @@ export default function Body(props) {
 
       let reenderCode = `
       // this file is imported on browsers.
-export default async function reender(page, browserFn) {
-  if (browserFn) {
-    (await import(browserFn)).default();
-  }
+export default async function reender(page, useClientDirective) {
   let $ = (selector) => document.querySelector(selector);
   let $$ = (selector) => document.querySelectorAll(selector);
   let React;
@@ -304,10 +300,8 @@ export default async function reender(page, browserFn) {
   if (p.name == "DoNotHydrate") return;
   if (!React)
     React = (await import("react"));
-  ${config.disablePreactCompat ? 'let { hydrateRoot } = await import("react-dom/client");' : ""}
-  let script = document.querySelector("script[type='importmap']");
-  let importmap = JSON.parse(script.innerHTML);
-  ${(importmap.imports["react-router-dom"] && (config.disableReactRouter ? "false" : "true")) ? `
+  ${config.disablePreactCompat ? 'let { hydrateRoot, createRoot } = await import("react-dom/client");' : ""}
+  ${(importmap.imports["react-router-dom"] && (config.disableReactRouter)) ? `
     let { createBrowserRouter, RouterProvider } = await import("react-router-dom");
     let routes = (await import("/__reejs/serve/__routes.js")).default; // this is generated by packit
     let Router = createBrowserRouter(routes);
@@ -331,17 +325,23 @@ export default async function reender(page, browserFn) {
 
   }
   `: `
-    ${config.disablePreactCompat ? 'hydrateRoot($("#root"), React.createElement(p));' :
+    ${config.disablePreactCompat ? `
+    if (useClientDirective) {
+      (createRoot($("#root")).render(React.createElement(p)));
+    }else{
+    hydrateRoot($("#root"), React.createElement(p));
+    }
+    ` :
           'React.hydrate(React.createElement(p), $("#root"));'}
 }`}
 `;
 
       fs.writeFileSync(path.join(".reejs", "serve", "__reender.js"), reenderCode);
 
-      pages = pages.map(({ route, page, savedAt, sha_name, is404 }) => {
+      pages = pages.map(({ route, page, savedAt, sha_name, is404, useClientDirective }) => {
         if (route.endsWith("/")) route = route.slice(0, -1);
-        mainFile += `\nimport * as file_${sha_name} from "./.reejs/${savedAt.split(".reejs/")[1]}";server.app.get("/${route == "" ? "" : route}",(c)=>{ ${is404 ? `c.status(404);` : ""}let h = "<!DOCTYPE html>"+render(React.createElement(${rrPath ? "RR_" : "App"},{${rrPath ? "App, " : ""}metadata: file_${savedAt.split("serve/")[1].split(".")[0]}.metadata || ((file_${savedAt.split("serve/")[1].split(".")[0]}?.generateMetadata)?file_${savedAt.split("serve/")[1].split(".")[0]}?.generateMetadata(c):{})},React.createElement(file_${savedAt.split("serve/")[1].split(".")[0]}?.useClient?React.Fragment:file_${savedAt.split("serve/")[1].split(".")[0]}.default,{c})))
-          .replace('<script id="__reejs"></script>',gs("${savedAt.split("serve/")[1]}")).replace('</head>',pre_(file_${sha_name}.default.name,"${savedAt.split("serve/")[1]}"));return ${twindFn?.length > 0 ? "c.html(inline(h,tw).replaceAll('{background-clip:text}','{-webkit-background-clip:text;background-clip:text}'))"
+        mainFile += `\nimport * as file_${sha_name} from "./.reejs/${savedAt.split(".reejs/")[1]}";server.app.get("/${route == "" ? "" : route}",(c)=>{ ${is404 ? `c.status(404);` : ""}let h = "<!DOCTYPE html>"+render(React.createElement(${rrPath ? "RR_" : "App"},{${rrPath ? "App, " : ""}metadata: file_${savedAt.split("serve/")[1].split(".")[0]}.metadata || ((file_${savedAt.split("serve/")[1].split(".")[0]}?.generateMetadata)?file_${savedAt.split("serve/")[1].split(".")[0]}?.generateMetadata(c):{})},React.createElement(${useClientDirective}?React.Fragment:file_${savedAt.split("serve/")[1].split(".")[0]}.default,{${useClientDirective?"":"c"}})))
+          .replace('<script id="__reejs"></script>',gs("${savedAt.split("serve/")[1]}",${useClientDirective})).replace('</head>',pre_(file_${sha_name}.default.name,"${savedAt.split("serve/")[1]}"));return ${twindFn?.length > 0 ? "c.html(inline(h,tw).replaceAll('{background-clip:text}','{-webkit-background-clip:text;background-clip:text}'))"
             //TODO: wait for twind to add vendor prefix for `background-clip:text`, then remove the replaceAll.
             : "c.html(h)"}});`;
       });
