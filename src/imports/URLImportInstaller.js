@@ -175,7 +175,8 @@ let dl =
     //   ua = globalThis?.process?.env?.USE_UA_REEJS;
     // }
     if (globalThis?.process?.env?.USED_BY_CLI_APP) cli = false; //installs deps to reejs dir instead of current dir.
-    if (process.env.ESM_SERVER && url.startsWith("https://esm.sh")) {
+    if (url == "https://esm.sh") url = "https://esm.sh/"; //fix for esm.sh
+    if (process.env.ESM_SERVER && url.startsWith("https://esm.sh/")) {
       url = url.replace("https://esm.sh", process.env.ESM_SERVER);
     }
     let start = Date.now();
@@ -399,9 +400,9 @@ let dl =
       }
       if (code.includes(".wasm")) {
         if ((isChild && process.env.DEBUG) || (!isChild))
-        spinners.update(originalUrl, {
-          text: styleit(`${isChild ? "├─  " : ""}🧩 %c${finalURL}`, "", "color: blue")
-        });
+          spinners.update(originalUrl, {
+            text: styleit(`${isChild ? "├─  " : ""}🧩 %c${finalURL}`, "", "color: blue")
+          });
         code = code.replaceAll(/(__dirname\s*(,|\+)\s*)?(("|'|`)[^("|'|`)]+\.wasm("|'|`))/g, (e) => {
           // e is the match, like __dirname+"./file.wasm"
           let ematch = JSON.stringify(e).replace("__dirname", "").replaceAll(" ", "").replaceAll("+", "").replaceAll(",", "").replaceAll('"', "").replaceAll("'", "").replaceAll("`", "");
@@ -437,7 +438,7 @@ let dl =
       spinners.update(originalUrl, {
         text: styleit(`${isChild ? "├─  " : ""}%c${finalURL} %cin %c${((Date.now() - start) / 1000)}s`, "", "color: blue", "color: gray", "color: green")
       });
-    if (!isChild) spinners.succeed(originalUrl);
+    if ((!isChild) || (isChild && process.env.DEBUG)) spinners.succeed(originalUrl);
     return URLToFile(finalURL, null, cli);
   };
 

@@ -388,7 +388,7 @@ jsxFragmentPragma : "Fragment",*/
 
   });
   if ((result.includes("React.createElement") || result.includes("React.Component")) &&
-    ((!result.includes("import React from")) && (!result.includes("import * as React from")) && (!result.includes("import React, {")) && (!result.includes("import React,{"))
+    ((!result.includes("import React from")) && (!result.includes("import * as React from")) && (!result.includes("import*as React from")) && (!result.includes("import React, {")) && (!result.includes("import React,{"))
     )) {
     result =
       `import React from "${(cachemap[react]) ? `../cache/${cachemap[react]}` : await dl(react, true)}";\n` +
