@@ -15,7 +15,7 @@
     "docs:dev": "vitepress dev website",
     "docs:build": "vitepress build website",
     "docs:preview": "vitepress preview website",
-    "format:fix": "prettier --write --ignore-path .gitignore ."
+    "format": "prettier --write --ignore-path .gitignore ."
   },
   "dependencies": {
     "@reejs/imports": "latest",
