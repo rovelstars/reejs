@@ -6,12 +6,12 @@ export default function add(prog) {
     .command("remove [name]")
     .alias(["uninstall", "rm"])
     .describe("Removes a package to your project")
-    .action(async (name) => {
+    .action(async name => {
       if (!fs.existsSync(path.join(process.cwd(), "reecfg.json"))) {
         console.log(
           "%c[REEJS] %cThis is not a reejs project!",
           "color: red",
-          "color: yellow"
+          "color: yellow",
         );
         return;
       }
@@ -19,7 +19,7 @@ export default function add(prog) {
         console.log(
           "%c[DOWNLOAD] %cPlease specify a package to remove",
           "color:orange",
-          "color:yellow"
+          "color:yellow",
         );
         return;
       }
@@ -32,7 +32,7 @@ export default function add(prog) {
       console.log(
         "%c[DOWNLOAD] %cRemoved " + name,
         "color:green",
-        "color:red;font-weight:bold;"
+        "color:red;font-weight:bold;",
       );
     });
 }

@@ -5,16 +5,16 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-      "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-      "@reejs/utils": "latest"
+    "@reejs/utils": "latest"
   },
   "keywords": [],
   "author": "@rovelstars",
   "license": "MIT",
   "repository": {
-      "type": "git",
-      "url": "https://github.com/rovelstars/reejs.git"
+    "type": "git",
+    "url": "https://github.com/rovelstars/reejs.git"
   }
 }

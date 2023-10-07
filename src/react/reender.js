@@ -5,8 +5,8 @@ export default async function reender(page, browserFn) {
   if (browserFn) {
     (await import(browserFn)).default();
   }
-  let $ = (selector) => document.querySelector(selector);
-  let $$ = (selector) => document.querySelectorAll(selector);
+  let $ = selector => document.querySelector(selector);
+  let $$ = selector => document.querySelectorAll(selector);
   let React;
   globalThis.ISLAND_COUNT = 0;
   // available attributes: client:load, client:idle, client:visible,
@@ -16,8 +16,7 @@ export default async function reender(page, browserFn) {
   let load = $$("[island='client:load']");
   ISLAND_COUNT += load.length;
   for (let i = 0; i < load.length; i++) {
-    if (!React)
-      React = (await import("react")).default;
+    if (!React) React = (await import("react")).default;
     let e = load[i];
     let file = e.getAttribute("__filename");
     let fn = e.getAttribute("__compname") || "default";
@@ -34,8 +33,7 @@ export default async function reender(page, browserFn) {
     let fn = e.getAttribute("__compname") || "default";
     window.requestIdleCallback(async () => {
       setTimeout(async () => {
-        if (!React)
-          React = (await import("react"));
+        if (!React) React = await import("react");
         let p = (await import("/__reejs/serve/" + file))[fn];
         React.render(React.createElement(p), e);
       }, 2000);
@@ -45,11 +43,10 @@ export default async function reender(page, browserFn) {
   load = $$("[island='client:visible']");
   ISLAND_COUNT += load.length;
   if (load.length > 0) {
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(async (entry) => {
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(async entry => {
         if (entry.isIntersecting) {
-          if (!React)
-            React = (await import("react"));
+          if (!React) React = await import("react");
           let e = entry.target;
           let file = e.getAttribute("__filename");
           let fn = e.getAttribute("__compname") || "default";
@@ -70,13 +67,11 @@ export default async function reender(page, browserFn) {
     let file = e.getAttribute("__filename");
     let fn = e.getAttribute("__compname") || "default";
     let q = e.getAttribute("mediaquery");
-    if (!q)
-      console.warn("Mediaquery attribute is missing for", e);
+    if (!q) console.warn("Mediaquery attribute is missing for", e);
     const mql = window.matchMedia(q);
-    const listener = async (ev) => {
+    const listener = async ev => {
       if (ev.matches) {
-        if (!React)
-          React = (await import("react"));
+        if (!React) React = await import("react");
         let p = (await import("/__reejs/serve/" + file))[fn];
         React.render(React.createElement(p), e);
       } else {
@@ -92,14 +87,17 @@ export default async function reender(page, browserFn) {
     let e = load[i];
     let file = e.getAttribute("__filename");
     let fn = e.getAttribute("__compname") || "default";
-    e.addEventListener("click", async () => {
-      if (!React)
-        React = (await import("react"));
-      let p = (await import("/__reejs/serve/" + file))[fn];
-      React.render(React.createElement(p), e);
-      // click the child element to register the click from user now
-      e.children[0].click();
-    }, { once: true });
+    e.addEventListener(
+      "click",
+      async () => {
+        if (!React) React = await import("react");
+        let p = (await import("/__reejs/serve/" + file))[fn];
+        React.render(React.createElement(p), e);
+        // click the child element to register the click from user now
+        e.children[0].click();
+      },
+      { once: true },
+    );
   }
 
   load = $$("[island='user:hover']");
@@ -108,24 +106,28 @@ export default async function reender(page, browserFn) {
     let e = load[i];
     let file = e.getAttribute("__filename");
     let fn = e.getAttribute("__compname") || "default";
-    e.addEventListener("mouseover", async () => {
-      if (!React)
-        React = (await import("react"));
-      let p = (await import("/__reejs/serve/" + file))[fn];
-      React.render(React.createElement(p), e);
-    }, { once: true });
+    e.addEventListener(
+      "mouseover",
+      async () => {
+        if (!React) React = await import("react");
+        let p = (await import("/__reejs/serve/" + file))[fn];
+        React.render(React.createElement(p), e);
+      },
+      { once: true },
+    );
   }
   if (!ISLAND_COUNT) {
     let p = (await import("/__reejs/serve/" + page.split("/")[2])).default;
     if (p.name == "DoNotHydrate") return;
-    if (!React)
-      React = (await import("react"));
+    if (!React) React = await import("react");
     //get the importmap script
     let script = document.querySelector("script[type='importmap']");
     let importmap = JSON.parse(script.innerHTML);
     //check if importmap includes react-router-dom
     if (importmap.imports["react-router-dom"]) {
-      let { createBrowserRouter, RouterProvider } = await import("react-router-dom");
+      let { createBrowserRouter, RouterProvider } = await import(
+        "react-router-dom"
+      );
       let routes = (await import("/__reejs/serve/__routes.js")).default; // this is generated by packit
       let Router = createBrowserRouter(routes);
       //TODO: use hydration without creating duplicate page
@@ -139,18 +141,15 @@ export default async function reender(page, browserFn) {
         let choosen = r.route.whole;
         //create a fake hono context polyfill
         let req = {
-          param: (s) => r.params[s],
-        }
+          param: s => r.params[s],
+        };
         let data = choosen?.generateMetadata?.({ req }) || choosen.metadata;
         React.hydrate(React.createElement(Head, { data }), $("head"));
       });
-
-    }
-    else {
+    } else {
       React.hydrate(React.createElement(p), $("#root"));
     }
-  }
-  else {
+  } else {
     console.log(ISLAND_COUNT);
   }
 }

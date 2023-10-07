@@ -39,4 +39,3 @@ Therefore, to create a new Reejs project called `my-app` with React, using Tailw
 ```sh
 reejs init my-app --features react,tailwind,api,static
 ```
-

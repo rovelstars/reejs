@@ -1,10 +1,10 @@
 # Ree.js
+
 > A web framework that's built different. Built for speed, simplicity, and compatibility.
 
 ## Read Documentation
 
 Documentation is available at [here](https://ree.js.org/docs)
-
 
 ## Contributing
 
@@ -36,30 +36,30 @@ We welcome all contributions. Please read our [CONTRIBUTING.md](https://github.c
 Reejs: default React project with features `react,tailwind,api,static`
 Vite: default react project
 Nextjs: default nextjs project: no typescript, no eslint, no tailwind, no app router.
+
 ### Transpilers (dev) - First Time
 
-| Transpiler  | Time                |
-|-------------|---------------------|
-| Packit      | 98ms                | 
-| Vite        | 547ms               |
-| Swc (Nextjs)| 5.8s + 845ms + 1.8s |
+| Transpiler   | Time                |
+| ------------ | ------------------- |
+| Packit       | 98ms                |
+| Vite         | 547ms               |
+| Swc (Nextjs) | 5.8s + 845ms + 1.8s |
 
 ### Transpilers (dev) - Edit and reevert file (Ree-run without cold boot)
 
-| Transpiler  | Time                 |
-|-------------|----------------------|
-| Packit      | 42ms                 |
-| Vite        | 225ms                |
-| Swc (Nextjs)| 1.4s + 932ms + 422ms |
+| Transpiler   | Time                 |
+| ------------ | -------------------- |
+| Packit       | 42ms                 |
+| Vite         | 225ms                |
+| Swc (Nextjs) | 1.4s + 932ms + 422ms |
 
 ### Transpilers (production build)
 
-| Transpiler  | Time    |
-|-------------|---------|
-| Packit      | 198ms   |
-| Vite        | 2.31s   |
-| Swc (Nextjs)| 37.68s  |
-
+| Transpiler   | Time   |
+| ------------ | ------ |
+| Packit       | 198ms  |
+| Vite         | 2.31s  |
+| Swc (Nextjs) | 37.68s |
 
 ## Default Project sizes
 
