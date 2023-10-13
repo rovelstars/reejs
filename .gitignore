@@ -7,3 +7,4 @@ package-lock.json
 bun.lockb
 website/.vitepress/dist
 website/.vitepress/cache
+.DS_Store
