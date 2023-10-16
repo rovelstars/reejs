@@ -217,7 +217,7 @@ let dl =
       spinners.add(originalUrl, { text: styleit(`${isChild ? "├─  " : ""}🔍 %c${url}`, "", "color: blue") });
     let res = await followRedirect(url, forBrowser);//returns url
     if (fs.existsSync(URLToFile(res, null, cli))) {
-      if ((res != url) && !NOTIFIED_UPDATE_URL.includes(url)) {
+      if ((res != url) && !NOTIFIED_UPDATE_URL.startsWith(url)) {
         spinners.succeed(originalUrl, {
           text: styleit(`${isChild ? "├─  " : ""}🪄 %c Please use specific version for %c${url} %cto access %c${res} %cfaster without pinging for latest version`, "",
             "color: yellow", "color: blue", "color: yellow", "color: blue", "color: yellow")
