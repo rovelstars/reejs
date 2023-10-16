@@ -1,10 +1,10 @@
 #!/usr/bin/env -S reejs x
-import * as clack from 'npm:v132/@clack/prompts@0.7.0?bundle';
-import pc from "npm:v132/picocolors@1.0.0?bundle";
-import boxen from "npm:v132/boxen@7.1.1?bundle";
-import gradient from "npm:v132/gradient-string@2.0.2?bundle";
-import path from "npm:v132/pathe@1.1.1?bundle";
-import { execa, $ } from "npm:v132/execa@8.0.1?bundle";
+import * as clack from 'https://esm.sh/v132/@clack/prompts@0.7.0?bundle';
+import pc from "https://esm.sh/v132/picocolors@1.0.0?bundle";
+import boxen from "https://esm.sh/v132/boxen@7.1.1?bundle";
+import gradient from "https://esm.sh/v132/gradient-string@2.0.2?bundle";
+import path from "https://esm.sh/v132/pathe@1.1.1?bundle";
+import { execa, $ } from "https://esm.sh/v132/execa@8.0.1?bundle";
 import fs from "node:fs";
 let g = gradient(['#7c3aed', '#db2777']);
 
@@ -140,7 +140,7 @@ if (features.includes("react") || features.includes("preact")) {
   fs.writeFileSync(
     path.join(dir, "src", "pages", "_app.jsx"),
     `import App from "@reejs/react/app";
-export default ${features.includes("tailwind")
+export default ${features.includes("tailwind") || features.includes("twind")
       ? "App"
       : "function({ children }){return <App children={children} className=\"!block\" style={{display: 'none'}} />}"};`);
   fs.mkdirSync(path.join(dir, "src", "components"), {
@@ -179,7 +179,7 @@ if (features.includes("react")) {
   importmap["react-dom/server"] = GetPackage("react-dom/server");
   browserimportmap["react"] = GetPackage("react", { bundle: true });
   browserimportmap["react-dom"] = GetPackage("react-dom", { bundle: true });
-  browserimportmap["react-dom/server"] = GetPackage("react-dom/server", { bundle: true });
+  browserimportmap["react-dom/client"] = GetPackage("react-dom/client", { bundle: true });
 }
 if (features.includes("preact")) {
   importmap["react"] = GetPackage("preact/compat");
