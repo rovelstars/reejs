@@ -6,7 +6,7 @@ export default function add(prog) {
     .command("remove [name]")
     .alias(["uninstall", "rm"])
     .describe("Removes a package to your project")
-    .action(async (name) => {
+    .action(async name => {
       if (!fs.existsSync(path.join(process.cwd(), "reecfg.json"))) {
         console.log(
           "%c[REEJS] %cThis is not a reejs project!",

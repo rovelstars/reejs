@@ -3,7 +3,6 @@ import env from "@reejs/imports/env.js";
 let chalk = DynamicImport(await import("./chalk.js"));
 let oc = console;
 
-
 export default function styleit(message, ...styles) {
   // Split the message by the placeholder %c and trim the spaces
   let messageArray = message.split("%c");
@@ -14,13 +13,13 @@ export default function styleit(message, ...styles) {
   // Loop through the styles array and create the chalk objects
   for (let style of styles) {
     // Split the style string by semicolons and trim the spaces
-    let styleArray = style.split(";").map((s) => s.trim());
+    let styleArray = style.split(";").map(s => s.trim());
     // Initialize a chalk object
     let chalkObject = chalk;
     // Loop through the style array and apply the corresponding methods to the chalk object
     for (let s of styleArray) {
       // Split the style by colon and trim the spaces
-      let [property, value] = s.split(":").map((s) => s.trim());
+      let [property, value] = s.split(":").map(s => s.trim());
       // Convert the property and value to lower case
       property = property?.toLowerCase();
       value = value?.toLowerCase();
@@ -34,7 +33,7 @@ export default function styleit(message, ...styles) {
               .replace("rgb(", "")
               .replace(")", "")
               .split(",")
-              .map((e) => parseInt(e.trim()));
+              .map(e => parseInt(e.trim()));
             chalkObject = chalkObject.rgb(r, g, b);
           } else {
             chalkObject = chalkObject[value];
@@ -66,10 +65,11 @@ export default function styleit(message, ...styles) {
               .replace("rgb(", "")
               .replace(")", "")
               .split(",")
-              .map((e) => parseInt(e.trim()));
+              .map(e => parseInt(e.trim()));
             chalkObject = chalkObject.bgRgb(r, g, b);
           } else {
-            chalkObject = chalkObject[`bg${value[0].toUpperCase()}${value.slice(1)}`]
+            chalkObject =
+              chalkObject[`bg${value[0].toUpperCase()}${value.slice(1)}`];
           }
           break;
         default:
@@ -100,10 +100,10 @@ function logWithStyle(type, message, ...styles) {
     oc.error(message);
     return;
   }
-	//if message is an object or json, return back to original console.
-	if(typeof message === "object" || typeof message === "json"){
-		return oc[type](message,...styles);
-	}
+  //if message is an object or json, return back to original console.
+  if (typeof message === "object" || typeof message === "json") {
+    return oc[type](message, ...styles);
+  }
   if (!message?.includes?.("%c") || !styles?.length) {
     return oc[type](message, ...styles);
   }
@@ -123,6 +123,6 @@ if (env == "node" || env == "bun") {
     },
     info: (...args) => {
       logWithStyle("info", ...args);
-    }
+    },
   };
 }

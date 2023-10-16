@@ -8,13 +8,19 @@ import "@reejs/utils/log.js";
 import "@reejs/imports/debug.js";
 import { Import } from "@reejs/imports/URLImport.js";
 let modulesLoadTimeout = setTimeout(() => {
-    //man talk about a hack
-    console.log("%c[REEJS] %c 🛠️  Setting Up for first time...", "color: #805ad5", "color: #ffffff");
+  //man talk about a hack
+  console.log(
+    "%c[REEJS] %c 🛠️  Setting Up for first time...",
+    "color: #805ad5",
+    "color: #ffffff"
+  );
 }, 1000);
 
 import DynamicImport from "@reejs/imports/dynamicImport.js";
-let sade = await Import("https://esm.sh/v132/sade@1.8.1/node/sade.bundle.mjs", { internalDir: true });
-let pkgJson = (DynamicImport(await import("./version.js"))).reejs;
+let sade = await Import("https://esm.sh/v132/sade@1.8.1/node/sade.bundle.mjs", {
+  internalDir: true,
+});
+let pkgJson = DynamicImport(await import("./version.js")).reejs;
 // recursively import all files from cmds folder
 import addCmd from "./cmds/add.js";
 import doctorCmd from "./cmds/doctor.js";
@@ -40,5 +46,9 @@ replCmd(prog);
 tasksCmd(prog);
 xCmd(prog);
 
-let processArgv = globalThis?.process?.argv || ["deno", "reejs", ...globalThis?.Deno?.args];
+let processArgv = globalThis?.process?.argv || [
+  "deno",
+  "reejs",
+  ...globalThis?.Deno?.args,
+];
 prog.parse(processArgv);

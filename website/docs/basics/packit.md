@@ -9,6 +9,7 @@ Alongwith that, it allows transpiling different file extensions like `.jsx` or `
 ### Fun Fact:
 
 Packit comes with all the goodies you will always expect to be available in a code bundler like vite or swc. These includes, but not limited to:
+
 - plugins
 - file watching
 - caching
@@ -58,8 +59,8 @@ export default {
   readers: [],
   transpilers: [],
   writers: [],
-  copyToPackit: []
-}
+  copyToPackit: [],
+};
 ```
 
 ---
@@ -141,6 +142,7 @@ Unlike Readers & Transpilers, Writers are processed serially (without using `awa
 
 A Copier will copy the file to the `packit` directory in your project.
 By default, Packit copies:
+
 - node_modules
 - package.json
 - import_map.json
@@ -155,14 +157,14 @@ Although you can consume the `isDevMode` argument in your function, copiers are 
 :::
 
 ```js
-(service, isDevMode, glob)=>{
-    // isDevMode will always be false as copiers are only ran during build mode
-    // glob is the package exported from `npm:v132/glob@10.2.7` (corresponds to https://esm.sh/v132/glob@10.2.7). We strongly suggest to use this package if possible (same url) because it is already available.
-    // you must return back an array of files and folders to copy to the `packit` directory
-    let files = glob.sync("example/**/*");
-    let folders = glob.sync("more_codes/**/*", { onlyDirectories: true });
-    return { files, folders };
-  }
+(service, isDevMode, glob) => {
+  // isDevMode will always be false as copiers are only ran during build mode
+  // glob is the package exported from `npm:v132/glob@10.2.7` (corresponds to https://esm.sh/v132/glob@10.2.7). We strongly suggest to use this package if possible (same url) because it is already available.
+  // you must return back an array of files and folders to copy to the `packit` directory
+  let files = glob.sync("example/**/*");
+  let folders = glob.sync("more_codes/**/*", { onlyDirectories: true });
+  return { files, folders };
+};
 ```
 
 ---
@@ -176,6 +178,7 @@ Packit plugins are generally npm packages that are published to npm registry. We
 We tried some of the plugins from vite and unplugin, and they worked flawlessly with Reejs! 🎉
 Some of them needed a little bit of tweaking, but they worked!
 Here are some of the plugins that we tried and they worked:
+
 - [millionjs](https://github.com/aidenybai/million/)
 - [unplugin-auto-import](https://github.com/unplugin/unplugin-auto-import)
 
@@ -185,26 +188,27 @@ Your best bet is to try their `unimport` or `vite` versions of those plugins.
 Example config for `unimport`:
 
 ```js
-import AutoImport from 'unplugin-auto-import';
+import AutoImport from "unplugin-auto-import";
 
 export default {
-  plugins:[
+  plugins: [
     AutoImport.vite({
-      include: [
-      /\.[tj]sx?$/,
-      ],
-      imports: ["react"]
-    })
-  ]
-}
+      include: [/\.[tj]sx?$/],
+      imports: ["react"],
+    }),
+  ],
+};
 ```
 
 Using this code in any page like `index.jsx` works flawlessly!
+
 ```jsx
-console.log(useEffect);// <- this works!
-export default function(){
-			return <h1 className="text-3xl font-bold text-violet-600">Hello from Reejs!</h1>
-		}
+console.log(useEffect); // <- this works!
+export default function () {
+  return (
+    <h1 className="text-3xl font-bold text-violet-600">Hello from Reejs!</h1>
+  );
+}
 ```
 
 Example config for `million`:
@@ -214,25 +218,29 @@ Install the npm version of million and link it for the server side of import map
 :::
 
 `packit.config.js`:
+
 ```js
 import million from "million/compiler";
 export default {
-  plugins:[
-    million.unplugin.vite({ // <- here we chose the vite edition of Millionjs
-      mode: 'react', server: true
-    })
-  ]
-}
+  plugins: [
+    million.unplugin.vite({
+      // <- here we chose the vite edition of Millionjs
+      mode: "react",
+      server: true,
+    }),
+  ],
+};
 ```
 
 If million properly works, try adding the following code in any page like `index.jsx`:
+
 ```jsx
-import { block } from 'million/react';
- 
+import { block } from "million/react";
+
 const LionBlock = block(function Lion() {
   return <img src="https://million.dev/lion.svg" />;
 });
- 
+
 export default LionBlock;
 ```
 

@@ -61,4 +61,3 @@ myapp
 
 6 directories, 9 files
 ```
-
