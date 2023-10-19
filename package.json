@@ -29,6 +29,7 @@
     "reejs": "./src/cli/index.js"
   },
   "exports": {
-    ".": "./packit-intellisense.js"
+    ".": "./imports.js",
+    "./packit": "./packit-intellisense.js"
   }
 }
