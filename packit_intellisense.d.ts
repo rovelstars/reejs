@@ -1,22 +1,20 @@
-
-
 //provide typings for the config object
 /**
  * This allows you to setup Packit configuration in a typesafe way.
  */
 export interface PackitConfig {
   /**
- * Represents a reader object that can read files and return their contents as an array of strings.
- */
-  readers?: Reader[]
+   * Represents a reader object that can read files and return their contents as an array of strings.
+   */
+  readers?: Reader[];
   /**
    * Represents a transpiler object that can transpile files and return their contents as an array of strings.
    */
-  transpilers?: Transpiler[]
+  transpilers?: Transpiler[];
   /**
    * Represents a writer object that can write files and return their contents as an array of strings.
    */
-  writers?: Writer[]
+  writers?: Writer[];
   /**
    * A Copier will copy the file to the packit directory in your project. By default, Packit copies:
    * - `package.json`
@@ -26,50 +24,48 @@ export interface PackitConfig {
    * - `twind.config.js`
    * - `.reecfg`
    */
-  copyToPackit?: string[]
+  copyToPackit?: string[];
 }
 
 interface Reader {
   /**
    * The name of the reader. Must be unique among all readers.
    */
-  name: string
+  name: string;
 
   /**
    * A function that runs the reader and returns an array of strings representing the contents of the files read.
    * Returns a Promise that resolves to the array of strings.
    */
-  run?: () => Promise<string[]> | string[]
+  run?: () => Promise<string[]> | string[];
 
   /**
    * A glob pattern that specifies the files to be read by the reader.
    */
-  pattern?: string
+  pattern?: string;
   /**
    * An array of files to exclude from the reader.
    * Is optional even when you use `pattern` property
-    */
-  exclude?: string[]
+   */
+  exclude?: string[];
 }
 
 //in reader, either run() or pattern must be defined. if both are defined, typescript should throw an error
 
-
 interface Transpiler {
-  (path: string, content: string): Promise<string>
+  (path: string, content: string): Promise<string>;
 }
 
 interface Writer {
-  (path: string, content: string): Promise<void>
+  (path: string, content: string): Promise<void>;
 }
-
 
 //declare the config object
 /**
  * This allows you to setup Packit configuration in a typesafe way.
  */
 export function defineConfig(config: PackitConfig): PackitConfig {
-  return config
+  return config;
 }
 
 //example code:

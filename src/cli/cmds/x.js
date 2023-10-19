@@ -143,7 +143,7 @@ export default async function (prog) {
             checkAbsolute ? "" : processCwd,
             await SpecialFileImport(file, null, runtime)
           );
-          if(opts.s || opts.save) {
+          if (opts.s || opts.save) {
             //link _file to the original file's directory, and append ".packit.build.js" to the end of original filename
             file = file + ".packit.build.js";
             await fs.symlinkSync(_file, file);
