@@ -61,8 +61,7 @@ if (!fs.existsSync(path.join(_reejsDir, "failsafe", "package.json")))
 if (!globalThis.fetch) {
   if (!fs.existsSync(path.join(_reejsDir, "failsafe", "fetch.js"))) {
     let fetchFileCode = await fetchUrl(
-      `${
-        process.env.ESM_SERVER || "https://esm.sh"
+      `${process.env.ESM_SERVER || "https://esm.sh"
       }/v128/node-fetch@3.3.1/node/node-fetch.bundle.mjs`
     );
     fs.writeFileSync(
@@ -100,8 +99,8 @@ switch (env) {
 //check if env has REEJS_UA and if it does, use it instead of the default one.
 
 if (
-  globalThis.process?.env?.REEJS_UA ||
-  globalThis.Deno?.env?.get("REEJS_UA")
+  (globalThis.process?.env?.REEJS_UA ||
+  globalThis.Deno?.env?.get("REEJS_UA")) && (globalThis.process?.env?.REEJS_UA || globalThis.Deno?.env?.get("REEJS_UA")) != UA
 ) {
   UA =
     globalThis.process?.env?.REEJS_UA || globalThis.Deno?.env?.get("REEJS_UA");
@@ -114,6 +113,16 @@ if (
 }
 
 globalThis.__CACHE_SHASUM = {};
+
+let importmap;
+if (fs.existsSync(path.join(processCwd, "import_map.json"))) {
+  importmap = JSON.parse(fs.readFileSync(path.join(processCwd, "import_map.json"), "utf8"));
+}
+
+let react =
+  importmap?.imports?.react ||
+  importmap?.browserImports?.react ||
+  "https://esm.sh/react@18.2.0";
 
 let URLToFile = function (url, noFolderPath = false, reejsDir) {
   if (url.startsWith("node:")) return url;
@@ -140,7 +149,7 @@ let URLToFile = function (url, noFolderPath = false, reejsDir) {
     //webcontainers emulate nodejs on browser, however u cannot modify the user agent. so we use ?target=node to let esm.sh know that we are using nodejs.
     url = url + (url.includes("?") ? "&" : "?") + "target=node";
   }
-  __CACHE_SHASUM[url] =
+  __CACHE_SHASUM[url + "|" + UA] =
     crypto
       .createHash("sha256")
       .update(url + UA)
@@ -149,21 +158,21 @@ let URLToFile = function (url, noFolderPath = false, reejsDir) {
 
   let fileString = noFolderPath
     ? "./" +
+    crypto
+      .createHash("sha256")
+      .update(url + UA)
+      .digest("hex")
+      .slice(0, 6) +
+    fileExt
+    : path.join(
+      reejsDir == true ? path.join(processCwd, ".reejs") : _reejsDir,
+      "cache",
       crypto
         .createHash("sha256")
         .update(url + UA)
         .digest("hex")
-        .slice(0, 6) +
-      fileExt
-    : path.join(
-        reejsDir == true ? path.join(processCwd, ".reejs") : _reejsDir,
-        "cache",
-        crypto
-          .createHash("sha256")
-          .update(url + UA)
-          .digest("hex")
-          .slice(0, 6) + fileExt
-      );
+        .slice(0, 6) + fileExt
+    );
   return fileString;
 };
 
@@ -173,9 +182,9 @@ let followRedirect = async function (url, forBrowser = false) {
     return (
       await fetch(
         (process.env.ESM_SERVER || "https://esm.sh/") +
-          "/" +
-          url.replace("npm:", "") +
-          "?bundle",
+        "/" +
+        url.replace("npm:", "") +
+        "?bundle",
         {
           headers: {
             "User-Agent": forBrowser
@@ -225,8 +234,7 @@ let lexer, parser;
 
 if (!fs.existsSync(path.join(_reejsDir, "failsafe", "spinnies.js"))) {
   let spinniesCode = await fetchUrl(
-    `${
-      process.env.ESM_SERVER || "https://esm.sh"
+    `${process.env.ESM_SERVER || "https://esm.sh"
     }/v128/spinnies@0.5.1/node/spinnies.bundle.mjs`
   );
   fs.writeFileSync(
@@ -247,10 +255,16 @@ let dl = async function (
   ua = UA,
   isChild = false
 ) {
+  if (
+    (globalThis.process?.env?.REEJS_UA ||
+    globalThis.Deno?.env?.get("REEJS_UA")) && (globalThis.process?.env?.REEJS_UA || globalThis.Deno?.env?.get("REEJS_UA")) != UA
+  ) {
+    UA =
+      globalThis.process?.env?.REEJS_UA || globalThis.Deno?.env?.get("REEJS_UA");
+    ua = UA;
+  }
+  if (url.includes("@reejs/cache")) throw new Error(url);
   let originalUrl = url;
-  // if(globalThis?.process?.env?.USE_UA_REEJS){
-  //   ua = globalThis?.process?.env?.USE_UA_REEJS;
-  // }
   if (globalThis?.process?.env?.USED_BY_CLI_APP) cli = false; //installs deps to reejs dir instead of current dir.
   if (url == "https://esm.sh") url = "https://esm.sh/"; //fix for esm.sh
   if (process.env.ESM_SERVER && url.startsWith("https://esm.sh/")) {
@@ -306,8 +320,7 @@ let dl = async function (
     if (res != url && !NOTIFIED_UPDATE_URL.startsWith(url)) {
       spinners.succeed(originalUrl, {
         text: styleit(
-          `${
-            isChild ? "├─  " : ""
+          `${isChild ? "├─  " : ""
           }🪄 %c Please use specific version for %c${url} %cto access %c${res} %cfaster without pinging for latest version`,
           "",
           "color: yellow",
@@ -363,8 +376,7 @@ let dl = async function (
   //set timeout for fetch for 30 secs, after which throw error
   let timeout = setTimeout(async () => {
     throw new Error(
-      `Failed to download ${finalURL}\nUser Agent: ${
-        forBrowser ? `Mozilla/5.0 (reejs/${pkgJson.version})` : UA
+      `Failed to download ${finalURL}\nUser Agent: ${forBrowser ? `Mozilla/5.0 (reejs/${pkgJson.version})` : UA
       }\n${await res.text()}`
     );
   }, 30000);
@@ -424,10 +436,8 @@ let dl = async function (
     await new Promise(resolve => setTimeout(resolve, tries * 100));
   }
   let oldCode = code;
-  if (
-    (finalURL.endsWith(".ts") || contentType.includes("typescript")) &&
-    !UA.startsWith("Deno")
-  ) {
+  let ext = path.extname(finalURL.split("?")[0]).slice(1);
+  if (ext == "ts" || contentType.includes("typescript") || ext == "tsx" || ext == "jsx") {
     if ((isChild && process.env.DEBUG) || !isChild)
       spinners.update(originalUrl, {
         text: styleit(
@@ -441,13 +451,31 @@ let dl = async function (
         internalDir: true,
       });
     }
+    let transforms =
+      ext === "jsx"
+        ? ["jsx"]
+        : ext === "ts"
+          ? ["typescript"]
+          : ext === "tsx"
+            ? ["typescript", "jsx"]
+            : [];
     code = parser.transform(code, {
-      transforms: ["typescript"],
+      transforms,
       production: true,
     }).code;
     if (code == "Invalid Body") throw new Error("Invalid Body in " + finalURL);
   }
-
+  if (
+    (code.includes("React.createElement") || code.includes("React.createFragment") ||
+      code.includes("React.Component")) &&
+    !code.includes("import React from") &&
+    !code.includes("import * as React from") &&
+    !code.includes("import*as React from") &&
+    !code.includes("import React, {") &&
+    !code.includes("import React,{") && !(new URL(originalUrl)).pathname.startsWith("/stable/react@") //fix for infinite loop of downloading react from esm.sh
+  ) {
+    code = `import React from "${react}";\n` + code;
+  }
   if (types) {
     if (!fs.existsSync(URLToFile(types, null, cli))) {
       if ((isChild && process.env.DEBUG) || !isChild)
@@ -515,9 +543,9 @@ let dl = async function (
       if (e.startsWith("npm:")) {
         return await followRedirect(
           (process.env.ESM_SERVER || "https://esm.sh") +
-            "/" +
-            e.replace("npm:", "") +
-            "?bundle",
+          "/" +
+          e.replace("npm:", "") +
+          "?bundle",
           forBrowser
         );
       } else if (e.startsWith("/")) {
@@ -551,7 +579,7 @@ let dl = async function (
       }
       //if(p.endsWith(".json.js")) p = p.replace(".json.js",".json");
       //if(p.endsWith("node/package.json")) p = p.replace("node/package.json","package.json");
-      return await dl(dlUrl || p, cli, remove, forBrowser, ua, true);
+      return await dl(dlUrl || p, cli, remove, forBrowser, ua, finalURL);
     })
   );
 
@@ -646,8 +674,7 @@ let dl = async function (
   if ((isChild && process.env.DEBUG) || !isChild)
     spinners.update(originalUrl, {
       text: styleit(
-        `${isChild ? "├─  " : ""}%c${finalURL} %cin %c${
-          (Date.now() - start) / 1000
+        `${isChild ? "├─  " : ""}%c${finalURL} %cin %c${(Date.now() - start) / 1000
         }s`,
         "",
         "color: blue",

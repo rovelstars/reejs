@@ -1,6 +1,6 @@
 {
   "name": "@reejs/imports",
-  "version": "2.6.1",
+  "version": "2.7.0",
   "description": "URL Imports, Native Imports and Dynamic Imports helper for Reejs. Can be easily used without installing Reejs.",
   "main": "index.js",
   "type": "module",

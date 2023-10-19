@@ -22,24 +22,24 @@ if (
 
 let importmap = fs.existsSync(path.join(processCwd, "import_map.json"))
   ? DynamicImport(
-      await import(`${processCwd}/import_map.json`, {
-        assert: { type: "json" },
-      })
-    )
+    await import(`${processCwd}/import_map.json`, {
+      assert: { type: "json" },
+    })
+  )
   : {};
 let cachemap = fs.existsSync(path.join(dir, "cache", "cache.json"))
   ? DynamicImport(
-      await import(`file://${dir}/cache/cache.json`, {
-        assert: { type: "json" },
-      })
-    )
+    await import(`file://${dir}/cache/cache.json`, {
+      assert: { type: "json" },
+    })
+  )
   : fs.existsSync(path.join(processCwd, ".reejs", "cache", "cache.json"))
-  ? DynamicImport(
+    ? DynamicImport(
       await import(`file://${processCwd}/.reejs/cache/cache.json`, {
         assert: { type: "json" },
       })
     )
-  : {};
+    : {};
 
 let react =
   importmap.imports?.react ||
@@ -99,7 +99,7 @@ globalThis.packitEvent.on("done", async () => {
     fs.writeFile(
       path.join(".reejs", "serve.cache"),
       JSON.stringify(MODIFIED_FILES),
-      () => {}
+      () => { }
     );
   }
 });
@@ -123,9 +123,24 @@ export default async function SpecialFileImport(
     return file;
   if (service == "deno") service = "deno-deploy";
   file = file.replace(processCwd + "/", "");
+  if ((file.startsWith("./") || file.startsWith("../")) && parentFile)
+    file = path.resolve(path.join(parentFile, file));
+  let ext = file?.split(".")?.pop();
+  if (ext == file) {
+    //get all files in the directory
+    let files = fs.readdirSync(path.dirname(file));
+    //find the file that starts with the file name
+    let foundFile = files.find(e => e.startsWith(path.basename(file)));
+    if (!foundFile) throw new Error(`File ${file} not found`);
+    //set the file to the found file
+    file = path.join(path.dirname(file), foundFile);
+    //set the ext to the ext of the found file
+    ext = foundFile.split(".").pop();
+  }
+  //get extname of file
   await waitUntilArrayDoesntHaveValue(file);
   // check if the file was modified,a by comparing the mtime
-  let mtime = fs.statSync(file).mtimeMs;
+  let mtime = fs.statSync(path.join(processCwd, file)).mtimeMs;
   // MODIFIED_FILES looks like: [{ f: file, s: savedAt, at: mtime}]
   let modified = MODIFIED_FILES.find(e => e.f == file);
   if (modified && modified.at == mtime) {
@@ -172,7 +187,6 @@ lexer = {
   let sucrase = await Import("npm:v132/sucrase@3.32.0?bundle", {
     internalDir: true,
   });
-  let ext = file?.split(".")?.pop();
   if (ext == file)
     throw new Error(
       `\`${file}\` has no extension passed to packit transpiler.\nThis usually means the file doesn't exist, or Packit couldn't find the file.`
@@ -196,10 +210,10 @@ lexer = {
     ext === "jsx"
       ? ["jsx"]
       : ext === "ts"
-      ? ["typescript"]
-      : ext === "tsx"
-      ? ["typescript", "jsx"]
-      : [];
+        ? ["typescript"]
+        : ext === "tsx"
+          ? ["typescript", "jsx"]
+          : [];
   if (transforms.includes("jsx") && code.includes("ISLAND_FILENAME")) {
     // we are working for @reejs/react/island.jsx
     code = code.replace(
@@ -229,7 +243,7 @@ jsxFragmentPragma : "Fragment",*/
           module: true,
           compress:
             globalThis?.process?.env?.NODE_ENV == "production" ||
-            globalThis?.Deno?.env?.get("NODE_ENV") == "production"
+              globalThis?.Deno?.env?.get("NODE_ENV") == "production"
               ? {}
               : false,
           mangle: false,
@@ -324,18 +338,17 @@ jsxFragmentPragma : "Fragment",*/
           });
           fs.writeFileSync(
             path.join(".reejs", "packit", "vite", "index.js"),
-            `import * as cheerio from "${
-              "../.." +
-              (
-                await dl("https://esm.sh/cheerio@1.0.0-rc.12/lib/slim", true)
-              ).split(".reejs")[1]
+            `import * as cheerio from "${"../.." +
+            (
+              await dl("https://esm.sh/cheerio@1.0.0-rc.12/lib/slim", true)
+            ).split(".reejs")[1]
             }";` +
-              fs
-                .readFileSync(
-                  path.dirname(import.meta.url).replace("file://", "") +
-                    "/vite.js"
-                )
-                .toString()
+            fs
+              .readFileSync(
+                path.dirname(import.meta.url).replace("file://", "") +
+                "/vite.js"
+              )
+              .toString()
           );
         }
         return "../packit/vite/index.js";
@@ -361,9 +374,9 @@ jsxFragmentPragma : "Fragment",*/
         let savedAt = await dl(pack.n, true);
         return "../cache/" + savedAt.split("cache/")[1];
       } else if (importmap.imports?.[pack.n]) {
-        return `../cache/${cachemap[importmap.imports?.[pack.n]]}`;
+        return `../cache/${cachemap[importmap.imports?.[pack.n]+"|"+(globalThis.process?.env?.REEJS_UA||globalThis.Deno?.env?.get("REEJS_UA"))]}`;
       } else if (importmap.browserImports?.[pack.n]) {
-        return `../cache/${cachemap[importmap.browserImports[pack.n]]}`;
+        return `../cache/${cachemap[importmap.browserImports[pack.n]+"|"+(globalThis.process?.env?.REEJS_UA||globalThis.Deno?.env?.get("REEJS_UA"))]}`;
       } else if (pack.n.startsWith("./") || pack.n.startsWith("../")) {
         //return pack.n;
         let ppack = pack.n;
@@ -436,7 +449,7 @@ jsxFragmentPragma : "Fragment",*/
                 (
                   await SpecialFileImport(
                     path.join(file.split("/").slice(0, -1).join("/"), ppack),
-                    null,
+                    file,
                     service
                   )
                 ).split("serve/")[1]
@@ -493,7 +506,7 @@ jsxFragmentPragma : "Fragment",*/
                     (
                       await SpecialFileImport(
                         path.join("./node_modules", ppack),
-                        null,
+                        file,
                         service
                       )
                     ).split("serve/")[1]
@@ -534,7 +547,7 @@ jsxFragmentPragma : "Fragment",*/
       .replace("import`" + p.n + "`", "import`" + files[i] + "`");
   });
   if (
-    (result.includes("React.createElement") ||
+    (result.includes("React.createElement") || result.includes("React.createFragment") ||
       result.includes("React.Component")) &&
     !result.includes("import React from") &&
     !result.includes("import * as React from") &&
@@ -542,9 +555,9 @@ jsxFragmentPragma : "Fragment",*/
     !result.includes("import React, {") &&
     !result.includes("import React,{")
   ) {
+    console.log(cachemap[react+"|"+(globalThis.process?.env?.REEJS_UA||globalThis.Deno?.env?.get("REEJS_UA"))])
     result =
-      `import React from "${
-        cachemap[react] ? `../cache/${cachemap[react]}` : await dl(react, true)
+      `import React from "${cachemap[react+"|"+(globalThis.process?.env?.REEJS_UA||globalThis.Deno?.env?.get("REEJS_UA"))] ? `../cache/${cachemap[react+"|"+(globalThis.process?.env?.REEJS_UA||globalThis.Deno?.env?.get("REEJS_UA"))]}` : await dl(react, true)
       }";\n` + result;
   }
   result += "\n//# sourceURL=file://" + file.replace(processCwd, ".");

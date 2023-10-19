@@ -3,7 +3,7 @@ import NativeImport from "@reejs/imports/nativeImport.js";
 import { Import } from "@reejs/imports/URLImport.js";
 let crypto = await NativeImport("node:crypto");
 import SpecialFileImport from "@reejs/imports/specialFileImport.js";
-import dl, { URLToFile } from "@reejs/imports/URLImportInstaller.js";
+import dl, { URLToFile, UA } from "@reejs/imports/URLImportInstaller.js";
 import copyFolder from "@reejs/utils/copyFolder.js";
 import versions from "../version.js";
 import merge from "./utils/merge.js";
@@ -84,8 +84,9 @@ export let packit = async (service, isDevMode, runOneTime) => {
   if (service == "deno") {
     service = "deno-deploy";
   }
+  process.env.REEJS_UA = UA;
   if (service == "deno-deploy") {
-    process.env.USE_UA_REEJS = "Deno/1.36";
+    process.env.REEJS_UA = "Deno/1.36";
   }
 
   letMeKnowWhatServiceItIs = service;

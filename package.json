@@ -1,6 +1,6 @@
 {
   "name": "reejs",
-  "version": "0.14.1",
+  "version": "0.15.0",
   "description": "",
   "type": "module",
   "main": "src/cli/index.js",
@@ -27,5 +27,8 @@
   "license": "MIT",
   "bin": {
     "reejs": "./src/cli/index.js"
+  },
+  "exports": {
+    ".": "./packit-intellisense.js"
   }
 }

@@ -59,32 +59,32 @@ server_version.version = bumpVersion(server_version.version);
 
 fs.writeFileSync(
   path.dirname(new URL(import.meta.url).pathname) + "/../package.json",
-  JSON.stringify(reejs_version, null, 4)
+  JSON.stringify(reejs_version, null, 2)
 );
 fs.writeFileSync(
   path.dirname(new URL(import.meta.url).pathname) +
     "/../src/create/package.json",
-  JSON.stringify(create_version, null, 4)
+  JSON.stringify(create_version, null, 2)
 );
 fs.writeFileSync(
   path.dirname(new URL(import.meta.url).pathname) +
     "/../src/imports/package.json",
-  JSON.stringify(imports_version, null, 4)
+  JSON.stringify(imports_version, null, 2)
 );
 fs.writeFileSync(
   path.dirname(new URL(import.meta.url).pathname) +
     "/../src/utils/package.json",
-  JSON.stringify(utils_version, null, 4)
+  JSON.stringify(utils_version, null, 2)
 );
 fs.writeFileSync(
   path.dirname(new URL(import.meta.url).pathname) +
     "/../src/react/package.json",
-  JSON.stringify(react_version, null, 4)
+  JSON.stringify(react_version, null, 2)
 );
 fs.writeFileSync(
   path.dirname(new URL(import.meta.url).pathname) +
     "/../src/server/package.json",
-  JSON.stringify(server_version, null, 4)
+  JSON.stringify(server_version, null, 2)
 );
 
 console.log("Bumped all versions.");

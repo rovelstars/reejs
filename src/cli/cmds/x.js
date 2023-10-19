@@ -10,12 +10,6 @@ let reejsDir = dir; // make reejsDir mutable
 import SpecialFileImport from "@reejs/imports/specialFileImport.js";
 let path = await NativeImport("node:path");
 let processCwd = globalThis?.process?.cwd?.() || globalThis?.Deno.cwd();
-//create __dirname
-Object.defineProperty(globalThis, "__dirname", {
-  get: () => path.dirname(processCwd),
-  configurable: true,
-  enumerable: true,
-});
 
 export default async function (prog) {
   prog
@@ -35,6 +29,16 @@ export default async function (prog) {
       "--args",
       "Arguments to pass to the file, adds `--` before your args.",
       ""
+    )
+    .option(
+      "-s, --save",
+      "Save the file locally (creates a soft-link to the transpiled file) in the same directory as the original file.",
+      false
+    )
+    .option(
+      "--deno",
+      "Polyfill Deno APIs on Reejs. This is useful for running files that use Deno's API. Bun can't run this option right now.",
+      false
     )
     .action(async function (file, opts) {
       let fs = await NativeImport("node:fs");
@@ -74,7 +78,7 @@ export default async function (prog) {
           process.argv = ["node", file, ...opts.args, ...opts.a];
         }
         if (file.startsWith("npm:")) {
-          if (!globalThis.Deno && !globalThis.Bun) {
+          if (!globalThis.Deno && !globalThis.Bun && opts.deno) {
             let modulesLoadTimeout = setTimeout(() => {
               //man talk about a hack
               console.log(
@@ -98,7 +102,7 @@ export default async function (prog) {
             file = path.join(file, bin).replace("https:/", "https://");
           }
         }
-        if (!globalThis.Deno && !globalThis.Bun) {
+        if (!globalThis.Deno && !globalThis.Bun && opts.deno) {
           let modulesLoadTimeout = setTimeout(() => {
             //man talk about a hack
             console.log(
@@ -117,7 +121,7 @@ export default async function (prog) {
         }
         return;
       } else {
-        if (!globalThis.Deno && !globalThis.Bun) {
+        if (!globalThis.Deno && !globalThis.Bun && opts.deno) {
           let modulesLoadTimeout = setTimeout(() => {
             //man talk about a hack
             console.log(
@@ -135,12 +139,16 @@ export default async function (prog) {
           if (checkAbsolute) process.env.USED_BY_CLI_APP = "true";
           //await import(path.join(processCwd, await SpecialFileImport(path.join(processCwd, file), null, runtime)));
           if (!checkAbsolute) file = path.join(processCwd, file);
-          await import(
-            path.join(
-              checkAbsolute ? "" : processCwd,
-              await SpecialFileImport(file, null, runtime)
-            )
+          let _file = path.join(
+            checkAbsolute ? "" : processCwd,
+            await SpecialFileImport(file, null, runtime)
           );
+          if(opts.s || opts.save) {
+            //link _file to the original file's directory, and append ".packit.build.js" to the end of original filename
+            file = file + ".packit.build.js";
+            await fs.symlinkSync(_file, file);
+          }
+          await import(_file);
           if (opts.e || opts.eval) {
             eval(opts.e || opts.eval);
           }
