@@ -42,7 +42,6 @@ if (runtime == "node" || runtime == "bun" || runtime == "deno") {
       joinPath(globalThis?.Deno?.env?.get("HOME"), ".deno");
   }
   if (globalThis?.process) process.env.PWD = process.cwd();
-  if (globalThis?.Deno) Deno.env.set("PWD", Deno.cwd());
   projectDir = dirname.slice(0, dirname.lastIndexOf("/"));
   reejsDir = projectDir.includes("node_modules")
     ? joinPath(
