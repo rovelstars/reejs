@@ -240,7 +240,7 @@ let lexer, parser;
 if (!fs.existsSync(path.join(_reejsDir, "failsafe", "spinnies.js"))) {
   let spinniesCode = await fetchUrl(
     `${process.env.ESM_SERVER || "https://esm.sh"}/v128/spinnies@0.5.1/${
-      globalThis?.process ? "node" : "denonext"
+      globalThis?.Deno ? "denonext" : "node"
     }/spinnies.bundle.mjs`
   );
   fs.writeFileSync(
