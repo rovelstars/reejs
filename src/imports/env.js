@@ -37,7 +37,9 @@ let dirname, projectDir, reejsDir;
 if (runtime == "node" || runtime == "bun" || runtime == "deno") {
   dirname = new URL("..", import.meta.url).pathname.slice(0, -1);
   if (new URL("..", import.meta.url).protocol != "file:") {
-    dirname = globalThis?.Deno?.env?.get("DENO_INSTALL_ROOT") || joinPath(globalThis?.Deno?.env?.get("HOME"), ".deno");
+    dirname =
+      globalThis?.Deno?.env?.get("DENO_INSTALL_ROOT") ||
+      joinPath(globalThis?.Deno?.env?.get("HOME"), ".deno");
   }
   if (globalThis?.process) process.env.PWD = process.cwd();
   if (globalThis?.Deno) Deno.env.set("PWD", Deno.cwd());
