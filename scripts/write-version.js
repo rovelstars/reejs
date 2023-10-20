@@ -83,6 +83,6 @@ reejs_version.dependencies["@reejs/server"] = server_version.version;
 fs.writeFileSync(
   path.dirname(new URL(import.meta.url).pathname) + "/../package.json",
   JSON.stringify(reejs_version, null, 2)
-)
+);
 
 console.log("Version files updated!");
