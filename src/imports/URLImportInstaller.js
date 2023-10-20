@@ -85,7 +85,7 @@ switch (env) {
   case "deno":
     //UA = `Deno/${Deno.version.deno} (reejs/${pkgJson.version})`;
     //TODO: wait for esm.sh to fix using the above way
-    UA = "Node/18 (reejs/0)"; //`Deno/${Deno.version.deno}`;
+    UA = `Deno/${Deno.version.deno}`;
     break;
   case "browser":
     UA = `Mozilla/5.0 (reejs/${pkgJson.version})`; // I got no idea why I did this. Sounds villainous. I can confirm lol~
