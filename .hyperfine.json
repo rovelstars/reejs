@@ -1,6 +1,6 @@
 [
   {
-    "name": "Reejs bootup",
+    "name": "Boot Time",
     "command": "reejs -v",
     "extraArgs": {
       "N": true
