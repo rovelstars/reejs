@@ -14,3 +14,4 @@ CODE_OF_CONDUCT.md
 package-lock.json
 .gitpod.yml
 .vscode
+output.log
