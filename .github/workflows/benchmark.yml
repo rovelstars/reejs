@@ -36,7 +36,7 @@ jobs:
           reejs doctor
 
       - name: Hyperfine
-        uses: blacha/hyperfine-action@v1
+        uses: renhiyama/hyperfine-action@patch-1
         with:
           # Configuration file to use
           benchmark-config: ".hyperfine.json"

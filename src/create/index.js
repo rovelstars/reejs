@@ -26,9 +26,8 @@ function GetPackage(name, opts) {
   const pkgName = name.split("/")[0];
   let scope = name.replace(pkgName, "");
   scope = scope.split("?")[0];
-  let url = `https://esm.sh/${pkgName}${
-    dependencies[pkgName] ? `@${dependencies[pkgName]}` : ""
-  }${scope}`;
+  let url = `https://esm.sh/${pkgName}${dependencies[pkgName] ? `@${dependencies[pkgName]}` : ""
+    }${scope}`;
   url = new URL(url);
   if (isReactPackage) {
     url.searchParams.append("external", "react,react-dom");
@@ -61,10 +60,9 @@ const projectName = await clack.text({
   message: g("What would we create your next project?"),
   initialValue: "./",
   validate(value) {
-    if (value.length === 0 || value == "./") return `Value is required!`;
     if (!value.startsWith("./") && !value.startsWith("../"))
       return `Provide a relative path!`;
-    if (fs.existsSync(path.join(process.cwd(), value)))
+    if (fs.existsSync(path.join(process.cwd(), value)) && value != "./")
       return `Directory already exists!`;
   },
 });
@@ -137,8 +135,10 @@ let packageManager = await clack.select({
 
 //ask whether it should install deps auto or not?
 let shouldInstall = await clack.confirm({
-  message: "Should we install dependencies for you?",
+  message: g("Should we install dependencies for you?"),
 });
+const s = await clack.spinner();
+s.start(g("Setting up..."));
 
 async function getLatestVersion(packageName) {
   let res = await fetch(`https://registry.npmjs.org/${packageName}`);
@@ -165,10 +165,9 @@ if (features.includes("react") || features.includes("preact")) {
   fs.mkdirSync(path.join(dir, "src", "components"), { recursive: true });
   fs.writeFileSync(
     path.join(dir, "src", "pages", "index.jsx"),
-    `export default function(){\n  return <h1 ${
-      features.includes("tailwind") || features.includes("twind")
-        ? 'className="text-3xl font-bold text-violet-600"'
-        : ""
+    `export default function(){\n  return <h1 ${features.includes("tailwind") || features.includes("twind")
+      ? 'className="text-3xl font-bold text-violet-600"'
+      : ""
     }>Hello from Reejs!</h1>\n}`,
     "utf-8"
   );
@@ -180,10 +179,9 @@ if (features.includes("react") || features.includes("preact")) {
   fs.writeFileSync(
     path.join(dir, "src", "pages", "_app.jsx"),
     `import App from "@reejs/react/app";
-export default ${
-      features.includes("tailwind") || features.includes("twind")
-        ? "App"
-        : "function({ children }){return <App children={children} className=\"!block\" style={{display: 'none'}} />}"
+export default ${features.includes("tailwind") || features.includes("twind")
+      ? "App"
+      : "function({ children }){return <App children={children} className=\"!block\" style={{display: 'none'}} />}"
     };`
   );
   fs.mkdirSync(path.join(dir, "src", "components"), {
@@ -286,17 +284,17 @@ if (features.includes("tailwind")) {
   fs.writeFileSync(
     path.join(dir, "tailwind.config.js"),
     "export default " +
-      JSON.stringify(
-        {
-          content: ["./src/**/*.{js,jsx,ts,tsx}"],
-          theme: {
-            extend: {},
-          },
-          plugins: [],
+    JSON.stringify(
+      {
+        content: ["./src/**/*.{js,jsx,ts,tsx}"],
+        theme: {
+          extend: {},
         },
-        null,
-        2
-      ),
+        plugins: [],
+      },
+      null,
+      2
+    ),
     "utf-8"
   );
   //write src/input.css
@@ -360,7 +358,7 @@ fs.writeFileSync(
   ),
   "utf-8"
 );
-
+s.stop();
 if (shouldInstall) {
   const s = await clack.spinner();
   s.start(g("Installing dependencies"));
