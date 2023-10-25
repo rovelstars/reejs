@@ -33,10 +33,11 @@ jobs:
           npm install
           npm run write-version
           npm link .
+          npx -v
           reejs doctor
 
       - name: Hyperfine
-        uses: renhiyama/hyperfine-action@patch-1
+        uses: renhiyama/hyperfine-action@patch-2
         with:
           # Configuration file to use
           benchmark-config: ".hyperfine.json"
