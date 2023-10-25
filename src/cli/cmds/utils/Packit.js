@@ -132,7 +132,8 @@ export let writers = [
           : ""
       }
       ${
-        (globalThis?.process?.env?.DEBUG || globalThis?.Deno?.env?.get?.("DEBUG")) &&
+        (globalThis?.process?.env?.DEBUG ||
+          globalThis?.Deno?.env?.get?.("DEBUG")) &&
         service !== "workers"
           ? `import { save } from "${await getPackage(
               "@reejs/imports/debug.js"
@@ -191,7 +192,8 @@ export let writers = [
         service === "node" ? "serve," : ""
       }});
       server.app.onError(${
-        (globalThis?.process?.env?.DEBUG || globalThis?.Deno?.env?.get?.("DEBUG")) &&
+        (globalThis?.process?.env?.DEBUG ||
+          globalThis?.Deno?.env?.get?.("DEBUG")) &&
         service !== "workers" &&
         service !== "workers"
           ? "save"

@@ -1,3 +1,1 @@
-[
-  { "name": "Reejs", "command": "reejs -v" }
-]
+[{ "name": "Reejs", "command": "reejs -v" }]
