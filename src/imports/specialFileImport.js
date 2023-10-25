@@ -571,14 +571,6 @@ jsxFragmentPragma : "Fragment",*/
     !result.includes("import React, {") &&
     !result.includes("import React,{")
   ) {
-    console.log(
-      cachemap[
-        react +
-          "|" +
-          (globalThis.process?.env?.REEJS_UA ||
-            globalThis.Deno?.env?.get("REEJS_UA"))
-      ]
-    );
     result =
       `import React from "${
         cachemap[

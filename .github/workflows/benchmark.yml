@@ -1,0 +1,54 @@
+name: Benchmark Ree.js
+
+# This action runs on every push to the main branch, and on every pull request to the main branch
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (on Github Actions)
+        if: ${{ !env.ACT }}
+        uses: actions/checkout@v3
+        with:
+          # Make sure the actual branch is checked out when running on pull requests
+          ref: ${{ github.head_ref }}
+
+      - name: Checkout (Locally)
+        if: ${{ env.ACT }}
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: Setup Ree.js
+        run: |
+          npm install
+          npm run write-version
+          npm link .
+          reejs doctor
+
+      - name: Hyperfine
+        uses: blacha/hyperfine-action@v1
+        with:
+          # Configuration file to use
+          benchmark-config: ".hyperfine.json"
+          # Number of benchmarks to keep
+          count: 100
+          # Branch to use for benchmarks output/benchmark.json
+          benchmark-branch: "benchmark-results"
+          # Where to store the output of the benchmarks
+          benchmark-output: "benchmarks.json"
+          # benchmark html file to view the benchmarks
+          benchmark-html: "benchmarks.html"
+          # Branch to use as the main or master for comparision
+          master-branch: "main"
+          # configuration token
+          github-token: ${{ github.token }}
