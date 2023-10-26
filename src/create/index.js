@@ -221,11 +221,11 @@ fs.writeFileSync(
 //setup import maps URLs
 let importmap = {},
   browserimportmap = {};
-  importmap["@reejs/server"] = GetPackage("@reejs/server");
-  importmap["@reejs/utils/log.js"] = GetPackage("@reejs/utils/log.js");
-  importmap["@reejs/react/app.jsx"] = GetPackage("@reejs/react/app.jsx");
-  importmap["@reejs/imports/debug.js"] = GetPackage("@reejs/imports/debug.js");
-  
+importmap["@reejs/server"] = GetPackage("@reejs/server");
+importmap["@reejs/utils/log.js"] = GetPackage("@reejs/utils/log.js");
+importmap["@reejs/react/app.jsx"] = GetPackage("@reejs/react/app.jsx");
+importmap["@reejs/imports/debug.js"] = GetPackage("@reejs/imports/debug.js");
+
 if (features.includes("react")) {
   importmap["react"] = GetPackage("react");
   importmap["react-dom"] = GetPackage("react-dom");
