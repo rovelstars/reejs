@@ -1,6 +1,6 @@
 {
   "name": "create-reejs",
-  "version": "0.15.5",
+  "version": "0.16.0",
   "description": "",
   "type": "module",
   "main": "index.js",
