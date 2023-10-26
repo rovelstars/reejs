@@ -1,4 +1,4 @@
-export  default async function (url) {
+export default async function (url) {
   let data = {};
   let urlObj = new URL(url);
   data.protocol = urlObj.protocol;
@@ -18,9 +18,10 @@ export  default async function (url) {
   let num = clearInfo.split("@").length;
   let latestVersion;
   async function getLatestVersion() {
-    if(latestVersion) return latestVersion;
+    if (latestVersion) return latestVersion;
     let i = 0;
-    while (i < 3) { // try 3 times
+    while (i < 3) {
+      // try 3 times
       try {
         let res = await fetch(`https://registry.npmjs.org/${data.name}/latest`);
         let json = await res.json();
