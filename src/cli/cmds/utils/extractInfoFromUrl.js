@@ -1,4 +1,4 @@
-export default function (url) {
+export  default async function (url) {
   let data = {};
   let urlObj = new URL(url);
   data.protocol = urlObj.protocol;
@@ -16,9 +16,26 @@ export default function (url) {
   data.isScoped = data.name.startsWith("@");
   data.version = clearInfo.split("@").pop().split("/")[0];
   let num = clearInfo.split("@").length;
-  if (num == 1) data.version = "latest";
-  if (data.isScoped && num < 2) data.version = "latest";
-  if (data.name.includes(data.version)) data.version = "latest";
+  let latestVersion;
+  async function getLatestVersion() {
+    if(latestVersion) return latestVersion;
+    let i = 0;
+    while (i < 3) { // try 3 times
+      try {
+        let res = await fetch(`https://registry.npmjs.org/${data.name}/latest`);
+        let json = await res.json();
+        latestVersion = json.version;
+        break; // exit loop if successful
+      } catch (err) {
+        i++; // increment counter
+        if (i === 3) throw err; // throw error if failed 3 times
+      }
+    }
+    return latestVersion;
+  }
+  if (num == 1) data.version = await getLatestVersion();
+  if (data.isScoped && num < 2) data.version = await getLatestVersion();
+  if (data.name.includes(data.version)) data.version = await getLatestVersion();
   clearInfo = //remove package and version from url
     clearInfo.replace(data.name, "").replace("@" + data.version, "");
   if (clearInfo.startsWith("/")) clearInfo = clearInfo.replace("/", "");

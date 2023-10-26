@@ -332,10 +332,6 @@ importmap["hono/compress"] = "https://esm.sh/v132/hono@3.6.3/compress";
 importmap["@hono/node-server"] = "https://esm.sh/v132/@hono/node-server@1.1.1";
 importmap["@hono/node-server/serve-static"] =
   "https://esm.sh/v132/@hono/node-server@1.1.1/serve-static";
-pkg.dependencies["@reejs/utils"] = await getLatestVersion("@reejs/utils");
-pkg.dependencies["@reejs/imports"] = await getLatestVersion("@reejs/imports");
-pkg.dependencies["@reejs/server"] = await getLatestVersion("@reejs/server");
-pkg.dependencies["@reejs/react"] = await getLatestVersion("@reejs/react");
 pkg.devDependencies["reejs"] = await getLatestVersion("reejs");
 
 fs.writeFileSync(

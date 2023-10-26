@@ -8,9 +8,9 @@ import extractInfoFromUrl from "./utils/extractInfoFromUrl.js";
 let fs = await NativeImport("node:fs");
 let path = await NativeImport("node:path");
 let processCwd = globalThis?.process?.cwd?.() || Deno.cwd();
-function getPackageInfo(name, url, cacheFile, forNodeModules) {
-  let info = extractInfoFromUrl(url);
-  let mapData = extractInfoFromUrl("https://example.com/" + name);
+async function getPackageInfo(name, url, cacheFile, forNodeModules) {
+  let info = await extractInfoFromUrl(url);
+  let mapData = await extractInfoFromUrl("https://example.com/" + name);
 
   let folder = path.join(
     forNodeModules ? "node_modules" : ".reejs/deps",
@@ -33,7 +33,7 @@ async function setupPackage(
   fixVersion,
   blacklistNPM
 ) {
-  let info = getPackageInfo(name, url, cacheFile, forNodeModules);
+  let info = await getPackageInfo(name, url, cacheFile, forNodeModules);
   if (blacklistNPM?.includes(info.name)) return;
   if (!fs.existsSync(info.at)) fs.mkdirSync(info.at, { recursive: true });
   if (!fs.existsSync(path.join(info.at, "package.json")))
