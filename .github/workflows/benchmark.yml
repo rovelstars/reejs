@@ -38,6 +38,7 @@ jobs:
           reejs doctor
 
       - name: Hyperfine
+        if: ${{ !contains(github.event.head_commit.message, '[publish]') }}
         uses: renhiyama/hyperfine-action@patch-2
         with:
           # Configuration file to use
