@@ -8,9 +8,7 @@ export let install = async (name, url, opts = {}) => {
   // we would show time taken to install the package
   let start = Date.now();
   let isBrowser = opts?.browser || opts?.b ? "browserImports" : "imports";
-  if (
-    !fs.existsSync(path.join(process.cwd(), "reecfg.json"))
-  ) {
+  if (!fs.existsSync(path.join(process.cwd(), "reecfg.json"))) {
     console.log(
       "%c[REEJS] %cThis is not a reejs project!",
       "color: red",
@@ -33,8 +31,7 @@ export let install = async (name, url, opts = {}) => {
       })
     );
     let end = Date.now();
-    if (!opts.nosync)
-      await sync();
+    if (!opts.nosync) await sync();
     let time = (end - start) / 1000;
     console.log(
       "%c[DOWNLOAD] %cInstalled all packages in " + time + "s",
@@ -56,7 +53,7 @@ export let install = async (name, url, opts = {}) => {
           //use fetch head and get the redirect url
           let res = await fetch(url, {
             method: "HEAD",
-            redirect: "manual"
+            redirect: "manual",
           });
           if (res.status === 302) {
             url = res.headers.get("location");
@@ -87,8 +84,7 @@ export let install = async (name, url, opts = {}) => {
   }
   let end = Date.now();
   let time = (end - start) / 1000;
-  if (!opts.nosync)
-    await sync();
+  if (!opts.nosync) await sync();
   console.log(
     "%c[DOWNLOAD] %cInstalled " + name + " in " + time + "s",
     "color:green",

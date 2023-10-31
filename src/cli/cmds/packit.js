@@ -24,19 +24,19 @@ let processCwd = globalThis?.process?.cwd?.() || Deno.cwd();
 
 let importmap = fs.existsSync(path.join(processCwd, "import_map.json"))
   ? DynamicImport(
-    await import(`${processCwd}/import_map.json`, {
-      assert: { type: "json" },
-    })
-  )
+      await import(`${processCwd}/import_map.json`, {
+        assert: { type: "json" },
+      })
+    )
   : {};
 let cachemap = fs.existsSync(
   path.join(processCwd, ".reejs", "cache", "cache.json")
 )
   ? DynamicImport(
-    await import(`${processCwd}/.reejs/cache/cache.json`, {
-      assert: { type: "json" },
-    })
-  )
+      await import(`${processCwd}/.reejs/cache/cache.json`, {
+        assert: { type: "json" },
+      })
+    )
   : {};
 
 let childProcess = null;
@@ -111,16 +111,24 @@ export let packit = async (service, isDevMode, runOneTime) => {
     );
 
   if (config._experimental_features) {
-    console.log("%c[PACKIT] %cExperimental features enabled: %c" + config._experimental_features.join(", "), "color: #db2777", "color: yellow", "color: gray")
+    console.log(
+      "%c[PACKIT] %cExperimental features enabled: %c" +
+        config._experimental_features.join(", "),
+      "color: #db2777",
+      "color: yellow",
+      "color: gray"
+    );
     if (config._experimental_features.includes("htmx")) {
       //if importmap doesn't have htmx, add it
       if (!importmap.imports?.["htmx.org"]) {
-        importmap.imports["htmx.org"] = "https://esm.sh/htmx.org@1.9.6"
-        await AddPackage("htmx.org", "https://esm.sh/htmx.org@1.9.6", { nosync: true })
+        importmap.imports["htmx.org"] = "https://esm.sh/htmx.org@1.9.6";
+        await AddPackage("htmx.org", "https://esm.sh/htmx.org@1.9.6", {
+          nosync: true,
+        });
       }
       //if browserImports doesn't have htmx, add it
       if (!importmap.browserImports?.["htmx.org"]) {
-        importmap.browserImports["htmx.org"] = "https://esm.sh/htmx.org@1.9.6"
+        importmap.browserImports["htmx.org"] = "https://esm.sh/htmx.org@1.9.6";
       }
     }
   }
@@ -418,7 +426,7 @@ export let packit = async (service, isDevMode, runOneTime) => {
         DATA,
         glob,
         config,
-        chokidar
+        chokidar,
       };
       let data;
       try {
@@ -445,10 +453,10 @@ export let packit = async (service, isDevMode, runOneTime) => {
       )
         console.log(
           "%c[PACKIT] %cWriter %c" +
-          Writers[writer].name +
-          "%c finished in %c" +
-          (Date.now() - writer_then) +
-          "ms",
+            Writers[writer].name +
+            "%c finished in %c" +
+            (Date.now() - writer_then) +
+            "ms",
           "color: #db2777",
           "color: #ffffff",
           "color: #10b981",
@@ -578,8 +586,8 @@ export let packit = async (service, isDevMode, runOneTime) => {
     )
       console.log(
         "%c[PACKIT] %cCopyToPackit finished in %c" +
-        (Date.now() - copy_then) +
-        "ms",
+          (Date.now() - copy_then) +
+          "ms",
         "color: #db2777",
         "color: #ffffff",
         "color: #10b981"
@@ -614,7 +622,7 @@ export let packit = async (service, isDevMode, runOneTime) => {
     fs.writeFile(
       path.join(".reejs", "plugins.cache"),
       JSON.stringify(MODIFIED_FILES_PLUGINS),
-      () => { }
+      () => {}
     );
   }
   if (globalThis?.process) globalThis.process.env.PACKIT_RUNNING = "";
@@ -623,7 +631,7 @@ export let packit = async (service, isDevMode, runOneTime) => {
   if (isDevMode && !runOneTime) {
     try {
       if (!childProcess?.exitCode) childProcess?.kill?.();
-    } catch (e) { }
+    } catch (e) {}
     if (service == "node") {
       childProcess = spawn("node", [path.join(processCwd, "packit.build.js")], {
         detached: false,
@@ -656,7 +664,7 @@ export let packit = async (service, isDevMode, runOneTime) => {
     await fs.writeFile(
       path.join(".reejs", "files.cache"),
       JSON.stringify(MODIFIED_FILES),
-      () => { }
+      () => {}
     );
   }
 };
@@ -707,7 +715,8 @@ export default function Packit(prog) {
       if (!config.disablePackitStartupLog) {
         console.log("");
         console.log(
-          `%c  PACKIT %c 🍱 %cv${versions.reejs.version} - ${service}${devMode ? "" : " | packing for production"
+          `%c  PACKIT %c 🍱 %cv${versions.reejs.version} - ${service}${
+            devMode ? "" : " | packing for production"
           }`,
           "font-weight: bold; background-color: #db2777",
           "",
@@ -788,10 +797,10 @@ export default function Packit(prog) {
                 );
               console.log(
                 "%c  ➜  %cDebug mode %c" +
-                (globalThis?.process?.env?.DEBUG ||
+                  (globalThis?.process?.env?.DEBUG ||
                   globalThis?.Deno?.env?.get("DEBUG")
-                  ? "enabled"
-                  : "disabled"),
+                    ? "enabled"
+                    : "disabled"),
                 "color: #db2777",
                 "color: #6b7280",
                 "color: #10b981"
@@ -810,7 +819,7 @@ export default function Packit(prog) {
                 );
                 try {
                   if (!childProcess?.exitCode) childProcess?.kill?.();
-                } catch (e) { }
+                } catch (e) {}
               }
               process.exit();
             } else if (key.name == "a") {
@@ -828,10 +837,10 @@ export default function Packit(prog) {
               //console.log("hmm",globalThis.Deno.env.get("PSC_DISABLE"),"hmm")
               console.log(
                 "%c  ➜  %cFile caching %c" +
-                (globalThis?.process?.env?.PSC_DISABLE ||
+                  (globalThis?.process?.env?.PSC_DISABLE ||
                   globalThis?.Deno?.env?.get("PSC_DISABLE")
-                  ? "disabled"
-                  : "enabled"),
+                    ? "disabled"
+                    : "enabled"),
                 "color: #db2777",
                 "color: #6b7280",
                 "color: #10b981"
@@ -849,11 +858,13 @@ export default function Packit(prog) {
               console.clear();
               console.log("");
               console.log(
-                `%c  ${config.fakeVite
-                  ? "VITE"
-                  : `PACKIT %cv${versions.reejs.version} - ${service}`
+                `%c  ${
+                  config.fakeVite
+                    ? "VITE"
+                    : `PACKIT %cv${versions.reejs.version} - ${service}`
                 }`,
-                `color: ${config.fakeVite ? "green" : "#db2777"
+                `color: ${
+                  config.fakeVite ? "green" : "#db2777"
                 }; font-weight: bold`,
                 "color: #db2777"
               );
@@ -861,9 +872,10 @@ export default function Packit(prog) {
             } else if (key.name == "h") {
               console.log("%c  Shortcuts", "font-weight: bold");
               console.log(
-                `%c  ➜  %cpress %cr %cto ${config.disablePackitStartupLog
-                  ? "restart the server"
-                  : "ree-pack"
+                `%c  ➜  %cpress %cr %cto ${
+                  config.disablePackitStartupLog
+                    ? "restart the server"
+                    : "ree-pack"
                 }`,
                 `color: ${config.fakeVite ? "green" : "#db2777"}`,
                 "color: #6b7280",
