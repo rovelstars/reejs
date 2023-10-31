@@ -22,24 +22,24 @@ if (
 
 let importmap = fs.existsSync(path.join(processCwd, "import_map.json"))
   ? DynamicImport(
-      await import(`${processCwd}/import_map.json`, {
-        assert: { type: "json" },
-      })
-    )
+    await import(`${processCwd}/import_map.json`, {
+      assert: { type: "json" },
+    })
+  )
   : {};
 let cachemap = fs.existsSync(path.join(dir, "cache", "cache.json"))
   ? DynamicImport(
-      await import(`file://${dir}/cache/cache.json`, {
-        assert: { type: "json" },
-      })
-    )
+    await import(`file://${dir}/cache/cache.json`, {
+      assert: { type: "json" },
+    })
+  )
   : fs.existsSync(path.join(processCwd, ".reejs", "cache", "cache.json"))
-  ? DynamicImport(
+    ? DynamicImport(
       await import(`file://${processCwd}/.reejs/cache/cache.json`, {
         assert: { type: "json" },
       })
     )
-  : {};
+    : {};
 
 let react =
   importmap.imports?.react ||
@@ -99,7 +99,7 @@ globalThis.packitEvent.on("done", async () => {
     fs.writeFile(
       path.join(".reejs", "serve.cache"),
       JSON.stringify(MODIFIED_FILES),
-      () => {}
+      () => { }
     );
   }
 });
@@ -194,6 +194,26 @@ lexer = {
   //if the file has no extension, the pop() will return the file name, so we throw an error
 
   if (!code) {
+    if (!fs.existsSync(file)) throw new Error(`File/Folder ${file} not found`);
+    if (file.split("/")[file.split("/").length - 2] == "node_modules") return file;
+    //if file is a folder
+    if (fs.statSync(file).isDirectory()) {
+      if (fs.existsSync(path.join(file, "package.json"))) {
+        let pkg = JSON.parse(fs.readFileSync(path.join(file, "package.json")).toString());
+        if (pkg.main) {
+          file = path.join(file, pkg.main);
+          ext = file.split(".").pop();
+        }
+      }
+      //check if the folder has index.js, else throw an error
+      else if (!fs.existsSync(path.join(file, "index.js")))
+        throw new Error(
+          `Folder ${file} doesn't have an index.js file.`
+        );
+      else {
+        file = path.join(file, "index.js");
+      }
+    }
     code = fs.readFileSync(file).toString();
   }
   if (ext === "md" || ext === "mdx") {
@@ -210,10 +230,10 @@ lexer = {
     ext === "jsx"
       ? ["jsx"]
       : ext === "ts"
-      ? ["typescript"]
-      : ext === "tsx"
-      ? ["typescript", "jsx"]
-      : [];
+        ? ["typescript"]
+        : ext === "tsx"
+          ? ["typescript", "jsx"]
+          : [];
   if (transforms.includes("jsx") && code.includes("ISLAND_FILENAME")) {
     // we are working for @reejs/react/island.jsx
     code = code.replace(
@@ -243,7 +263,7 @@ jsxFragmentPragma : "Fragment",*/
           module: true,
           compress:
             globalThis?.process?.env?.NODE_ENV == "production" ||
-            globalThis?.Deno?.env?.get("NODE_ENV") == "production"
+              globalThis?.Deno?.env?.get("NODE_ENV") == "production"
               ? {}
               : false,
           mangle: false,
@@ -338,18 +358,17 @@ jsxFragmentPragma : "Fragment",*/
           });
           fs.writeFileSync(
             path.join(".reejs", "packit", "vite", "index.js"),
-            `import * as cheerio from "${
-              "../.." +
-              (
-                await dl("https://esm.sh/cheerio@1.0.0-rc.12/lib/slim", true)
-              ).split(".reejs")[1]
+            `import * as cheerio from "${"../.." +
+            (
+              await dl("https://esm.sh/cheerio@1.0.0-rc.12/lib/slim", true)
+            ).split(".reejs")[1]
             }";` +
-              fs
-                .readFileSync(
-                  path.dirname(import.meta.url).replace("file://", "") +
-                    "/vite.js"
-                )
-                .toString()
+            fs
+              .readFileSync(
+                path.dirname(import.meta.url).replace("file://", "") +
+                "/vite.js"
+              )
+              .toString()
           );
         }
         return "../packit/vite/index.js";
@@ -375,23 +394,21 @@ jsxFragmentPragma : "Fragment",*/
         let savedAt = await dl(pack.n, true);
         return "../cache/" + savedAt.split("cache/")[1];
       } else if (importmap.imports?.[pack.n]) {
-        return `../cache/${
-          cachemap[
-            importmap.imports?.[pack.n] +
-              "|" +
-              (globalThis.process?.env?.REEJS_UA ||
-                globalThis.Deno?.env?.get("REEJS_UA"))
+        return `../cache/${cachemap[
+          importmap.imports?.[pack.n] +
+          "|" +
+          (globalThis.process?.env?.REEJS_UA ||
+            globalThis.Deno?.env?.get("REEJS_UA"))
           ]
-        }`;
+          }`;
       } else if (importmap.browserImports?.[pack.n]) {
-        return `../cache/${
-          cachemap[
-            importmap.browserImports[pack.n] +
-              "|" +
-              (globalThis.process?.env?.REEJS_UA ||
-                globalThis.Deno?.env?.get("REEJS_UA"))
+        return `../cache/${cachemap[
+          importmap.browserImports[pack.n] +
+          "|" +
+          (globalThis.process?.env?.REEJS_UA ||
+            globalThis.Deno?.env?.get("REEJS_UA"))
           ]
-        }`;
+          }`;
       } else if (pack.n.startsWith("./") || pack.n.startsWith("../")) {
         //return pack.n;
         let ppack = pack.n;
@@ -572,22 +589,20 @@ jsxFragmentPragma : "Fragment",*/
     !result.includes("import React,{")
   ) {
     result =
-      `import React from "${
-        cachemap[
-          react +
-            "|" +
-            (globalThis.process?.env?.REEJS_UA ||
-              globalThis.Deno?.env?.get("REEJS_UA"))
+      `import React from "${cachemap[
+        react +
+        "|" +
+        (globalThis.process?.env?.REEJS_UA ||
+          globalThis.Deno?.env?.get("REEJS_UA"))
+      ]
+        ? `../cache/${cachemap[
+        react +
+        "|" +
+        (globalThis.process?.env?.REEJS_UA ||
+          globalThis.Deno?.env?.get("REEJS_UA"))
         ]
-          ? `../cache/${
-              cachemap[
-                react +
-                  "|" +
-                  (globalThis.process?.env?.REEJS_UA ||
-                    globalThis.Deno?.env?.get("REEJS_UA"))
-              ]
-            }`
-          : await dl(react, true)
+        }`
+        : await dl(react, true)
       }";\n` + result;
   }
   result += "\n//# sourceURL=file://" + file.replace(processCwd, ".");

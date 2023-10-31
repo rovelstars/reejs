@@ -3,15 +3,13 @@ import path from "pathe";
 import dl from "@reejs/imports/URLImportInstaller.js";
 import { sync } from "./npmsync.js";
 
-export let install = async (name, url, opts) => {
+export let install = async (name, url, opts = {}) => {
   let ua = opts["user-agent"] || opts["u"];
   // we would show time taken to install the package
   let start = Date.now();
   let isBrowser = opts?.browser || opts?.b ? "browserImports" : "imports";
   if (
-    !fs.existsSync(path.join(process.cwd(), "reecfg.json")) &&
-    opts["force"] !== true &&
-    opts["f"] !== true
+    !fs.existsSync(path.join(process.cwd(), "reecfg.json"))
   ) {
     console.log(
       "%c[REEJS] %cThis is not a reejs project!",
@@ -35,7 +33,8 @@ export let install = async (name, url, opts) => {
       })
     );
     let end = Date.now();
-    await sync();
+    if (!opts.nosync)
+      await sync();
     let time = (end - start) / 1000;
     console.log(
       "%c[DOWNLOAD] %cInstalled all packages in " + time + "s",
@@ -52,28 +51,18 @@ export let install = async (name, url, opts) => {
       if (import_map[isBrowser][name]) {
         url = import_map[isBrowser][name];
       } else {
-        if (!opts.force && !opts.f) {
-          console.log(
-            "%c[REEJS] %cPackage not found in import_map.json",
-            "color: red",
-            "color: yellow"
-          );
-          console.log(
-            "%c[REEJS] %cPlease specify a url alongwith name to add it. Use %c`--force`%c to use default esm.sh with nodejs/browser (based on your args) target & bundled version.",
-            "color: red",
-            "color: white",
-            "color: blue;",
-            "color:white"
-          );
-          return;
-        } else {
-          if (!name.startsWith("https://") && !name.startsWith("http://")) {
-            console.log("Generating default URL...");
-            url = `https://esm.sh/${name}?bundle`;
-            console.log(url);
-          } else {
-            url = name;
+        if (!name.startsWith("https://") && !name.startsWith("http://")) {
+          url = `https://esm.sh/${name}?bundle`;
+          //use fetch head and get the redirect url
+          let res = await fetch(url, {
+            method: "HEAD",
+            redirect: "manual"
+          });
+          if (res.status === 302) {
+            url = res.headers.get("location");
           }
+        } else {
+          url = name;
         }
       }
       await dl(url, true, null, null, ua);
@@ -90,7 +79,6 @@ export let install = async (name, url, opts) => {
     let import_map = JSON.parse(
       fs.readFileSync(path.join(process.cwd(), "import_map.json"))
     );
-    console.log(isBrowser, name, url);
     import_map[isBrowser][name] = url;
     fs.writeFileSync(
       path.join(process.cwd(), "import_map.json"),
@@ -99,7 +87,8 @@ export let install = async (name, url, opts) => {
   }
   let end = Date.now();
   let time = (end - start) / 1000;
-  await sync();
+  if (!opts.nosync)
+    await sync();
   console.log(
     "%c[DOWNLOAD] %cInstalled " + name + " in " + time + "s",
     "color:green",
