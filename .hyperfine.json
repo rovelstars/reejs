@@ -3,8 +3,9 @@
     "name": "Install dependencies",
     "command": "cd project && reejs i",
     "extraArgs": {
+      "warmup": 1,
       "runs": 3,
-      "prepare": "rm -rf project && git clone https://github.com/ree-js/project project",
+      "prepare": "rm -rf project && giget gh:ree-js/project project --prefer-offline",
       "cleanup": "rm -rf project"
     }
   },
@@ -12,8 +13,9 @@
     "name": "Packit - Node [DEV]",
     "command": "cd project && reejs packit node -d -o",
     "extraArgs": {
+      "warmup": 1,
       "runs": 3,
-      "prepare": "rm -rf project && git clone https://github.com/ree-js/project project && cd project && reejs i",
+      "prepare": "rm -rf project && giget gh:ree-js/project project --prefer-offline && cd project && reejs i",
       "cleanup": "rm -rf project"
     }
   },
@@ -21,8 +23,9 @@
     "name": "Packit - Node [PROD]",
     "command": "cd project && reejs packit node",
     "extraArgs": {
+      "warmup": 1,
       "runs": 3,
-      "prepare": "rm -rf project && git clone https://github.com/ree-js/project project && cd project && reejs i",
+      "prepare": "rm -rf project && giget gh:ree-js/project project --prefer-offline && cd project && reejs i",
       "cleanup": "rm -rf project"
     }
   }

@@ -36,6 +36,7 @@ jobs:
           npm link .
           npx -v
           reejs doctor
+          npm i -g giget
 
       - name: Hyperfine
         if: ${{ !contains(github.event.head_commit.message, '[publish]') }}
