@@ -1,16 +1,19 @@
-# Ree.js
+<div align='center'>
+  <img src="https://dev-to-uploads.s3.amazonaws.com/uploads/articles/st8dij8atau8h8brnahu.png" height='130px' width='331.5px' alt="Ree.js" />
+  <h3>Finally the best of both worlds: Fast build times and a great developer experience 😎</h3>
+</div>
 
-> A web framework that's built different. Built for speed, simplicity, and compatibility.
+> Ree.js is a library that makes web development faster and easier by providing features such as URL Imports, JSX support, and server-side rendering. URL Imports are a way of importing modules from URLs instead of local files or npm packages. This can reduce the download size and improve the performance of your web applications. Let's get cooler, shouldn't we?
 
-## Read Documentation
+## 📖 Read Documentation
 
-Documentation is available at [here](https://ree.js.org/docs)
+Documentation is available at [here](https://ree.js.org/docs) . If you find any mistakes, please make an issue. Incase you have any questions, please ask them on our [Discord Server](https://discord.rovelstars.com/server)
 
-## Contributing
+## ✒️ Contributing
 
 We welcome all contributions. Please read our [CONTRIBUTING.md](https://github.com/rovelstars/reejs/blob/main/CONTRIBUTING.md)
 
-## Roadmap
+## 🛣️ Roadmap
 
 - [x] Reewrite Packit to be modular
 - [ ] Packit in dev mode should run hono server in dev mode, and dynamically transpile & load files on a request.
@@ -27,7 +30,7 @@ We welcome all contributions. Please read our [CONTRIBUTING.md](https://github.c
 - [ ] Make Reejs more faster (we can do better haha!)
 - [ ] Allow importing files under a scope url (like being able to import `@reejs/utils/log.js` when import maps has`@reejs/utils`). I expect packit to be able to handle this, rather than `@reejs/imports` handling it. Packit should probably save this data to a seperate object in import maps from where `@reejs/imports` can read it in future.
 
-## Benchmark
+## 🚤 Benchmark
 
 > Ran on Pentium G620 @ 2.60GHz (released in Q2'11), 8GB DDR3 RAM, Arch Linux on 1st June 2023 Reejs v0.9.15, Nodejs v18.16.0
 
@@ -49,7 +52,7 @@ Nextjs: default nextjs project: no typescript, no eslint, no tailwind, no app ro
 
 | Transpiler   | Time                 |
 | ------------ | -------------------- |
-| Packit       | 42ms                 |
+| Packit       | 17ms                 |
 | Vite         | 225ms                |
 | Swc (Nextjs) | 1.4s + 932ms + 422ms |
 
@@ -57,7 +60,7 @@ Nextjs: default nextjs project: no typescript, no eslint, no tailwind, no app ro
 
 | Transpiler   | Time   |
 | ------------ | ------ |
-| Packit       | 198ms  |
+| Packit       | 172ms  |
 | Vite         | 2.31s  |
 | Swc (Nextjs) | 37.68s |
 
