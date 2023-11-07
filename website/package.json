@@ -16,5 +16,9 @@
   "devDependencies": {
     "vitepress": "^1.0.0-rc.13",
     "vue": "^3.3.4"
+  },
+  "dependencies": {
+    "chart.js": "^4.4.0",
+    "vue-chartjs": "^5.2.0"
   }
 }

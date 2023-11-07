@@ -13,6 +13,9 @@ hero:
     - theme: alt
       text: Install
       link: /docs/getting-started/installation
+    - theme: alt
+      text: Benchmarks
+      link: /graph
 
 features:
   - icon: ⚡️
