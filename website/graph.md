@@ -78,7 +78,7 @@ this.loaded = false
       this.reejsDevCacWNextjs = (parseData(nextjsData,'Nextjs - Node [DEV]') / parseData(reejsData,'Packit - Node [DEV]')).toFixed(2)
       this.reejsProdCacWVite = (parseData(viteData,'Vite - Node [PROD]') / parseData(reejsData,'Packit - Node [PROD]')).toFixed(2)
       this.reejsProdCacWNextjs = (parseData(nextjsData,'Nextjs - Node [PROD]') / parseData(reejsData,'Packit - Node [PROD]')).toFixed(2)
-      
+
       this.loaded = true
     } catch (e) {
       console.error(e)
