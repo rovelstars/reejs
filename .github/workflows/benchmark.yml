@@ -1,6 +1,8 @@
 name: Benchmark Ree.js
 
-# This action runs on every push to the main branch, and on every pull request to the main branch
+on:
+  schedule:
+    - cron: '0 0 * * *'
 on:
   pull_request:
   push:
