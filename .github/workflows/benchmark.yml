@@ -3,7 +3,6 @@ name: Benchmark Ree.js
 on:
   schedule:
     - cron: '0 0 * * *'
-on:
   pull_request:
   push:
     branches:
