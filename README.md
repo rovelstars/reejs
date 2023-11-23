@@ -13,13 +13,15 @@
 <img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/rovelstars/reejs?style=for-the-badge">
 <img alt="GitHub forks" src="https://img.shields.io/github/forks/rovelstars/reejs?style=for-the-badge">
 <img alt="GitHub issues" src="https://img.shields.io/github/issues/rovelstars/reejs?style=for-the-badge">
-<img alt="GitHub package.json version (branch)" src="https://img.shields.io/github/package-json/v/rovelstars/reejs/main?
-style=for-the-badge&logo=npm">
-<img alt="X (formerly Twitter) Follow" src="https://img.shields.io/twitter/follow/rovelstars?link=https%3A%2F%2Ftwitter.com%2FRovelStars">
-<img alt="X (formerly Twitter) Follow" src="https://img.shields.io/twitter/follow/ren_hiyama_gg?link=https%3A%2F%2Ftwitter.com%2Fren_hiyama_gg">
+<a href="https://twitter.com/rovelstars">
+  <img alt="X (formerly Twitter) Follow" src="https://img.shields.io/twitter/follow/rovelstars">
+</a>
+<a href="https://twitter.com/ren_hiyama_gg">
+  <img alt="X (formerly Twitter) Follow" src="https://img.shields.io/twitter/follow/ren_hiyama_gg">
+</a>
   </p>
 
-> Ree.js is a library that makes web development faster and easier by providing features such as URL Imports, JSX support, and server-side rendering. URL Imports are a way of importing modules from URLs instead of local files or npm packages. This can reduce the download size and improve the performance of your web applications. Let's get cooler, shouldn't we?
+> Ree.js is a library that makes web development faster and easier by providing features such as URL Imports, JSX support, and server-side rendering. URL Imports are a way of importing modules from URLs instead of local files or npm packages. This can reduce the download size and improve the performance of your web applications. It doesn't hurt to use the latest features for better performance, right?
 
 ## 📖 Read Documentation
 
