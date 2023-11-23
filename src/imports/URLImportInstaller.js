@@ -492,10 +492,10 @@ let dl = async function (
       ext === "jsx"
         ? ["jsx"]
         : ext === "ts"
-        ? ["typescript"]
-        : ext === "tsx"
-        ? ["typescript", "jsx"]
-        : [];
+          ? ["typescript"]
+          : ext === "tsx"
+            ? ["typescript", "jsx"]
+            : [];
     code = parser.transform(code, {
       transforms,
       production: true,

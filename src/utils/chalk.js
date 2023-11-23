@@ -96,8 +96,8 @@ function P() {
             ? e < 8
               ? 16
               : e > 248
-              ? 231
-              : Math.round(((e - 8) / 247) * 24) + 232
+                ? 231
+                : Math.round(((e - 8) / 247) * 24) + 232
             : 16 +
                 36 * Math.round((e / 255) * 5) +
                 6 * Math.round((t / 255) * 5) +
@@ -172,10 +172,10 @@ function S() {
     return i.FORCE_COLOR === "true"
       ? 1
       : i.FORCE_COLOR === "false"
-      ? 0
-      : i.FORCE_COLOR.length === 0
-      ? 1
-      : Math.min(Number.parseInt(i.FORCE_COLOR, 10), 3);
+        ? 0
+        : i.FORCE_COLOR.length === 0
+          ? 1
+          : Math.min(Number.parseInt(i.FORCE_COLOR, 10), 3);
 }
 function L(r) {
   return r === 0
@@ -207,15 +207,15 @@ function Y(r, { streamIsTTY: e, sniffFlags: t = !0 } = {}) {
     return "GITHUB_ACTIONS" in i
       ? 3
       : [
-          "TRAVIS",
-          "CIRCLECI",
-          "APPVEYOR",
-          "GITLAB_CI",
-          "BUILDKITE",
-          "DRONE",
-        ].some(a => a in i) || i.CI_NAME === "codeship"
-      ? 1
-      : s;
+            "TRAVIS",
+            "CIRCLECI",
+            "APPVEYOR",
+            "GITLAB_CI",
+            "BUILDKITE",
+            "DRONE",
+          ].some(a => a in i) || i.CI_NAME === "codeship"
+        ? 1
+        : s;
   if ("TEAMCITY_VERSION" in i)
     return /^(9\.(0*[1-9]\d*)\.|\d{2,}\.)/.test(i.TEAMCITY_VERSION) ? 1 : 0;
   if (i.COLORTERM === "truecolor" || i.TERM === "xterm-kitty") return 3;
@@ -231,10 +231,10 @@ function Y(r, { streamIsTTY: e, sniffFlags: t = !0 } = {}) {
   return /-256(color)?$/i.test(i.TERM)
     ? 2
     : /^screen|^xterm|^vt100|^vt220|^rxvt|color|ansi|cygwin|linux/i.test(
-        i.TERM
-      ) || "COLORTERM" in i
-    ? 1
-    : s;
+          i.TERM
+        ) || "COLORTERM" in i
+      ? 1
+      : s;
 }
 function E(r, e = {}) {
   let t = Y(r, { streamIsTTY: r && r.isTTY, ...e });
@@ -321,11 +321,11 @@ var v = (r, e, t, ...o) =>
       ? e === "ansi16m"
         ? c[t].ansi16m(...o)
         : e === "ansi256"
-        ? c[t].ansi256(c.rgbToAnsi256(...o))
-        : c[t].ansi(c.rgbToAnsi(...o))
+          ? c[t].ansi256(c.rgbToAnsi256(...o))
+          : c[t].ansi(c.rgbToAnsi(...o))
       : r === "hex"
-      ? v("rgb", e, t, ...c.hexToRgb(...o))
-      : c[t][r](...o),
+        ? v("rgb", e, t, ...c.hexToRgb(...o))
+        : c[t][r](...o),
   U = ["rgb", "hex", "ansi256"];
 for (let r of U) {
   g[r] = {

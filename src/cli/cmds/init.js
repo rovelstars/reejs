@@ -14,14 +14,30 @@ export default function (prog) {
     .option("-y, --yes", "Skip prompts and use mentioned options", false)
     .option("-n, --no-install", "Don't install dependencies", false)
     .option("-p, --package-manager", "Package manager to use", "npm")
-    .option("-f, --features", "Features to include (comma separated)", "preact,twind,api,static")
+    .option(
+      "-f, --features",
+      "Features to include (comma separated)",
+      "preact,twind,api,static"
+    )
     .option("-d, --dir", "Directory to create the project in", "./")
     .action(async (name, opts) => {
-      let clack = await Import("https://esm.sh/v132/@clack/prompts@0.7.0?bundle", { internalDir: true });
-      let pc = await Import("https://esm.sh/v132/picocolors@1.0.0?bundle", { internalDir: true });
-      let boxen = await Import("https://esm.sh/v132/boxen@7.1.1?bundle", { internalDir: true });
-      let gradient = await Import("https://esm.sh/v132/gradient-string@2.0.2?bundle", { internalDir: true });
-      let { $ } = await Import("https://esm.sh/v132/execa@8.0.1?bundle", { internalDir: true });
+      let clack = await Import(
+        "https://esm.sh/v132/@clack/prompts@0.7.0?bundle",
+        { internalDir: true }
+      );
+      let pc = await Import("https://esm.sh/v132/picocolors@1.0.0?bundle", {
+        internalDir: true,
+      });
+      let boxen = await Import("https://esm.sh/v132/boxen@7.1.1?bundle", {
+        internalDir: true,
+      });
+      let gradient = await Import(
+        "https://esm.sh/v132/gradient-string@2.0.2?bundle",
+        { internalDir: true }
+      );
+      let { $ } = await Import("https://esm.sh/v132/execa@8.0.1?bundle", {
+        internalDir: true,
+      });
       let g = gradient(["#7c3aed", "#db2777"]);
 
       const dependencies = {
@@ -36,7 +52,11 @@ export default function (prog) {
       };
 
       function GetPackage(name, opts) {
-        const { bundle = false, isReactPackage = false, extDeps = [] } = opts || {};
+        const {
+          bundle = false,
+          isReactPackage = false,
+          extDeps = [],
+        } = opts || {};
         //a name would be like "react" or "react-dom/client"
         //replace the name with the version, prefix with "https://esm.sh/", suffix with "@<version>"
 
@@ -46,8 +66,9 @@ export default function (prog) {
         const pkgName = name.split("/")[0];
         let scope = name.replace(pkgName, "");
         scope = scope.split("?")[0];
-        let url = `https://esm.sh/${pkgName}${dependencies[pkgName] ? `@${dependencies[pkgName]}` : ""
-          }${scope}`;
+        let url = `https://esm.sh/${pkgName}${
+          dependencies[pkgName] ? `@${dependencies[pkgName]}` : ""
+        }${scope}`;
         url = new URL(url);
         if (isReactPackage) {
           url.searchParams.append("external", "react,react-dom");
@@ -64,7 +85,10 @@ export default function (prog) {
         console.log("");
         console.log(
           g.multiline(
-            boxen("Welcome to Reejs Framework", { padding: 1, borderStyle: "round" })
+            boxen("Welcome to Reejs Framework", {
+              padding: 1,
+              borderStyle: "round",
+            })
           )
         );
         console.log("");
@@ -80,7 +104,10 @@ export default function (prog) {
         clack.intro(g("Let's create a new project!"));
         projectName = await clack.text({
           message: g("What would we create your next project?"),
-          initialValue: projectName.startsWith("./") || projectName.startsWith("../") ? projectName : "./" + projectName,
+          initialValue:
+            projectName.startsWith("./") || projectName.startsWith("../")
+              ? projectName
+              : "./" + projectName,
           validate(value) {
             if (!value.startsWith("./") && !value.startsWith("../"))
               return `Provide a relative path!`;
@@ -91,7 +118,8 @@ export default function (prog) {
         checkCancel(projectName);
       }
 
-      let value, features = [];
+      let value,
+        features = [];
 
       async function getFeatures() {
         value = await clack.multiselect({
@@ -146,7 +174,7 @@ export default function (prog) {
       if (!opts.yes) {
         features = await getFeatures();
       } else {
-        features = opts.features.split(",").map((v) => v.trim());
+        features = opts.features.split(",").map(v => v.trim());
       }
 
       let packageManager = opts.packageManager;
@@ -186,7 +214,9 @@ export default function (prog) {
 
       fs.mkdirSync(path.join(dir, "src"), { recursive: true });
       if (features.includes("api")) {
-        fs.mkdirSync(path.join(dir, "src", "pages", "api"), { recursive: true });
+        fs.mkdirSync(path.join(dir, "src", "pages", "api"), {
+          recursive: true,
+        });
         fs.writeFileSync(
           path.join(dir, "src", "pages", "api", "index.js"),
           `export default function (c) {\n  return c.json({ hello: "world" })\n}`,
@@ -201,9 +231,10 @@ export default function (prog) {
         fs.mkdirSync(path.join(dir, "src", "components"), { recursive: true });
         fs.writeFileSync(
           path.join(dir, "src", "pages", "index.jsx"),
-          `export default function(){\n  return <h1 ${features.includes("tailwind") || features.includes("twind")
-            ? 'className="text-3xl font-bold text-violet-600"'
-            : ""
+          `export default function(){\n  return <h1 ${
+            features.includes("tailwind") || features.includes("twind")
+              ? 'className="text-3xl font-bold text-violet-600"'
+              : ""
           }>Hello from Reejs!</h1>\n}`,
           "utf-8"
         );
@@ -215,9 +246,10 @@ export default function (prog) {
         fs.writeFileSync(
           path.join(dir, "src", "pages", "_app.jsx"),
           `import App from "@reejs/react/app";
-export default ${features.includes("tailwind") || features.includes("twind")
-            ? "App"
-            : "function({ children }){return <App children={children} className=\"!block\" style={{display: 'none'}} />}"
+export default ${
+            features.includes("tailwind") || features.includes("twind")
+              ? "App"
+              : "function({ children }){return <App children={children} className=\"!block\" style={{display: 'none'}} />}"
           };`
         );
         fs.mkdirSync(path.join(dir, "src", "components"), {
@@ -257,14 +289,18 @@ export default ${features.includes("tailwind") || features.includes("twind")
       importmap["@reejs/server"] = GetPackage("@reejs/server");
       importmap["@reejs/utils/log.js"] = GetPackage("@reejs/utils/log.js");
       importmap["@reejs/react/app.jsx"] = GetPackage("@reejs/react/app.jsx");
-      importmap["@reejs/imports/debug.js"] = GetPackage("@reejs/imports/debug.js");
+      importmap["@reejs/imports/debug.js"] = GetPackage(
+        "@reejs/imports/debug.js"
+      );
 
       if (features.includes("react")) {
         importmap["react"] = GetPackage("react");
         importmap["react-dom"] = GetPackage("react-dom");
         importmap["react-dom/server"] = GetPackage("react-dom/server");
         browserimportmap["react"] = GetPackage("react", { bundle: true });
-        browserimportmap["react-dom"] = GetPackage("react-dom", { bundle: true });
+        browserimportmap["react-dom"] = GetPackage("react-dom", {
+          bundle: true,
+        });
         browserimportmap["react-dom/client"] = GetPackage("react-dom/client", {
           bundle: true,
         });
@@ -274,15 +310,25 @@ export default ${features.includes("tailwind") || features.includes("twind")
         importmap["react-dom"] = GetPackage("preact/compat");
         importmap["preact"] = GetPackage("preact");
         importmap["preact/debug"] = GetPackage("preact/debug");
-        importmap["preact-render-to-string"] = GetPackage("preact-render-to-string", {
-          extDeps: ["preact"],
+        importmap["preact-render-to-string"] = GetPackage(
+          "preact-render-to-string",
+          {
+            extDeps: ["preact"],
+          }
+        );
+        browserimportmap["react"] = GetPackage("preact/compat", {
+          bundle: true,
         });
-        browserimportmap["react"] = GetPackage("preact/compat", { bundle: true });
-        browserimportmap["react-dom"] = GetPackage("preact/compat", { bundle: true });
-        browserimportmap["preact/debug"] = GetPackage("preact", { bundle: true });
+        browserimportmap["react-dom"] = GetPackage("preact/compat", {
+          bundle: true,
+        });
+        browserimportmap["preact/debug"] = GetPackage("preact", {
+          bundle: true,
+        });
       }
       if (features.includes("twind")) {
-        importmap["@twind/core"] = "https://cdn.jsdelivr.net/npm/@twind/core/+esm";
+        importmap["@twind/core"] =
+          "https://cdn.jsdelivr.net/npm/@twind/core/+esm";
         browserimportmap["@twind/core"] = importmap["@twind/core"];
         importmap["@twind/preset-autoprefix"] =
           "https://cdn.jsdelivr.net/npm/@twind/preset-autoprefix/+esm";
@@ -320,22 +366,23 @@ darkMode: "class",
       }
       if (features.includes("tailwind")) {
         //tailwind doesn't work from url imports. use it from npm directly
-        pkg.devDependencies["tailwindcss"] = await getLatestVersion("tailwindcss");
+        pkg.devDependencies["tailwindcss"] =
+          await getLatestVersion("tailwindcss");
         //write tailwind.config.js
         fs.writeFileSync(
           path.join(dir, "tailwind.config.js"),
           "export default " +
-          JSON.stringify(
-            {
-              content: ["./src/**/*.{js,jsx,ts,tsx}"],
-              theme: {
-                extend: {},
+            JSON.stringify(
+              {
+                content: ["./src/**/*.{js,jsx,ts,tsx}"],
+                theme: {
+                  extend: {},
+                },
+                plugins: [],
               },
-              plugins: [],
-            },
-            null,
-            2
-          ),
+              null,
+              2
+            ),
           "utf-8"
         );
         //write src/input.css
@@ -362,7 +409,8 @@ darkMode: "class",
       // TODO: work on below string to function.
       importmap["hono"] = "https://esm.sh/v132/hono@3.6.3";
       importmap["hono/compress"] = "https://esm.sh/v132/hono@3.6.3/compress";
-      importmap["@hono/node-server"] = "https://esm.sh/v132/@hono/node-server@1.1.1";
+      importmap["@hono/node-server"] =
+        "https://esm.sh/v132/@hono/node-server@1.1.1";
       importmap["@hono/node-server/serve-static"] =
         "https://esm.sh/v132/@hono/node-server@1.1.1/serve-static";
       pkg.devDependencies["reejs"] = await getLatestVersion("reejs");
@@ -453,6 +501,5 @@ darkMode: "class",
         );
       }
       clack.outro(g("Let's get started!"));
-
     });
 }

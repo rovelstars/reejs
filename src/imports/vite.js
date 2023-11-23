@@ -190,10 +190,10 @@ export function defineConfig(config) {
           service !== "node" && service !== "workers" //todo: make a custom serveStatic myself.
             ? "app.get('/__reejs/**',serveStatic({root:'./__reejs/',rewriteRequestPath:(p)=>p.replace('/__reejs','')}));app.get('/**',serveStatic({root:'./public',rewriteRequestPath:(p)=>p.replace('/public','')}));"
             : service == "deno-deploy" ||
-              service == "node" ||
-              service == "workers"
-            ? reejsSavedFilesString
-            : "";
+                service == "node" ||
+                service == "workers"
+              ? reejsSavedFilesString
+              : "";
         mainFile += "\napp.get('/__reejs/*',(c)=>{return c.notFound()});";
         mainFile +=
           "app.get('/',(c)=>{c.header('Content-type','text/html');return c.body(fs.readFileSync('./.reejs/serve/index.html'))});";

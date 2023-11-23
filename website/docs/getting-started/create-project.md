@@ -35,7 +35,7 @@ You can find a list of all available features in the interactive prompt. You can
 - static
 - million.js
 
---- 
+---
 
 Therefore, to create a new Reejs project called `my-app` with Preact, using Twind, having a REST API and serving static files, you would run the following command:
 

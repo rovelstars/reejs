@@ -36,7 +36,7 @@ let version = {
   imports: imports_version,
   utils: utils_version,
   react: react_version,
-  server: server_version
+  server: server_version,
 };
 
 //generate js file exporting JSON.stringify(version)

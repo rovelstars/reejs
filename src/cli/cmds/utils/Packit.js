@@ -179,8 +179,8 @@ export let writers = [
         "@hono/node-server/serve-static"
       )}"`
           : service === "deno-deploy"
-          ? `import { serveStatic } from "https://deno.land/x/hono/middleware.ts";`
-          : ""
+            ? `import { serveStatic } from "https://deno.land/x/hono/middleware.ts";`
+            : ""
       }
       ${
         config.disablePreactCompat

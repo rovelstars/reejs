@@ -95,18 +95,18 @@ export default function Header({ children, data }) {
       data.formatDetection.email === false
         ? content.push("no")
         : data.formatDetection.email === true
-        ? content.push("yes")
-        : null;
+          ? content.push("yes")
+          : null;
       data.formatDetection.address === false
         ? content.push("no")
         : data.formatDetection.address === true
-        ? content.push("yes")
-        : null;
+          ? content.push("yes")
+          : null;
       data.formatDetection.telephone === false
         ? content.push("no")
         : data.formatDetection.telephone === true
-        ? content.push("yes")
-        : null;
+          ? content.push("yes")
+          : null;
     }
     if (data.alternates) {
       if (data.alternates.canonical) {
@@ -290,8 +290,8 @@ export default function Header({ children, data }) {
           value === true
             ? content.push(key)
             : value === false
-            ? content.push(`no${key}`)
-            : content.push(`${key}:${value}`);
+              ? content.push(`no${key}`)
+              : content.push(`${key}:${value}`);
         }
         return content.join(", ");
       };
