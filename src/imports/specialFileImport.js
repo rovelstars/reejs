@@ -22,24 +22,24 @@ if (
 
 let importmap = fs.existsSync(path.join(processCwd, "import_map.json"))
   ? DynamicImport(
-      await import(`${processCwd}/import_map.json`, {
-        assert: { type: "json" },
-      })
-    )
+    await import(`${processCwd}/import_map.json`, {
+      assert: { type: "json" },
+    })
+  )
   : {};
 let cachemap = fs.existsSync(path.join(dir, "cache", "cache.json"))
   ? DynamicImport(
-      await import(`file://${dir}/cache/cache.json`, {
-        assert: { type: "json" },
-      })
-    )
+    await import(`file://${dir}/cache/cache.json`, {
+      assert: { type: "json" },
+    })
+  )
   : fs.existsSync(path.join(processCwd, ".reejs", "cache", "cache.json"))
-  ? DynamicImport(
+    ? DynamicImport(
       await import(`file://${processCwd}/.reejs/cache/cache.json`, {
         assert: { type: "json" },
       })
     )
-  : {};
+    : {};
 
 let react =
   importmap.imports?.react ||
@@ -99,7 +99,7 @@ globalThis.packitEvent.on("done", async () => {
     fs.writeFile(
       path.join(".reejs", "serve.cache"),
       JSON.stringify(MODIFIED_FILES),
-      () => {}
+      () => { }
     );
   }
 });
@@ -231,10 +231,10 @@ lexer = {
     ext === "jsx"
       ? ["jsx"]
       : ext === "ts"
-      ? ["typescript"]
-      : ext === "tsx"
-      ? ["typescript", "jsx"]
-      : [];
+        ? ["typescript"]
+        : ext === "tsx"
+          ? ["typescript", "jsx"]
+          : [];
   if (transforms.includes("jsx") && code.includes("ISLAND_FILENAME")) {
     // we are working for @reejs/react/island.jsx
     code = code.replace(
@@ -264,7 +264,7 @@ jsxFragmentPragma : "Fragment",*/
           module: true,
           compress:
             globalThis?.process?.env?.NODE_ENV == "production" ||
-            globalThis?.Deno?.env?.get("NODE_ENV") == "production"
+              globalThis?.Deno?.env?.get("NODE_ENV") == "production"
               ? {}
               : false,
           mangle: false,
@@ -359,18 +359,17 @@ jsxFragmentPragma : "Fragment",*/
           });
           fs.writeFileSync(
             path.join(".reejs", "packit", "vite", "index.js"),
-            `import * as cheerio from "${
-              "../.." +
-              (
-                await dl("https://esm.sh/cheerio@1.0.0-rc.12/lib/slim", true)
-              ).split(".reejs")[1]
+            `import * as cheerio from "${"../.." +
+            (
+              await dl("https://esm.sh/cheerio@1.0.0-rc.12/lib/slim", true)
+            ).split(".reejs")[1]
             }";` +
-              fs
-                .readFileSync(
-                  path.dirname(import.meta.url).replace("file://", "") +
-                    "/vite.js"
-                )
-                .toString()
+            fs
+              .readFileSync(
+                path.dirname(import.meta.url).replace("file://", "") +
+                "/vite.js"
+              )
+              .toString()
           );
         }
         return "../packit/vite/index.js";
@@ -396,23 +395,21 @@ jsxFragmentPragma : "Fragment",*/
         let savedAt = await dl(pack.n, true);
         return "../cache/" + savedAt.split("cache/")[1];
       } else if (importmap.imports?.[pack.n]) {
-        return `../cache/${
-          cachemap[
-            importmap.imports?.[pack.n] +
-              "|" +
-              (globalThis.process?.env?.REEJS_UA ||
-                globalThis.Deno?.env?.get("REEJS_UA"))
+        return `../cache/${cachemap[
+          importmap.imports?.[pack.n] +
+          "|" +
+          (globalThis.process?.env?.REEJS_UA ||
+            globalThis.Deno?.env?.get("REEJS_UA"))
           ]
-        }`;
+          }`;
       } else if (importmap.browserImports?.[pack.n]) {
-        return `../cache/${
-          cachemap[
-            importmap.browserImports[pack.n] +
-              "|" +
-              (globalThis.process?.env?.REEJS_UA ||
-                globalThis.Deno?.env?.get("REEJS_UA"))
+        return `../cache/${cachemap[
+          importmap.browserImports[pack.n] +
+          "|" +
+          (globalThis.process?.env?.REEJS_UA ||
+            globalThis.Deno?.env?.get("REEJS_UA"))
           ]
-        }`;
+          }`;
       } else if (pack.n.startsWith("./") || pack.n.startsWith("../")) {
         //return pack.n;
         let ppack = pack.n;
@@ -593,25 +590,28 @@ jsxFragmentPragma : "Fragment",*/
     !result.includes("import React,{")
   ) {
     result =
-      `import React from "${
-        cachemap[
-          react +
-            "|" +
-            (globalThis.process?.env?.REEJS_UA ||
-              globalThis.Deno?.env?.get("REEJS_UA"))
+      `import React from "${cachemap[
+        react +
+        "|" +
+        (globalThis.process?.env?.REEJS_UA ||
+          globalThis.Deno?.env?.get("REEJS_UA"))
+      ]
+        ? `../cache/${cachemap[
+        react +
+        "|" +
+        (globalThis.process?.env?.REEJS_UA ||
+          globalThis.Deno?.env?.get("REEJS_UA"))
         ]
-          ? `../cache/${
-              cachemap[
-                react +
-                  "|" +
-                  (globalThis.process?.env?.REEJS_UA ||
-                    globalThis.Deno?.env?.get("REEJS_UA"))
-              ]
-            }`
-          : await dl(react, true)
+        }`
+        : await dl(react, true)
       }";\n` + result;
   }
   result += "\n//# sourceURL=file://" + file.replace(processCwd, ".");
+  //add custom import.meta.url if the code includes it already and we are on nodejs runtime
+  if (result.includes("import.meta.url") && service == "node") {
+    result = `import.meta.url = "file://${path.join(processCwd, file)
+      }";\n` + result;
+  }
   // save it to reejsDir/serve/[hash].js
   let savedAt = path.join(
     globalThis?.process?.env?.USED_BY_CLI_APP ? dir : ".reejs",

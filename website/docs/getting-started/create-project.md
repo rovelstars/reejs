@@ -6,8 +6,8 @@ To create a new Reejs project, run the following command:
 reejs init <project-name> [options]
 ```
 
-::: warning
-After creating the project, you must run `reejs i && reejs sync && npm i` only for the first time. This installs some necessary reejs dependencies. This process will be removed soon in the future.
+::: tip
+Trying out for the first time? Don't run `-y` or `--yes` to get interactive prompts. If you're a veteran, you can run `-y` or `--yes` to skip the prompts, and apply your custom arguments along with it or it chooses the default options automatically.
 :::
 
 # Choosing Features
@@ -25,18 +25,25 @@ You can select multiple features by separating them with a comma. You must not a
 
 # Available Features
 
-You can find a list of all available features below.
+You can find a list of all available features in the interactive prompt. You can also find them below:
 
 - react
+- preact
 - tailwind
+- twind
 - api
 - static
+- million.js
 
-Therefore, to create a new Reejs project called `my-app` with React, using TailwindCSS, having a REST API and serving static files, you would run the following command:
+--- 
+
+Therefore, to create a new Reejs project called `my-app` with Preact, using Twind, having a REST API and serving static files, you would run the following command:
 
 ```sh
-reejs init my-app --features react,tailwind,api,static
+reejs init my-app -f -y
 ```
+
+Reejs selects `preact, twind, api, static` by default. Therefore, you don't need to specify them. The `-y` flag skips the interactive prompt and applies the default options.
 
 ## Project Structure
 
@@ -48,6 +55,7 @@ myapp
 ├── package.json
 ├── packit.config.js
 ├── public
+├── reecfg.json
 ├── src
 │   ├── components
 │   └── pages

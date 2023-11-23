@@ -10,12 +10,7 @@ let reejs_version = JSON.parse(
     path.dirname(new URL(import.meta.url).pathname) + "/../package.json"
   )
 );
-let create_version = JSON.parse(
-  fs.readFileSync(
-    path.dirname(new URL(import.meta.url).pathname) +
-      "/../src/create/package.json"
-  )
-);
+
 let imports_version = JSON.parse(
   fs.readFileSync(
     path.dirname(new URL(import.meta.url).pathname) +
@@ -51,7 +46,6 @@ function bumpVersion(version) {
 }
 
 reejs_version.version = bumpVersion(reejs_version.version);
-create_version.version = bumpVersion(create_version.version);
 imports_version.version = bumpVersion(imports_version.version);
 utils_version.version = bumpVersion(utils_version.version);
 react_version.version = bumpVersion(react_version.version);
@@ -60,11 +54,6 @@ server_version.version = bumpVersion(server_version.version);
 fs.writeFileSync(
   path.dirname(new URL(import.meta.url).pathname) + "/../package.json",
   JSON.stringify(reejs_version, null, 2)
-);
-fs.writeFileSync(
-  path.dirname(new URL(import.meta.url).pathname) +
-    "/../src/create/package.json",
-  JSON.stringify(create_version, null, 2)
 );
 fs.writeFileSync(
   path.dirname(new URL(import.meta.url).pathname) +

@@ -6,12 +6,6 @@ let reejs_version = JSON.parse(
     path.dirname(new URL(import.meta.url).pathname) + "/../package.json"
   )
 );
-let create_version = JSON.parse(
-  fs.readFileSync(
-    path.dirname(new URL(import.meta.url).pathname) +
-      "/../src/create/package.json"
-  )
-);
 let imports_version = JSON.parse(
   fs.readFileSync(
     path.dirname(new URL(import.meta.url).pathname) +
@@ -42,8 +36,7 @@ let version = {
   imports: imports_version,
   utils: utils_version,
   react: react_version,
-  server: server_version,
-  create: create_version,
+  server: server_version
 };
 
 //generate js file exporting JSON.stringify(version)
@@ -51,10 +44,6 @@ let f = `export default ${JSON.stringify(version)};`;
 
 fs.writeFileSync(
   path.dirname(new URL(import.meta.url).pathname) + "/../src/cli/version.js",
-  f
-);
-fs.writeFileSync(
-  path.dirname(new URL(import.meta.url).pathname) + "/../src/create/version.js",
   f
 );
 fs.writeFileSync(

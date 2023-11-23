@@ -5,3 +5,5 @@
 ~~As such, we currently do not have any built-in components like `Head`, `Link` or `Image` (from Next.js). We plan to have them in the future, join our Discord server to know more.~~
 
 WIP. The components have been added, but they are not yet documented. Please join our Discord server to know more.
+
+For now, if you're using React/Preact, Reejs applies hydration to all pages by default. IF the component's name is `DoNotHydrate`, Reejs will not hydrate it.
