@@ -50,7 +50,9 @@ We welcome all contributions. Please read our [CONTRIBUTING.md](https://github.c
 
 ## 🚤 Benchmark
 
-> Ran on Pentium G620 @ 2.60GHz (released in Q2'11), 8GB DDR3 RAM, Arch Linux on 1st June 2023 Reejs v0.9.15, Nodejs v18.16.0
+> Ran on Pentium G620 @ 2.60GHz (released in Q2'11), 8GB DDR3 RAM, Arch Linux on 1st June 2023 Reejs v0.9.15, Nodejs v18.16.0.
+>
+> If you want to view the latest benchmarks online, please visit https://ree.js.org/graph (Uses GitHub Actions to run benchmarks on every commit and everyday)
 
 > Important Note: This tests were ran manually, and the observations were noted manually. Since different frameworks have different ways and ideas of how it should run, please think of this benchmarks as approx data (except folder sizes). Only Reejs Packit provides required data, and nextjs dev builds run transpilers 2-3 times when booting up, so its written as it is.
 
