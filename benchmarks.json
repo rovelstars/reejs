@@ -1,6 +1,63 @@
 [
   {
     "hash": "a9dc09758c4539f033a11155c9abf617f2677a93",
+    "createdAt": "2023-12-27T00:48:17.313Z",
+    "results": [
+      {
+        "name": "Install dependencies",
+        "count": 3,
+        "command": "cd project && reejs i",
+        "mean": 2.173937800053333,
+        "stddev": 0.048593117802917994,
+        "median": 2.19120132672,
+        "user": 0.6294781866666667,
+        "system": 0.10554906666666668,
+        "min": 2.11907002172,
+        "max": 2.21154205172,
+        "exit_codes": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "Packit - Node [DEV]",
+        "count": 3,
+        "command": "cd project && reejs packit node -d -o",
+        "mean": 0.20335554188000002,
+        "stddev": 0.00012224424028558034,
+        "median": 0.20342424288,
+        "user": 0.19418859999999996,
+        "system": 0.03560383333333333,
+        "min": 0.20321440288,
+        "max": 0.20342797988,
+        "exit_codes": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "Packit - Node [PROD]",
+        "count": 3,
+        "command": "cd project && reejs packit node",
+        "mean": 0.23015185784666667,
+        "stddev": 0.013587407153285443,
+        "median": 0.22235005418,
+        "user": 0.22220566666666666,
+        "system": 0.04557266666666667,
+        "min": 0.22226435318,
+        "max": 0.24584116618000001,
+        "exit_codes": [
+          0,
+          0,
+          0
+        ]
+      }
+    ]
+  },
+  {
+    "hash": "a9dc09758c4539f033a11155c9abf617f2677a93",
     "createdAt": "2023-12-26T00:48:09.588Z",
     "results": [
       {
