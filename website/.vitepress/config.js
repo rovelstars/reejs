@@ -15,7 +15,13 @@ export default defineConfig({
   },
   head: [
     ["meta", { name: "theme-color", content: "#5f67ee" }],
-    ["meta", { name: "google-site-verification", content: "LCR6hOS2RiaSDCMlJjkjsh2ZoN8y5wDuYW1QJLcw8bA" }],
+    [
+      "meta",
+      {
+        name: "google-site-verification",
+        content: "LCR6hOS2RiaSDCMlJjkjsh2ZoN8y5wDuYW1QJLcw8bA",
+      },
+    ],
     ["meta", { name: "og:type", content: "website" }],
     ["meta", { name: "og:locale", content: "en" }],
     ["meta", { name: "og:site_name", content: "Reejs" }],
