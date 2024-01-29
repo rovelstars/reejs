@@ -24,27 +24,6 @@ export default async function (prog) {
         Deno.exit(1);
       }
       let repl = await NativeImport("node:repl");
-      if (!globalThis.Deno && !globalThis.Bun) {
-        let modulesLoadTimeout = setTimeout(() => {
-          //man talk about a hack
-          console.log(
-            "%c[DENO] Setting up Deno namespace shim",
-            "color:yellow;"
-          );
-        }, 1000);
-        //setup Deno namespace shim
-        globalThis.Deno = DynamicImport(
-          await Import("https://esm.sh/@deno/shim-deno@0.16.0", {
-            internalDir: true,
-          })
-        ).Deno;
-        if (!Deno.readFile) {
-          Deno.readFile = async function (path) {
-            return fs.readFileSync(path);
-          };
-        }
-        clearTimeout(modulesLoadTimeout);
-      }
       console.log(
         "%c[REPL] %cStarting ReePL",
         "color:#7c3aed",

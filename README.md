@@ -56,7 +56,7 @@ We welcome all contributions. Please read our [CONTRIBUTING.md](https://github.c
 
 > Important Note: This tests were ran manually, and the observations were noted manually. Since different frameworks have different ways and ideas of how it should run, please think of this benchmarks as approx data (except folder sizes). Only Reejs Packit provides required data, and nextjs dev builds run transpilers 2-3 times when booting up, so its written as it is.
 
-Reejs: default React project with features `react,tailwind,api,static`
+Reejs: default React project with features `preact,twind,api,static`
 Vite: default react project
 Nextjs: default nextjs project: no typescript, no eslint, no tailwind, no app router.
 
