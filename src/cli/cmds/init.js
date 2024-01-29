@@ -67,16 +67,16 @@ export default function (prog) {
         let pkgName = name.split("/")[0];
         let scope = name.replace(pkgName, "");
         scope = scope.split("?")[0];
-        if(pkgName.startsWith("@")){
+        if (pkgName.startsWith("@")) {
           //split scope by "/", and get the first item and append it to pkgName and remove it from scope
-          pkgName += "/"+scope.split("/")[1];
-          scope = scope.replace("/"+scope.split("/")[1], "");
+          pkgName += "/" + scope.split("/")[1];
+          scope = scope.replace("/" + scope.split("/")[1], "");
         }
         let url = `https://esm.sh/${pkgName}${
-          dependencies[pkgName] ? `@${dependencies[pkgName]}` : (
-            ""
-            //the package may be scoped. if it is scoped, then use the scope too
-          )
+          dependencies[pkgName]
+            ? `@${dependencies[pkgName]}`
+            : ""
+              //the package may be scoped. if it is scoped, then use the scope too
         }${scope}`;
         url = new URL(url);
         if (isReactPackage) {
