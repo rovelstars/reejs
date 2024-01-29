@@ -73,10 +73,8 @@ export default function (prog) {
           scope = scope.replace("/" + scope.split("/")[1], "");
         }
         let url = `https://esm.sh/${pkgName}${
-          dependencies[pkgName]
-            ? `@${dependencies[pkgName]}`
-            : ""
-              //the package may be scoped. if it is scoped, then use the scope too
+          dependencies[pkgName] ? `@${dependencies[pkgName]}` : ""
+          //the package may be scoped. if it is scoped, then use the scope too
         }${scope}`;
         url = new URL(url);
         if (isReactPackage) {
