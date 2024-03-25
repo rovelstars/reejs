@@ -1,6 +1,6 @@
 {
   "name": "reejs",
-  "version": "0.20.0",
+  "version": "0.20.1",
   "description": "",
   "type": "module",
   "main": "src/cli/index.js",
@@ -17,9 +17,9 @@
     "docs:preview": "vitepress preview website"
   },
   "dependencies": {
-    "@reejs/imports": "2.12.0",
-    "@reejs/server": "0.20.0",
-    "@reejs/utils": "1.11.0",
+    "@reejs/imports": "2.12.1",
+    "@reejs/server": "0.20.1",
+    "@reejs/utils": "1.11.1",
     "pathe": "^1.1.1"
   },
   "keywords": [],
