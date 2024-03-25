@@ -96,4 +96,7 @@ export default class CacheMapReader {
       console.log(e);
     }
   }
+  url(){
+    return this.cacheMapPath;
+  }
 }

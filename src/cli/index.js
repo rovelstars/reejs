@@ -23,6 +23,7 @@ let sade = await Import("https://esm.sh/v132/sade@1.8.1/node/sade.bundle.mjs", {
 let pkgJson = DynamicImport(await import("./version.js")).reejs;
 // recursively import all files from cmds folder
 import addCmd from "./cmds/add.js";
+import cacheInfo from "./cmds/cacheinfo.js";
 import doctorCmd from "./cmds/doctor.js";
 import initCmd from "./cmds/init.js";
 import npmsyncCmd from "./cmds/npmsync.js";
@@ -37,6 +38,7 @@ clearTimeout(modulesLoadTimeout);
 let prog = sade("reejs");
 prog.version(pkgJson.version);
 addCmd(prog);
+cacheInfo(prog);
 doctorCmd(prog);
 initCmd(prog);
 npmsyncCmd(prog);
