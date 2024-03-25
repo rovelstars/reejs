@@ -1,5 +1,6 @@
 import DynamicImport from "./dynamicImport.js";
 import env, { projectDir } from "./env.js";
+import getJSR_URL from "./jsr.js";
 import NativeImport from "./nativeImport.js";
 import dl from "./URLImportInstaller.js";
 
@@ -35,6 +36,9 @@ export async function Import(
 ) {
   if (name.startsWith("node:")) {
     return await NativeImport(name);
+  } else if (name.startsWith("jsr:")) {
+    let url = await getJSR_URL(name);
+    return await URLImport(url, opts.internalDir);
   } else if (name.startsWith("http:") || name.startsWith("https:")) {
     return await URLImport(name, opts.internalDir);
   } else if (name.startsWith("npm:")) {

@@ -4,17 +4,13 @@ import { UA } from "@reejs/imports/URLImportInstaller.js";
 let pkg = DynamicImport(await import("../version.js")).reejs;
 import fs from "node:fs";
 import path from "pathe";
-let projectCacheJson = {};
+
 let processCwd = globalThis?.process?.cwd?.() || Deno.cwd();
-if (fs.existsSync(path.join(processCwd, ".reejs", "cache", "cache.json"))) {
-  projectCacheJson = JSON.parse(
-    fs.readFileSync(
-      path.join(processCwd, ".reejs", "cache", "cache.json"),
-      "utf-8"
-    )
-  );
-}
+
 let reejsDir = dir; // make reejsDir mutable
+
+let projectCacheCount = fs.existsSync(path.join(processCwd, ".reejs", "cache")) && fs.readdirSync(path.join(processCwd, ".reejs", "cache")).length;
+let reejsCacheCount = fs.existsSync(path.join(dir, "cache")) && fs.readdirSync(path.join(dir, "cache")).length;
 
 //on android, process.cwd() is /data/data/com.termux/files/home and since it doesn't include the username, we dont need to redact it
 if (!processCwd.startsWith("/data/data/com.termux/files/home")) {
@@ -31,10 +27,10 @@ export let doctorReport = async function () {
   console.log("%c[reejs] %cDoctor", "color: blue", "color: yellow");
   console.log(
     "%c[RUNTIME] %c" +
-      runtime +
-      (process.versions.webcontainer
-        ? ` | webcontainer (${process.versions.webcontainer})`
-        : ""),
+    runtime +
+    (process.versions.webcontainer
+      ? ` | webcontainer (${process.versions.webcontainer})`
+      : ""),
     "color: #7237C1",
     "color: green"
   );
@@ -58,7 +54,7 @@ export let doctorReport = async function () {
       "color: green"
     );
   console.log(
-    "%c[REEJS_CACHE] %c" + Object.keys(projectCacheJson).length + " files",
+    "%c[REEJS_CACHE] %c" + `${reejsCacheCount} files in main, ${projectCacheCount || "no"} files in project`,
     "color: #7237C1",
     "color: green"
   );

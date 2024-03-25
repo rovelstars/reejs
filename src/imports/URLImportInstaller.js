@@ -18,6 +18,7 @@ import styleit from "@reejs/utils/log.js";
 import DynamicImport from "./dynamicImport.js";
 import URLImport from "./URLImport.js";
 import { save } from "./debug.js";
+import getJSR_URL from "./jsr.js";
 
 let processCwd = globalThis?.process?.cwd?.() || Deno.cwd();
 
@@ -61,8 +62,7 @@ if (!fs.existsSync(path.join(_reejsDir, "failsafe", "package.json")))
 if (!globalThis.fetch) {
   if (!fs.existsSync(path.join(_reejsDir, "failsafe", "fetch.js"))) {
     let fetchFileCode = await fetchUrl(
-      `${
-        process.env.ESM_SERVER || "https://esm.sh"
+      `${process.env.ESM_SERVER || "https://esm.sh"
       }/v128/node-fetch@3.3.1/node/node-fetch.bundle.mjs`
     );
     fs.writeFileSync(
@@ -92,8 +92,6 @@ switch (env) {
     break;
   case "bun":
     UA = `Bun/${Bun.version} (reejs/${pkgJson.version})`;
-    //UA = `Node/${process.version} (reejs/${pkgJson.version})`; //As of time of writing, `esm.sh` provides `esnext` build for Bun instead of its own or `node` target
-    // // so we use Node's UA because we don't want nodejs polyfills.
     break;
 }
 
@@ -131,6 +129,7 @@ let react =
 
 let URLToFile = function (url, noFolderPath = false, reejsDir) {
   if (url.startsWith("node:")) return url;
+  //URLToFile must not be passed `jsr:` specifier. It cannot fetch metadata here as its a sync function.
   if (url.startsWith("npm:"))
     url = url.replace(
       "npm:",
@@ -163,21 +162,21 @@ let URLToFile = function (url, noFolderPath = false, reejsDir) {
 
   let fileString = noFolderPath
     ? "./" +
+    crypto
+      .createHash("sha256")
+      .update(url + UA)
+      .digest("hex")
+      .slice(0, 6) +
+    fileExt
+    : path.join(
+      reejsDir == true ? path.join(processCwd, ".reejs") : _reejsDir,
+      "cache",
       crypto
         .createHash("sha256")
         .update(url + UA)
         .digest("hex")
-        .slice(0, 6) +
-      fileExt
-    : path.join(
-        reejsDir == true ? path.join(processCwd, ".reejs") : _reejsDir,
-        "cache",
-        crypto
-          .createHash("sha256")
-          .update(url + UA)
-          .digest("hex")
-          .slice(0, 6) + fileExt
-      );
+        .slice(0, 6) + fileExt
+    );
   return fileString;
 };
 
@@ -187,9 +186,9 @@ let followRedirect = async function (url, forBrowser = false) {
     return (
       await fetch(
         (process.env.ESM_SERVER || "https://esm.sh/") +
-          "/" +
-          url.replace("npm:", "") +
-          "?bundle",
+        "/" +
+        url.replace("npm:", "") +
+        "?bundle",
         {
           headers: {
             "User-Agent": forBrowser
@@ -218,7 +217,7 @@ let followRedirect = async function (url, forBrowser = false) {
           });
           break;
         } catch (error) {
-          console.log(error);
+          //console.trace("Failed to fetch:", url);
         }
       }
       return response;
@@ -251,8 +250,7 @@ let lexer, parser;
 
 if (!fs.existsSync(path.join(_reejsDir, "failsafe", "spinnies.js"))) {
   let spinniesCode = await fetchUrl(
-    `${process.env.ESM_SERVER || "https://esm.sh"}/v128/spinnies@0.5.1/${
-      globalThis?.Deno ? "denonext" : "node"
+    `${process.env.ESM_SERVER || "https://esm.sh"}/v128/spinnies@0.5.1/${globalThis?.Deno ? "denonext" : "node"
     }/spinnies.bundle.mjs`
   );
   fs.writeFileSync(
@@ -307,6 +305,9 @@ let dl = async function (
   }
 
   if (url.startsWith("node:")) return url;
+  if (url.startsWith("jsr:")) {
+    url = await getJSR_URL(url);
+  }
   if (url.startsWith("npm:")) {
     url =
       (process.env.ESM_SERVER || "https://esm.sh") +
@@ -341,8 +342,7 @@ let dl = async function (
     if (res != url && !NOTIFIED_UPDATE_URL.some(u => u == url)) {
       spinners.succeed(originalUrl, {
         text: styleit(
-          `${
-            isChild ? "├─  " : ""
+          `${isChild ? "├─  " : ""
           }🪄 %c Please use specific version for %c${url} %cto access %c${res} %cfaster without pinging for latest version`,
           "",
           "color: yellow",
@@ -398,8 +398,7 @@ let dl = async function (
   //set timeout for fetch for 30 secs, after which throw error
   let timeout = setTimeout(async () => {
     throw new Error(
-      `Failed to download ${finalURL}\nUser Agent: ${
-        forBrowser ? `Mozilla/5.0 (reejs/${pkgJson.version})` : UA
+      `Failed to download ${finalURL}\nUser Agent: ${forBrowser ? `Mozilla/5.0 (reejs/${pkgJson.version})` : UA
       }\n${await res.text()}`
     );
   }, 30000);
@@ -417,7 +416,7 @@ let dl = async function (
         });
         break;
       } catch (error) {
-        console.log(error);
+        //console.trace("URL Failed to fetch:", finalURL);
       }
     }
     return response;
@@ -439,7 +438,7 @@ let dl = async function (
     await waitUntilArrayDoesntHaveValue(finalURL);
     return URLToFile(finalURL, null, cli);
   }
-  if (!remove && fs.existsSync(URLToFile(finalURL))) {
+  if (!remove && fs.existsSync(URLToFile(finalURL, null, cli))) {
     return URLToFile(finalURL, null, cli);
   }
   CURRENT_DOWNLOADING.push(finalURL);
@@ -542,7 +541,7 @@ let dl = async function (
               });
               break;
             } catch (error) {
-              console.log(error);
+              //console.trace("Failed to fetch:", url);
             }
           }
           return response;
@@ -596,9 +595,9 @@ let dl = async function (
       if (e.startsWith("npm:")) {
         return await followRedirect(
           (process.env.ESM_SERVER || "https://esm.sh") +
-            "/" +
-            e.replace("npm:", "") +
-            "?bundle",
+          "/" +
+          e.replace("npm:", "") +
+          "?bundle",
           forBrowser
         );
       } else if (e.startsWith("/")) {
@@ -611,12 +610,13 @@ let dl = async function (
       return e;
     })
   );
-  files = files.map(e => {
+  files = files.map(e => { 
     return URLToFile(e, true);
   });
   await Promise.all(
     packs.map(async (p, i) => {
-      code = code.replaceAll(p, files[i]);
+      if(files[i].startsWith("jsr:")) files[i] = URLToFile(await getJSR_URL(files[i]), true);
+      code = code.replaceAll(p, files[i] );
       let dlUrl;
       if (p.startsWith("/")) {
         let eurl = new URL(finalURL);
@@ -727,8 +727,7 @@ let dl = async function (
   if ((isChild && process.env.DEBUG) || !isChild)
     spinners.update(originalUrl, {
       text: styleit(
-        `${isChild ? "├─  " : ""}%c${finalURL} %cin %c${
-          (Date.now() - start) / 1000
+        `${isChild ? "├─  " : ""}%c${finalURL} %cin %c${(Date.now() - start) / 1000
         }s`,
         "",
         "color: blue",

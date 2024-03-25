@@ -72,10 +72,9 @@ export default function (prog) {
           pkgName += "/" + scope.split("/")[1];
           scope = scope.replace("/" + scope.split("/")[1], "");
         }
-        let url = `https://esm.sh/${pkgName}${
-          dependencies[pkgName] ? `@${dependencies[pkgName]}` : ""
+        let url = `https://esm.sh/${pkgName}${dependencies[pkgName] ? `@${dependencies[pkgName]}` : ""
           //the package may be scoped. if it is scoped, then use the scope too
-        }${scope}`;
+          }${scope}`;
         url = new URL(url);
         if (isReactPackage) {
           url.searchParams.append("external", "react,react-dom");
@@ -238,10 +237,9 @@ export default function (prog) {
         fs.mkdirSync(path.join(dir, "src", "components"), { recursive: true });
         fs.writeFileSync(
           path.join(dir, "src", "pages", "index.jsx"),
-          `export default function(){\n  return <h1 ${
-            features.includes("tailwind") || features.includes("twind")
-              ? 'className="text-3xl font-bold text-violet-600"'
-              : ""
+          `export default function(){\n  return <h1 ${features.includes("tailwind") || features.includes("twind")
+            ? 'className="text-3xl font-bold text-violet-600"'
+            : ""
           }>Hello from Reejs!</h1>\n}`,
           "utf-8"
         );
@@ -253,10 +251,9 @@ export default function (prog) {
         fs.writeFileSync(
           path.join(dir, "src", "pages", "_app.jsx"),
           `import App from "@reejs/react/app";
-export default ${
-            features.includes("tailwind") || features.includes("twind")
-              ? "App"
-              : "function({ children }){return <App children={children} className=\"!block\" style={{display: 'none'}} />}"
+export default ${features.includes("tailwind") || features.includes("twind")
+            ? "App"
+            : "function({ children }){return <App children={children} className=\"!block\" style={{display: 'none'}} />}"
           };`
         );
         fs.mkdirSync(path.join(dir, "src", "components"), {
@@ -293,12 +290,10 @@ export default ${
       //setup import maps URLs
       let importmap = {},
         browserimportmap = {};
-      importmap["@reejs/server"] = GetPackage("@reejs/server");
-      importmap["@reejs/utils/log.js"] = GetPackage("@reejs/utils/log.js");
+      //importmap["@reejs/server"] = GetPackage("@reejs/server");
+      //importmap["@reejs/utils/log.js"] = GetPackage("@reejs/utils/log.js");
       importmap["@reejs/react/app.jsx"] = GetPackage("@reejs/react/app.jsx");
-      importmap["@reejs/imports/debug.js"] = GetPackage(
-        "@reejs/imports/debug.js"
-      );
+      //importmap["@reejs/imports/debug.js"] = GetPackage("@reejs/imports/debug.js");
 
       if (features.includes("react")) {
         importmap["react"] = GetPackage("react");
@@ -379,17 +374,17 @@ darkMode: "class",
         fs.writeFileSync(
           path.join(dir, "tailwind.config.js"),
           "export default " +
-            JSON.stringify(
-              {
-                content: ["./src/**/*.{js,jsx,ts,tsx}"],
-                theme: {
-                  extend: {},
-                },
-                plugins: [],
+          JSON.stringify(
+            {
+              content: ["./src/**/*.{js,jsx,ts,tsx}"],
+              theme: {
+                extend: {},
               },
-              null,
-              2
-            ),
+              plugins: [],
+            },
+            null,
+            2
+          ),
           "utf-8"
         );
         //write src/input.css

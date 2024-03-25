@@ -3,6 +3,7 @@
 
 import DynamicImport from "./dynamicImport.js";
 import env from "./env.js";
+import CacheMapReader from "@reejs/utils/cacheMapReader.js";
 import NativeImport from "./nativeImport.js";
 import { reejsDir as dir } from "@reejs/imports/env.js";
 let fs = await NativeImport("node:fs");
@@ -22,24 +23,18 @@ if (
 
 let importmap = fs.existsSync(path.join(processCwd, "import_map.json"))
   ? DynamicImport(
-      await import(`${processCwd}/import_map.json`, {
-        assert: { type: "json" },
-      })
-    )
+    await import(`${processCwd}/import_map.json`, {
+      assert: { type: "json" },
+    })
+  )
   : {};
-let cachemap = fs.existsSync(path.join(dir, "cache", "cache.json"))
-  ? DynamicImport(
-      await import(`file://${dir}/cache/cache.json`, {
-        assert: { type: "json" },
-      })
-    )
-  : fs.existsSync(path.join(processCwd, ".reejs", "cache", "cache.json"))
-    ? DynamicImport(
-        await import(`file://${processCwd}/.reejs/cache/cache.json`, {
-          assert: { type: "json" },
-        })
-      )
-    : {};
+
+let cachemap = new CacheMapReader(dir).read();
+//replace old cachemap values with values from processCwd
+let _ = new CacheMapReader(processCwd).read();
+for (let key in _) {
+  cachemap[key] = _[key];
+}
 
 let react =
   importmap.imports?.react ||
@@ -79,6 +74,7 @@ function waitUntilArrayDoesntHaveValue(element) {
 
 //hook up a global listener for packit fire
 import { EventEmitter } from "node:events";
+import getJSR_URL from "./jsr.js";
 globalThis.packitEvent = new EventEmitter();
 globalThis.packitEvent.on("start", async () => {
   //this event is fired when packit is done transpiling the files.
@@ -99,7 +95,7 @@ globalThis.packitEvent.on("done", async () => {
     fs.writeFile(
       path.join(".reejs", "serve.cache"),
       JSON.stringify(MODIFIED_FILES),
-      () => {}
+      () => { }
     );
   }
 });
@@ -264,7 +260,7 @@ jsxFragmentPragma : "Fragment",*/
           module: true,
           compress:
             globalThis?.process?.env?.NODE_ENV == "production" ||
-            globalThis?.Deno?.env?.get("NODE_ENV") == "production"
+              globalThis?.Deno?.env?.get("NODE_ENV") == "production"
               ? {}
               : false,
           mangle: false,
@@ -286,6 +282,7 @@ jsxFragmentPragma : "Fragment",*/
   }
   // replace @reejs/react with ./node_modules/@reejs/react
   let files = await Promise.all(
+    //DO NOT EDIT "pack", if u do, the code will break in the next packs.map function below.
     packs.map(async pack => {
       //setup vite compability -> resolveId function
       let resolvedPluginInfo;
@@ -359,27 +356,32 @@ jsxFragmentPragma : "Fragment",*/
           });
           fs.writeFileSync(
             path.join(".reejs", "packit", "vite", "index.js"),
-            `import * as cheerio from "${
-              "../.." +
-              (
-                await dl("https://esm.sh/cheerio@1.0.0-rc.12/lib/slim", true)
-              ).split(".reejs")[1]
+            `import * as cheerio from "${"../.." +
+            (
+              await dl("https://esm.sh/cheerio@1.0.0-rc.12/lib/slim", true)
+            ).split(".reejs")[1]
             }";` +
-              fs
-                .readFileSync(
-                  path.dirname(import.meta.url).replace("file://", "") +
-                    "/vite.js"
-                )
-                .toString()
+            fs
+              .readFileSync(
+                path.dirname(import.meta.url).replace("file://", "") +
+                "/vite.js"
+              )
+              .toString()
           );
         }
         return "../packit/vite/index.js";
       }
-      if (pack.n.startsWith("npm:")) {
+      if (pack.n.startsWith("jsr:")) {
+        let url = await getJSR_URL(pack.n);
+        if (fs.existsSync(path.join(".reejs", "cache", URLToFile(url, true))))
+          return "../cache/" + URLToFile(url, true);
+        let savedAt = await dl(url, true);
+        return "../cache/" + savedAt.split("cache/")[1];
+      } else if (pack.n.startsWith("npm:")) {
         if (
-          fs.existsSync(path.join(".reejs", "cache", URLToFile(pack.n, true)))
+          fs.existsSync(path.join(".reejs", "cache", URLToFile(_packn, true)))
         )
-          return "../cache/" + path.join(URLToFile(pack.n, true));
+          return "../cache/" + path.join(URLToFile(_packn, true));
         let savedAt = await dl(
           pack.n.replace(
             "npm:",
@@ -387,7 +389,7 @@ jsxFragmentPragma : "Fragment",*/
           ),
           true
         );
-        return "../cache/" + savedAt.split("cache/")[1];
+        return path.join("../cache/", savedAt.split("cache/")[1]);
       } else if (pack.n.startsWith("https:")) {
         if (
           fs.existsSync(path.join(".reejs", "cache", URLToFile(pack.n, true)))
@@ -396,23 +398,21 @@ jsxFragmentPragma : "Fragment",*/
         let savedAt = await dl(pack.n, true);
         return "../cache/" + savedAt.split("cache/")[1];
       } else if (importmap.imports?.[pack.n]) {
-        return `../cache/${
-          cachemap[
-            importmap.imports?.[pack.n] +
-              "|" +
-              (globalThis.process?.env?.REEJS_UA ||
-                globalThis.Deno?.env?.get("REEJS_UA"))
-          ]
-        }`;
+        return `../cache/${cachemap[
+          importmap.imports?.[pack.n] +
+          "|" +
+          (globalThis.process?.env?.REEJS_UA ||
+            globalThis.Deno?.env?.get("REEJS_UA"))
+        ]
+          }`;
       } else if (importmap.browserImports?.[pack.n]) {
-        return `../cache/${
-          cachemap[
-            importmap.browserImports[pack.n] +
-              "|" +
-              (globalThis.process?.env?.REEJS_UA ||
-                globalThis.Deno?.env?.get("REEJS_UA"))
-          ]
-        }`;
+        return `../cache/${cachemap[
+          importmap.browserImports[pack.n] +
+          "|" +
+          (globalThis.process?.env?.REEJS_UA ||
+            globalThis.Deno?.env?.get("REEJS_UA"))
+        ]
+          }`;
       } else if (pack.n.startsWith("./") || pack.n.startsWith("../")) {
         //return pack.n;
         let ppack = pack.n;
@@ -593,22 +593,20 @@ jsxFragmentPragma : "Fragment",*/
     !result.includes("import React,{")
   ) {
     result =
-      `import React from "${
-        cachemap[
-          react +
-            "|" +
-            (globalThis.process?.env?.REEJS_UA ||
-              globalThis.Deno?.env?.get("REEJS_UA"))
+      `import React from "${cachemap[
+        react +
+        "|" +
+        (globalThis.process?.env?.REEJS_UA ||
+          globalThis.Deno?.env?.get("REEJS_UA"))
+      ]
+        ? `../cache/${cachemap[
+        react +
+        "|" +
+        (globalThis.process?.env?.REEJS_UA ||
+          globalThis.Deno?.env?.get("REEJS_UA"))
         ]
-          ? `../cache/${
-              cachemap[
-                react +
-                  "|" +
-                  (globalThis.process?.env?.REEJS_UA ||
-                    globalThis.Deno?.env?.get("REEJS_UA"))
-              ]
-            }`
-          : await dl(react, true)
+        }`
+        : await dl(react, true)
       }";\n` + result;
   }
   result += "\n//# sourceURL=file://" + file.replace(processCwd, ".");

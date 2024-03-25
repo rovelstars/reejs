@@ -1,5 +1,6 @@
 import NativeImport from "./nativeImport.js";
 import { reejsDir } from "./env.js";
+import CacheMapReader from "@reejs/utils/cacheMapReader.js";
 import version from "@reejs/imports/version.js";
 let fs = await NativeImport("node:fs");
 let path = await NativeImport("node:path");
@@ -10,22 +11,12 @@ export let save = e => {
   if (!fs.existsSync(path.join(reejsDir, "cache"))) {
     fs.mkdirSync(path.join(reejsDir, "cache"), { recursive: true });
   }
-  let oldCache = {};
-  if (fs.existsSync(path.join(reejsDir, "cache", "cache.json"))) {
-    try {
-      oldCache = fs.readFileSync(
-        path.join(reejsDir, "cache", "cache.json"),
-        "utf-8"
-      );
-      oldCache = JSON.parse(oldCache);
-    } catch (e) {}
-  }
+  let cacheMapReader = new CacheMapReader(reejsDir);
+  let oldCache = cacheMapReader.read();
   let totalCache = { ...oldCache, ...globalThis?.__CACHE_SHASUM };
-  fs.writeFileSync(
-    path.join(reejsDir, "cache", "cache.json"),
-    JSON.stringify(totalCache, null, 2)
-  );
-  let copyE = e;
+  cacheMapReader.write(JSON.stringify(totalCache));
+  let copyE = new Error(e);
+  copyE.stack = e.stack;
   if (e instanceof Error) {
     if (
       globalThis?.process?.env?.DEBUG ||
@@ -34,6 +25,7 @@ export let save = e => {
       console.log("%cGenerating doctor report...", "color:yellow");
       if (globalThis?.REEJS_doctorReport) globalThis.REEJS_doctorReport();
     }
+    console.log("");
     console.log(
       "%c INFO %c %cSaving important data...",
       "background-color:blue",
@@ -73,6 +65,7 @@ export let save = e => {
     stack = stack.map(e => {
       // replace the file names with the urls
       Object.entries(result).forEach(([key, value]) => {
+        value = value.split("|")[0];
         e = e.replaceAll(key, value);
       });
       return e;
