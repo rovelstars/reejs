@@ -35,8 +35,8 @@ function s(Q, K = "@") {
       k = A.ss(),
       i = A.se(),
       g;
-    A.ip() && (g = w(Q.slice(o === -1 ? C - 1 : C, o === -1 ? I + 1 : I))),
-      L.push({ n: g, s: C, e: I, ss: k, se: i, d: o, a: D });
+    (A.ip() && (g = w(Q.slice(o === -1 ? C - 1 : C, o === -1 ? I + 1 : I))),
+      L.push({ n: g, s: C, e: I, ss: k, se: i, d: o, a: D }));
   }
   for (; A.re(); ) {
     let C = A.es(),

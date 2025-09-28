@@ -74,9 +74,9 @@ function P() {
   let r = new Map();
   for (let [e, t] of Object.entries(n)) {
     for (let [o, l] of Object.entries(t))
-      (n[o] = { open: `\x1B[${l[0]}m`, close: `\x1B[${l[1]}m` }),
+      ((n[o] = { open: `\x1B[${l[0]}m`, close: `\x1B[${l[1]}m` }),
         (t[o] = n[o]),
-        r.set(l[0], l[1]);
+        r.set(l[0], l[1]));
     Object.defineProperty(n, e, { value: t, enumerable: !1 });
   }
   return (
@@ -125,19 +125,19 @@ function P() {
           if (e < 8) return 30 + e;
           if (e < 16) return 90 + (e - 8);
           let t, o, l;
-          if (e >= 232) (t = ((e - 232) * 10 + 8) / 255), (o = t), (l = t);
+          if (e >= 232) ((t = ((e - 232) * 10 + 8) / 255), (o = t), (l = t));
           else {
             e -= 16;
             let R = e % 36;
-            (t = Math.floor(e / 36) / 5),
+            ((t = Math.floor(e / 36) / 5),
               (o = Math.floor(R / 6) / 5),
-              (l = (R % 6) / 5);
+              (l = (R % 6) / 5));
           }
           let s = Math.max(t, o, l) * 2;
           if (s === 0) return 30;
           let a =
             30 + ((Math.round(l) << 2) | (Math.round(o) << 1) | Math.round(t));
-          return s === 2 && (a += 60), a;
+          return (s === 2 && (a += 60), a);
         },
         enumerable: !1,
       },
@@ -251,16 +251,16 @@ function F(r, e, t) {
   let l = e.length,
     s = 0,
     a = "";
-  do (a += r.slice(s, o) + e + t), (s = o + l), (o = r.indexOf(e, s));
+  do ((a += r.slice(s, o) + e + t), (s = o + l), (o = r.indexOf(e, s)));
   while (o !== -1);
-  return (a += r.slice(s)), a;
+  return ((a += r.slice(s)), a);
 }
 function D(r, e, t, o) {
   let l = 0,
     s = "";
   do {
     let a = r[o - 1] === "\r";
-    (s +=
+    ((s +=
       r.slice(l, a ? o - 1 : o) +
       e +
       (a
@@ -274,9 +274,9 @@ function D(r, e, t, o) {
         `
 `,
         l
-      ));
+      )));
   } while (o !== -1);
-  return (s += r.slice(l)), s;
+  return ((s += r.slice(l)), s);
 }
 var { stdout: M, stderr: x } = $,
   O = Symbol("GENERATOR"),
@@ -297,7 +297,7 @@ var { stdout: M, stderr: x } = $,
   },
   j = r => {
     let e = (...t) => t.join(" ");
-    return V(e, r), Object.setPrototypeOf(e, h.prototype), e;
+    return (V(e, r), Object.setPrototypeOf(e, h.prototype), e);
   };
 function h(r) {
   return j(r);
@@ -307,13 +307,13 @@ for (let [r, e] of Object.entries(c))
   g[r] = {
     get() {
       let t = d(this, T(e.open, e.close, this[b]), this[f]);
-      return Object.defineProperty(this, r, { value: t }), t;
+      return (Object.defineProperty(this, r, { value: t }), t);
     },
   };
 g.visible = {
   get() {
     let r = d(this, this[b], !0);
-    return Object.defineProperty(this, "visible", { value: r }), r;
+    return (Object.defineProperty(this, "visible", { value: r }), r);
   },
 };
 var v = (r, e, t, ...o) =>
@@ -371,7 +371,7 @@ var W = Object.defineProperties(() => {}, {
   },
   d = (r, e, t) => {
     let o = (...l) => H(o, l.length === 1 ? "" + l[0] : l.join(" "));
-    return Object.setPrototypeOf(o, W), (o[O] = r), (o[b] = e), (o[f] = t), o;
+    return (Object.setPrototypeOf(o, W), (o[O] = r), (o[b] = e), (o[f] = t), o);
   },
   H = (r, e) => {
     if (r.level <= 0 || !e) return r[f] ? "" : e;
@@ -379,10 +379,10 @@ var W = Object.defineProperties(() => {}, {
     if (t === void 0) return e;
     let { openAll: o, closeAll: l } = t;
     if (e.includes("\x1B"))
-      for (; t !== void 0; ) (e = F(e, t.close, t.open)), (t = t.parent);
+      for (; t !== void 0; ) ((e = F(e, t.close, t.open)), (t = t.parent));
     let s = e.indexOf(`
 `);
-    return s !== -1 && (e = D(e, l, o, s)), o + e + l;
+    return (s !== -1 && (e = D(e, l, o, s)), o + e + l);
   };
 Object.defineProperties(h.prototype, g);
 var K = h(),
